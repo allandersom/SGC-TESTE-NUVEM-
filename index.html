@@ -80,9 +80,7 @@ Posto Ipiranga..."></textarea>
             <div class="p-6 space-y-3">
                 <button onclick="UI.toggleModal('disposal-modal'); UI.toggleModal('settings-modal')" class="action-list-btn group"><div class="icon-box bg-green-50 text-green-600"><i class="fas fa-dumpster"></i></div><div class="font-semibold text-xs">Gerenciar Aterros</div></button>
                 <div class="flex gap-2">
-                    <button onclick="DataService.export()" class="action-list-btn group flex-1"><div class="icon-box bg-blue-50 text-blue-600"><i class="fas fa-download"></i></div><div class="font-semibold text-xs">Baixar Nuvem</div></button>
-                    <button onclick="document.getElementById('file-upload').click()" class="action-list-btn group flex-1"><div class="icon-box bg-emerald-50 text-emerald-600"><i class="fas fa-upload"></i></div><div class="font-semibold text-xs">Restaurar</div></button>
-                    <input type="file" id="file-upload" class="hidden" accept=".json" onchange="DataService.import(this)">
+                    <button class="action-list-btn group flex-1 opacity-50 cursor-not-allowed" disabled><div class="icon-box bg-blue-50 text-blue-600"><i class="fas fa-cloud"></i></div><div class="font-semibold text-xs">Backup Automático na Nuvem</div></button>
                 </div>
                 <button onclick="DataService.reset()" class="action-list-btn group hover:border-red-200"><div class="icon-box bg-red-50 text-red-500"><i class="fas fa-trash-alt"></i></div><div class="font-semibold text-sm text-red-600">Apagar Dados de Hoje</div></button>
             </div>
