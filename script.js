@@ -451,6 +451,24 @@ const UI = {
         setTimeout(() => el.remove(), 3500);
     },
 
+    // FUNÇÃO INJETADA PARA MOSTRAR A FOTO EM TELA CHEIA
+    showPhoto(base64) {
+        let modal = document.getElementById('photo-modal-viewer');
+        if(!modal) {
+            modal = document.createElement('div');
+            modal.id = 'photo-modal-viewer';
+            modal.className = 'fixed inset-0 z-[10009] bg-slate-900/95 flex items-center justify-center p-4 backdrop-blur-sm cursor-pointer animate-fade-in';
+            modal.onclick = () => modal.remove();
+            document.body.appendChild(modal);
+        }
+        modal.innerHTML = `
+            <img src="${base64}" class="max-w-full max-h-[80vh] rounded-xl shadow-2xl border-4 border-white object-contain">
+            <div class="absolute bottom-10 left-1/2 transform -translate-x-1/2 text-white font-black bg-red-600 px-6 py-3 rounded-full shadow-lg hover:bg-red-700 transition">
+                <i class="fas fa-times mr-2"></i> FECHAR FOTO
+            </div>
+        `;
+    },
+
     openEditor(name) {
         const d = State.getDriver(name);
         State.session.currentDriver = name;
@@ -937,6 +955,9 @@ const App = {
                     if (motObs) obsHtml += `<div class="mt-1 flex justify-center"><span class="text-[9px] bg-blue-100 text-blue-900 font-medium rounded px-1.5 py-0.5 border border-blue-300"><i class="fas fa-comment-dots"></i> MOT: ${motObs}</span></div>`;
                 }
 
+                // TAG DE FOTO DO MOTORISTA
+                const fotoTag = t.foto ? `<button onclick="UI.showPhoto('${t.foto}')" class="mt-2 w-full flex items-center justify-center gap-1 bg-slate-800 text-white font-bold rounded-md py-1.5 text-[10px] shadow-sm hover:bg-black transition-colors"><i class="fas fa-camera"></i> VER FOTO</button>` : '';
+
                 const mtrTag = t.mtr ? `<div class="mt-1 flex justify-center"><span class="text-[10px] bg-indigo-100 text-indigo-900 font-medium rounded px-1.5 py-0.5 border border-indigo-200"><i class="fas fa-file-invoice"></i> MTR</span></div>` : '';
                 const descTag = t.descarteLocal ? `<div class="mt-1 flex justify-center"><span class="text-[10px] bg-red-100 text-red-900 font-medium rounded px-1.5 py-0.5 border border-red-200">DESC: ${t.descarteLocal}</span></div>` : '';
                 const timeTag = ((status === 'concluido' || status === 'nao_feito') && t.horaConclusao) 
@@ -952,7 +973,7 @@ const App = {
                     
                     <div class="flex justify-between items-center mb-1 px-2">
                         <button onclick="App.setTripStatus('${name}', ${i}, 'concluido')" class="w-6 h-6 rounded-full flex items-center justify-center text-green-600 hover:bg-green-200 shadow-sm border border-green-200 bg-white" title="Marcar Concluído"><i class="fas fa-check text-[10px]"></i></button>
-                        <button onclick="App.setTripStatus('${name}', ${i}, 'cancelado')" class="w-6 h-6 rounded-full flex items-center justify-center text-orange-500 hover:bg-orange-200 shadow-sm border border-orange-200 bg-white" title="Marcar Cancelado"><i class="fas fa-times text-[10px]"></i></button>
+                        <button onclick="App.setTripStatus('${name}', ${i}, 'cancelado')" class="w-6 h-6 rounded-full flex items-center justify-center text-orange-500 hover:bg-orange-200 shadow-sm border border-orange-200 bg-white" title="Marcar Cancelado (Sairá do app do motorista)"><i class="fas fa-times text-[10px]"></i></button>
                     </div>
 
                     <div class="${colorClass} font-bold text-[11px] uppercase leading-tight tracking-wide">
@@ -968,6 +989,7 @@ const App = {
                     ${mtrTag}
                     ${descTag}
                     ${timeTag}
+                    ${fotoTag}
                 </div>`;
             };
 
