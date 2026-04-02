@@ -14,7 +14,6 @@ const firebaseConfig = {
     measurementId: "G-3Q4B4HLE65"
 };
 
-// Inicializa o Firebase
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
@@ -42,33 +41,40 @@ const State = {
         
         UI.loading(true);
 
-        // ESCUTADOR DA NUVEM: Fica lendo o Firebase o tempo todo
         db.ref('sgc_data').on('value', (snapshot) => {
-            const val = snapshot.val();
-            if (val) {
-                this.data = val;
-                if(!this.data.addressBook) this.data.addressBook = [];
-                if(!this.data.disposalPoints) this.data.disposalPoints = [];
-                if(!this.data.fleet) this.data.fleet = {};
-            } else {
-                this.resetFleet();
-            }
-            
-            this.integrityCheck();
+            try {
+                const val = snapshot.val();
+                if (val) {
+                    this.data = val;
+                    if(!this.data.addressBook) this.data.addressBook = [];
+                    else if(!Array.isArray(this.data.addressBook)) this.data.addressBook = Object.values(this.data.addressBook);
+                    
+                    if(!this.data.disposalPoints) this.data.disposalPoints = [];
+                    else if(!Array.isArray(this.data.disposalPoints)) this.data.disposalPoints = Object.values(this.data.disposalPoints);
+                    
+                    if(!this.data.fleet) this.data.fleet = {};
+                } else {
+                    this.resetFleet();
+                }
+                
+                this.integrityCheck();
 
-            // Atualiza tudo visualmente pra quem tiver com o app aberto
-            App.renderGrid();
-            App.renderSpreadsheet(); // RENDERIZA A NOVA PLANILHA
-            App.renderAddressBook();
-            App.renderDisposalList();
-            
-            if (this.session.currentDriver) {
-                App.renderMiniHistory(this.session.currentDriver);
-            }
-
-            if (this.isInitializing) {
-                this.isInitializing = false;
-                UI.loading(false);
+                App.renderGrid();
+                App.renderSpreadsheet(); 
+                App.renderAddressBook();
+                App.renderDisposalList();
+                
+                if (this.session.currentDriver) {
+                    App.renderMiniHistory(this.session.currentDriver);
+                }
+            } catch (err) {
+                console.error("ERRO GRAVE:", err);
+                UI.toast("Erro ao carregar (Veja se o HTML foi atualizado)", "error");
+            } finally {
+                if (this.isInitializing) {
+                    this.isInitializing = false;
+                    UI.loading(false);
+                }
             }
         });
     },
@@ -84,8 +90,14 @@ const State = {
                     color: CONFIG.colors[i % CONFIG.colors.length] 
                 };
                 changed = true;
-            } else if (!this.data.fleet[name].trips) {
-                this.data.fleet[name].trips = [];
+            } else {
+                if (!this.data.fleet[name].trips) {
+                    this.data.fleet[name].trips = [];
+                    changed = true;
+                } else if (!Array.isArray(this.data.fleet[name].trips)) {
+                    this.data.fleet[name].trips = Object.values(this.data.fleet[name].trips);
+                    changed = true;
+                }
             }
         });
         if (changed && !this.isInitializing) this.save();
@@ -222,6 +234,7 @@ const WhatsappService = {
     generateShiftIcon(shift) { return shift === 'day' ? 'DIA' : 'NOITE'; },
     
     getPluralLabel(type, qty) {
+        if(!type) return '';
         const q = parseInt(qty);
         const t = type.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         let label = type.toUpperCase();
@@ -315,6 +328,7 @@ const WhatsappService = {
 
         drivers.forEach(name => {
             const driver = State.getDriver(name);
+            if(!driver || !driver.trips) return;
             const activeTrips = driver.trips.filter(t => !t.completed);
             
             if (activeTrips.length > 0) {
@@ -446,6 +460,7 @@ const UI = {
 
     toast(msg, type = 'success') {
         const c = document.getElementById('toast-container');
+        if(!c) return;
         const el = document.createElement('div');
         const cls = type === 'success' ? 'bg-emerald-600' : (type === 'error' ? 'bg-red-500' : 'bg-blue-600');
         el.className = `${cls} text-white px-4 py-3 rounded-xl shadow-xl flex items-center gap-3 text-xs font-bold animate-fade-in border border-white/20`;
@@ -489,6 +504,7 @@ const UI = {
         const types = ['troca', 'colocacao', 'retirada', 'encher'];
         types.forEach(type => {
             const btn = document.getElementById(`btn-type-${type}`);
+            if(!btn) return;
             btn.className = 'type-sel transition-all duration-200 font-bold text-lg border text-slate-500 border-slate-200 hover:bg-slate-50';
             if (t === type) {
                 if(type === 'troca') btn.className = 'type-sel active bg-slate-800 text-white border-slate-800 shadow-md scale-105';
@@ -1020,7 +1036,7 @@ const App = {
             const obsText = t.obs ? `<span class="text-[8px] text-amber-600 block italic">Obs: ${t.obs}</span>` : '';
             const companyTag = t.empresa ? `<span class="text-[7px] bg-slate-200 px-1 rounded mr-1">${t.empresa}</span>` : '';
             
-            let displayType = t.type.toUpperCase();
+            let displayType = t.type ? t.type.toUpperCase() : 'TROCA';
             if(t.type === 'encher') displayType = 'ENCHER'; 
 
             row.innerHTML = `
@@ -1039,22 +1055,25 @@ const App = {
     },
 
     // ========================================================================
-    // NOVO SISTEMA DE PLANILHA (SUBSTITUI A LISTA ANTIGA)
+    // NOVO SISTEMA DE PLANILHA COM BOTÃO DO WHATSAPP
     // ========================================================================
     renderSpreadsheet() {
         const container = document.getElementById('spreadsheet-container');
+        if (!container) return; 
+        
         container.innerHTML = '';
         const drivers = State.getDriversByShift();
         
         drivers.forEach(name => {
             const d = State.getDriver(name);
             if(!d || !d.trips) return;
+            if(d.trips.length === 0) return; 
             
-            // Container da coluna do motorista
+            // Container da coluna do motorista (flex para empurrar o rodapé para baixo)
             const column = document.createElement('div');
             column.className = "min-w-[220px] max-w-[260px] flex flex-col bg-white snap-start border border-slate-300";
 
-            // Header da planilha (Nome, Placa, Qtd Caixas)
+            // Header da planilha
             let headerHtml = `
                 <div class="bg-slate-300 text-center text-[10px] font-bold py-1 border-b border-slate-300">MOTORISTA</div>
                 <div class="bg-yellow-300 text-center text-xs font-bold py-1 border-b border-slate-300 text-blue-900">${d.plate || 'SEM PLACA'}</div>
@@ -1062,14 +1081,13 @@ const App = {
                 <div class="bg-fuchsia-500 text-white text-center text-[10px] font-bold py-1 border-b border-slate-300">${d.trips.length} SERVIÇOS</div>
             `;
             
-            // Corpo da coluna
+            // Corpo da coluna flex-1 empurra o botão para baixo
             const bodyDiv = document.createElement('div');
-            bodyDiv.className = "flex-1 flex flex-col bg-white";
+            bodyDiv.className = "flex-1 flex flex-col bg-white overflow-y-auto custom-scroll";
             
-            // Função para montar cada "célula" do serviço com a cor pedida
             const buildCell = (t, i, colorClass, customLabel = null) => {
                 const completedClass = t.completed ? 'line-through opacity-50 bg-slate-100' : 'hover:bg-slate-50 cursor-pointer';
-                const label = customLabel || WhatsappService.getPluralLabel(t.type, t.qty);
+                const label = customLabel || WhatsappService.getPluralLabel(t.type || 'troca', t.qty || 1);
                 const qtdText = t.qty > 1 ? `${t.qty} ` : '';
                 
                 const obsTag = t.obs ? `<div class="mt-1 flex justify-center"><span class="text-[9px] bg-amber-100 text-amber-800 rounded px-1.5 py-0.5 border border-amber-200">Obs: ${t.obs}</span></div>` : '';
@@ -1094,31 +1112,35 @@ const App = {
             let tripsHtml = '';
             
             d.trips.forEach((t, i) => {
-                // REGRA DE CORES
-                // Troca = Preto | Colocação = Vermelho | Retirada = Roxo
                 if (t.type === 'troca') {
-                    tripsHtml += buildCell(t, i, 'text-slate-900'); // Preto
+                    tripsHtml += buildCell(t, i, 'text-slate-900'); 
                 } 
                 else if (t.type === 'colocacao') {
-                    tripsHtml += buildCell(t, i, 'text-red-600'); // Vermelho
+                    tripsHtml += buildCell(t, i, 'text-red-600'); 
                 } 
                 else if (t.type === 'retirada') {
-                    tripsHtml += buildCell(t, i, 'text-purple-600'); // Roxo
+                    tripsHtml += buildCell(t, i, 'text-purple-600'); 
                 } 
                 else if (t.type === 'encher') {
-                    // Encher = 2 Serviços (Um vermelho e Um roxo)
                     tripsHtml += buildCell(t, i, 'text-red-600', 'COLOCAÇÃO (ENCHER)');
                     tripsHtml += buildCell(t, i, 'text-purple-600', 'RETIRADA (ENCHER)');
                 }
             });
 
-            if(d.trips.length === 0) {
-                tripsHtml = '<div class="p-4 text-center text-xs text-slate-400 font-bold italic">NENHUM SERVIÇO</div>';
-            }
-
             bodyDiv.innerHTML = tripsHtml;
+
+            // BOTÃO DO WHATSAPP (Rodapé da Coluna)
+            const footerHtml = `
+                <div class="mt-auto p-2 border-t border-slate-300 bg-slate-100">
+                    <button onclick="App.shareDriverRoute('${name}')" class="w-full py-2.5 bg-slate-900 hover:bg-black text-white text-[10px] font-bold rounded-lg shadow flex items-center justify-center gap-2 transition transform hover:scale-[1.02]">
+                        <i class="fab fa-whatsapp text-sm text-green-400"></i> ENVIAR ROTA
+                    </button>
+                </div>
+            `;
+
             column.innerHTML = headerHtml;
             column.appendChild(bodyDiv);
+            column.insertAdjacentHTML('beforeend', footerHtml);
             
             container.appendChild(column);
         });
