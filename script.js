@@ -29,34 +29,39 @@ const CONFIG = {
 };
 
 const State = {
-    data: { fleet: {}, addressBook: [], disposalPoints: [] }, 
+    data: { routes: {}, addressBook: [], disposalPoints: [] }, 
     session: { currentDriver: null, shift: 'day', type: 'troca', routeDate: '' },
     tempQueue: [],
     isInitializing: true,
 
     init() {
         if (!this.session.routeDate) {
-            this.session.routeDate = new Date().toISOString().split('T')[0];
+            // Ajuste fuso horário para Brasil
+            const d = new Date();
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            this.session.routeDate = `${year}-${month}-${day}`;
         }
         
         UI.loading(true);
 
         db.ref('sgc_data').on('value', (snapshot) => {
             try {
-                const val = snapshot.val();
-                if (val) {
-                    this.data = val;
-                    if(!this.data.addressBook) this.data.addressBook = [];
-                    else if(!Array.isArray(this.data.addressBook)) this.data.addressBook = Object.values(this.data.addressBook);
-                    
-                    if(!this.data.disposalPoints) this.data.disposalPoints = [];
-                    else if(!Array.isArray(this.data.disposalPoints)) this.data.disposalPoints = Object.values(this.data.disposalPoints);
-                    
-                    if(!this.data.fleet) this.data.fleet = {};
-                } else {
-                    this.resetFleet();
-                }
+                const val = snapshot.val() || {};
                 
+                // MIGRAR DADOS ANTIGOS PARA O SISTEMA DE MÚLTIPLOS DIAS
+                if (val.fleet) {
+                    if (!val.routes) val.routes = {};
+                    if (!val.routes[this.session.routeDate]) val.routes[this.session.routeDate] = { fleet: val.fleet };
+                    db.ref('sgc_data/routes/' + this.session.routeDate + '/fleet').set(val.fleet);
+                    db.ref('sgc_data/fleet').remove();
+                }
+
+                this.data.addressBook = val.addressBook ? (Array.isArray(val.addressBook) ? val.addressBook : Object.values(val.addressBook)) : [];
+                this.data.disposalPoints = val.disposalPoints ? (Array.isArray(val.disposalPoints) ? val.disposalPoints : Object.values(val.disposalPoints)) : [];
+                this.data.routes = val.routes || {};
+
                 this.integrityCheck();
 
                 App.renderGrid();
@@ -79,152 +84,166 @@ const State = {
         });
     },
 
+    getCurrentFleet() {
+        if (!this.data.routes) this.data.routes = {};
+        if (!this.data.routes[this.session.routeDate]) {
+            this.data.routes[this.session.routeDate] = { fleet: {} };
+        }
+        return this.data.routes[this.session.routeDate].fleet;
+    },
+
     integrityCheck() {
         let changed = false;
+        const fleet = this.getCurrentFleet();
         const all = [...CONFIG.drivers.day, ...CONFIG.drivers.night];
         all.forEach((name, i) => {
-            if (!this.data.fleet[name]) {
-                this.data.fleet[name] = { 
-                    trips: [], 
-                    plate: '', 
-                    color: CONFIG.colors[i % CONFIG.colors.length] 
-                };
+            if (!fleet[name]) {
+                fleet[name] = { trips: [], plate: '', color: CONFIG.colors[i % CONFIG.colors.length] };
                 changed = true;
             } else {
-                if (!this.data.fleet[name].trips) {
-                    this.data.fleet[name].trips = [];
+                if (!fleet[name].trips) {
+                    fleet[name].trips = [];
                     changed = true;
-                } else if (!Array.isArray(this.data.fleet[name].trips)) {
-                    this.data.fleet[name].trips = Object.values(this.data.fleet[name].trips);
+                } else if (!Array.isArray(fleet[name].trips)) {
+                    fleet[name].trips = Object.values(fleet[name].trips);
                     changed = true;
                 }
             }
         });
-        if (changed && !this.isInitializing) this.save();
+        if (changed && !this.isInitializing) this.saveFleet();
     },
 
-    save() {
+    saveFleet() {
         if (this.isInitializing) return;
-        db.ref('sgc_data').set(this.data);
+        db.ref('sgc_data/routes/' + this.session.routeDate + '/fleet').set(this.getCurrentFleet());
+    },
+    saveAddressBook() {
+        if (this.isInitializing) return;
+        db.ref('sgc_data/addressBook').set(this.data.addressBook);
+    },
+    saveDisposal() {
+        if (this.isInitializing) return;
+        db.ref('sgc_data/disposalPoints').set(this.data.disposalPoints);
     },
 
     resetFleet() {
-        const book = this.data.addressBook || [];
-        const disposal = this.data.disposalPoints || [];
-        this.data.fleet = {};
-        this.data.addressBook = book;
-        this.data.disposalPoints = disposal;
+        if (!this.data.routes) this.data.routes = {};
+        this.data.routes[this.session.routeDate] = { fleet: {} };
         this.integrityCheck();
-        if (!this.isInitializing) this.save();
+        if (!this.isInitializing) this.saveFleet();
     },
 
-    getDriver(name) { return this.data.fleet[name]; },
+    getDriver(name) { return this.getCurrentFleet()[name]; },
     
-    getDriversByShift() {
-        return this.session.shift === 'day' ? CONFIG.drivers.day : CONFIG.drivers.night;
+    getDriversByShift() { return this.session.shift === 'day' ? CONFIG.drivers.day : CONFIG.drivers.night; },
+
+    // CALCULAR SERVIÇOS DOS ÚLTIMOS 7 DIAS
+    getWeeklyStats(driverName) {
+        let total = 0;
+        // Evitar erro de fuso horário na criação da data base
+        const baseDate = new Date(this.session.routeDate + 'T12:00:00Z');
+        
+        for(let i = 0; i < 7; i++) {
+            const d = new Date(baseDate);
+            d.setDate(d.getDate() - i);
+            const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+            const fleetDay = this.data.routes?.[dateStr]?.fleet;
+            if(fleetDay && fleetDay[driverName] && fleetDay[driverName].trips) {
+                fleetDay[driverName].trips.forEach(t => {
+                    if(t.status === 'concluido' || t.completed) {
+                        let qty = parseInt(t.qty) || 1;
+                        total += (t.type === 'encher') ? (qty * 2) : qty;
+                    }
+                });
+            }
+        }
+        return total;
     },
 
     addTrip(driverName, tripData) {
-        const driver = this.data.fleet[driverName];
+        const driver = this.getCurrentFleet()[driverName];
         if (!driver) return;
-        
         tripData.id = Date.now() + Math.random();
-        // Inicializa o status
         tripData.status = 'pendente';
         driver.trips.push(tripData);
-        this.save();
+        this.saveFleet();
     },
 
     removeTrip(driverName, index) {
-        this.data.fleet[driverName].trips.splice(index, 1);
-        this.save();
+        this.getCurrentFleet()[driverName].trips.splice(index, 1);
+        this.saveFleet();
     },
     
     updateTripText(driverName, index, company, obra, obs) {
-        if(this.data.fleet[driverName] && this.data.fleet[driverName].trips[index]) {
-            this.data.fleet[driverName].trips[index].empresa = company;
-            this.data.fleet[driverName].trips[index].obra = obra;
-            if (obs !== undefined) this.data.fleet[driverName].trips[index].obs = obs;
-            this.save();
+        const driver = this.getCurrentFleet()[driverName];
+        if(driver && driver.trips[index]) {
+            driver.trips[index].empresa = company;
+            driver.trips[index].obra = obra;
+            if (obs !== undefined) driver.trips[index].obs = obs;
+            this.saveFleet();
         }
     },
-
-    toggleTripStatus(driverName, index) {
-        const trip = this.data.fleet[driverName].trips[index];
-        trip.completed = !trip.completed;
-        trip.status = trip.completed ? 'concluido' : 'pendente';
-        this.save();
-    },
     
-    // NOVA FUNÇÃO PARA OS STATUS DE CORES
     setTripStatus(driverName, index, status) {
-        const trip = this.data.fleet[driverName].trips[index];
+        const driver = this.getCurrentFleet()[driverName];
+        const trip = driver.trips[index];
         if (trip) {
             trip.status = trip.status === status ? 'pendente' : status;
             trip.completed = (trip.status === 'concluido');
             
-            // Registra o horário quando marcar como concluído pelo painel também
             if (trip.status === 'concluido') {
                 const agora = new Date();
                 trip.horaConclusao = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
             } else {
                 trip.horaConclusao = null;
             }
-            
-            this.save();
+            this.saveFleet();
         }
     },
 
     updateTripQty(driverName, index, newQty) {
-        if(this.data.fleet[driverName] && this.data.fleet[driverName].trips[index]) {
+        const driver = this.getCurrentFleet()[driverName];
+        if(driver && driver.trips[index]) {
             const qty = parseInt(newQty);
             if(qty > 0) {
-                this.data.fleet[driverName].trips[index].qty = qty;
-                this.save();
+                driver.trips[index].qty = qty;
+                this.saveFleet();
             }
         }
     },
 
     addDisposalPoint(name, address) {
         this.data.disposalPoints.push({ id: Date.now(), name, address });
-        this.save();
+        this.saveDisposal();
     },
     
     removeDisposalPoint(id) {
         this.data.disposalPoints = this.data.disposalPoints.filter(d => d.id !== id);
-        this.save();
+        this.saveDisposal();
     },
 
     updateDescarte(driverName, index, location) {
-        const trip = this.data.fleet[driverName].trips[index];
-        if (trip) {
-            trip.descarteLocal = location;
-            this.save();
+        const driver = this.getCurrentFleet()[driverName];
+        if (driver && driver.trips[index]) {
+            driver.trips[index].descarteLocal = location;
+            this.saveFleet();
         }
     },
 
     updatePlate(driverName, plate) {
-        this.data.fleet[driverName].plate = plate.toUpperCase();
-        this.save();
+        this.getCurrentFleet()[driverName].plate = plate.toUpperCase();
+        this.saveFleet();
     },
 
     addToAddressBook(company, name, address) {
         const safeName = (name || "Sem Nome").trim();
         const safeCompany = (company || "").trim();
-        
-        const exists = this.data.addressBook.find(i => 
-            i.name.toLowerCase() === safeName.toLowerCase() && 
-            i.company.toLowerCase() === safeCompany.toLowerCase()
-        );
+        const exists = this.data.addressBook.find(i => i.name.toLowerCase() === safeName.toLowerCase() && i.company.toLowerCase() === safeCompany.toLowerCase());
 
         if (!exists) {
-            this.data.addressBook.push({ 
-                id: Date.now(), 
-                company: safeCompany, 
-                name: safeName, 
-                address: address 
-            });
-            this.save();
+            this.data.addressBook.push({ id: Date.now(), company: safeCompany, name: safeName, address: address });
+            this.saveAddressBook();
             return true; 
         }
         return false; 
@@ -232,7 +251,7 @@ const State = {
     
     removeFromAddressBook(id) {
         this.data.addressBook = this.data.addressBook.filter(item => item.id !== id);
-        this.save();
+        this.saveAddressBook();
     },
 
     searchAddressBook(query) {
@@ -242,6 +261,14 @@ const State = {
             (item.name && item.name.toLowerCase().includes(q)) || 
             (item.company && item.company.toLowerCase().includes(q))
         ).slice(0, 5);
+    },
+    
+    updateTripType(driverName, index, newType) {
+        const driver = this.getCurrentFleet()[driverName];
+        if(driver && driver.trips[index]) {
+            driver.trips[index].type = newType;
+            this.saveFleet();
+        }
     }
 };
 
@@ -257,7 +284,6 @@ const WhatsappService = {
         if (t.includes('coloca')) label = q > 1 ? 'COLOCAÇÕES' : 'COLOCAÇÃO';
         if (t.includes('retira')) label = q > 1 ? 'RETIRADAS' : 'RETIRADA';
         if (t.includes('encher')) label = 'ENCHER';
-        
         return label;
     },
 
@@ -290,13 +316,8 @@ const WhatsappService = {
         for (let i = 0; i < trips.length; i++) {
             const t = trips[i];
             
-            if (t.obs) {
-                msg += `*\`OBS: ${t.obs.toUpperCase()}\`*\n`;
-            }
-
-            if (t.empresa) {
-                msg += `${t.empresa.toUpperCase()}\n`;
-            }
+            if (t.obs) msg += `*\`OBS: ${t.obs.toUpperCase()}\`*\n`;
+            if (t.empresa) msg += `${t.empresa.toUpperCase()}\n`;
 
             let typeHeader = "";
             if (t.type === 'encher') {
@@ -308,26 +329,16 @@ const WhatsappService = {
                 typeHeader = `${t.qty} ${this.getPluralLabel(t.type, t.qty)}`;
             }
             msg += `*${typeHeader}*\n`;
-
-            if (t.obra) {
-                msg += `OBRA: ${t.obra.toUpperCase()}\n`;
-            }
+            if (t.obra) msg += `OBRA: ${t.obra.toUpperCase()}\n`;
 
             const addressText = typeof t.to === 'string' ? t.to : (t.to && t.to.text ? t.to.text : '');
             const displayEnd = this.formatAddress(addressText).toUpperCase();
             msg += `END: ${displayEnd}\n`;
 
-            if (t.descarteLocal) {
-                msg += `*DESCARTE: ${t.descarteLocal.toUpperCase()}*\n`;
-            }
-
-            if (t.mtr) {
-                msg += `\`${t.mtr}\`\n`;
-            }
-
+            if (t.descarteLocal) msg += `*DESCARTE: ${t.descarteLocal.toUpperCase()}*\n`;
+            if (t.mtr) msg += `\`${t.mtr}\`\n`;
             msg += `\n`; 
         }
-
         return msg;
     },
 
@@ -344,7 +355,7 @@ const WhatsappService = {
         drivers.forEach(name => {
             const driver = State.getDriver(name);
             if(!driver || !driver.trips) return;
-            const activeTrips = driver.trips.filter(t => !t.completed && t.status !== 'cancelado');
+            const activeTrips = driver.trips.filter(t => t.status !== 'concluido' && t.status !== 'cancelado');
             
             if (activeTrips.length > 0) {
                 hasContent = true;
@@ -353,33 +364,23 @@ const WhatsappService = {
                 
                 for (let i = 0; i < activeTrips.length; i++) {
                     const t = activeTrips[i];
-                    
                     if(t.obs) msg += `*\`OBS: ${t.obs.toUpperCase()}\`*\n`;
                     if (t.empresa) msg += `${t.empresa.toUpperCase()}\n`;
 
                     let header = "";
                     if (t.type === 'encher') {
                         const q = t.qty;
-                        const l1 = q > 1 ? 'COLOCAÇÕES' : 'COLOCAÇÃO';
-                        const l2 = q > 1 ? 'RETIRADAS' : 'RETIRADA';
-                        header = `*${q} ${l1} + ${q} ${l2}*`;
+                        header = `*${q} ${q > 1 ? 'COLOCAÇÕES' : 'COLOCAÇÃO'} + ${q} ${q > 1 ? 'RETIRADAS' : 'RETIRADA'}*`;
                     } else {
                         header = `*${t.qty} ${this.getPluralLabel(t.type, t.qty)}*`;
                     }
                     msg += `${header}\n`;
-
                     if (t.obra) msg += `OBRA: ${t.obra.toUpperCase()}\n`;
                     
                     const addressText = typeof t.to === 'string' ? t.to : (t.to && t.to.text ? t.to.text : '');
-                    const displayEnd = this.formatAddress(addressText).toUpperCase();
-                    msg += `END: ${displayEnd}\n`;
-                    
+                    msg += `END: ${this.formatAddress(addressText).toUpperCase()}\n`;
                     if(t.descarteLocal) msg += `*DESCARTE: ${t.descarteLocal.toUpperCase()}*\n`;
-
-                    if (t.mtr) {
-                        msg += `\`${t.mtr}\`\n`;
-                    }
-
+                    if (t.mtr) msg += `\`${t.mtr}\`\n`;
                     msg += `\n`;
                 }
                 msg += `------------------------\n`;
@@ -407,18 +408,8 @@ const DataService = {
         r.onload = e => { 
             try { 
                 const importedData = JSON.parse(e.target.result); 
-                
-                if (importedData.fleet) {
-                    const cleanFleet = {};
-                    for (const key in importedData.fleet) {
-                        const cleanKey = key.replace(/\./g, '');
-                        cleanFleet[cleanKey] = importedData.fleet[key];
-                    }
-                    importedData.fleet = cleanFleet;
-                }
-
                 State.data = importedData; 
-                State.save(); 
+                db.ref('sgc_data').set(State.data); 
                 UI.toast("Backup enviado para a Nuvem com sucesso!");
                 setTimeout(() => location.reload(), 1500);
             } catch { UI.toast("Arquivo inválido", "error"); }
@@ -437,12 +428,8 @@ const UI = {
 
     init() {
         State.init();
-        
         const dateInput = document.getElementById('route-date');
-        if(dateInput) {
-            dateInput.value = State.session.routeDate;
-        }
-
+        if(dateInput) dateInput.value = State.session.routeDate;
         this.toggleSection('planning');
         App.initDBForm();
     },
@@ -498,12 +485,10 @@ const UI = {
         document.getElementById('input-dest').value = '';
         document.getElementById('input-obs').value = ''; 
         document.getElementById('input-qty').value = '1';
-
         document.getElementById('form-single').classList.remove('hidden');
 
         this.selectType('troca');
         App.renderMiniHistory(name);
-        
         setTimeout(() => document.getElementById('input-empresa').focus(), 100);
     },
 
@@ -550,6 +535,10 @@ const App = {
 
     setRouteDate(dateString) {
         State.session.routeDate = dateString;
+        State.integrityCheck();
+        UI.closeEditor();
+        this.renderGrid();
+        this.renderSpreadsheet();
     },
 
     processSmartPaste() {
@@ -560,113 +549,51 @@ const App = {
         if (!driverName) return UI.toast("Selecione um motorista", "error");
 
         const lines = text.split('\n');
-        let count = 0;
-        let notFound = 0;
+        let count = 0, notFound = 0;
 
-        const isOldFormat = text.toUpperCase().includes('EMPRESA:');
+        for (let line of lines) {
+            const query = line.trim();
+            if(!query) continue;
 
-        if (isOldFormat) {
-            let buffer = { empresa: '', obra: '', end: '' };
-            for (let line of lines) {
-                line = line.trim();
-                if(!line) continue;
+            if (query.includes(':')) {
+                const parts = query.split(':');
+                const emp = parts[0].trim(), obr = parts[1].trim();
+                
+                const match = State.data.addressBook.find(item => 
+                    (item.name && item.name.toLowerCase() === obr.toLowerCase()) ||
+                    (item.company && item.company.toLowerCase() === emp.toLowerCase() && item.name && item.name.toLowerCase() === obr.toLowerCase())
+                );
 
-                const matchEmpresa = line.match(/(?:EMPRESA|CLIENTE):\s*(.+)/i);
-                if(matchEmpresa) buffer.empresa = matchEmpresa[1].trim();
+                const inputs = {
+                    empresa: emp, obra: obr, qty: 1, type: State.session.type,
+                    obs: match ? "" : "NÃO ACHOU NO BANCO",
+                    to: { text: match ? match.address : "PREENCHER ENDEREÇO" },
+                    mtr: null, descarteLocal: null, status: 'pendente', completed: false
+                };
+                State.addTrip(driverName, inputs);
+                count++;
+                if (!match) notFound++;
 
-                const matchObra = line.match(/(?:OBRA|LOCAL):\s*(.+)/i);
-                if(matchObra) buffer.obra = matchObra[1].trim();
+            } else {
+                const queryLower = query.toLowerCase();
+                const specificMatches = State.data.addressBook.filter(item => item.name && queryLower.includes(item.name.toLowerCase()));
+                let finalMatches = specificMatches.length > 0 ? specificMatches : State.data.addressBook.filter(item => item.company && queryLower.includes(item.company.toLowerCase()));
 
-                const matchEnd = line.match(/(?:END|ENDEREÇO):\s*(.+)/i);
-                if(matchEnd) {
-                    buffer.end = matchEnd[1].trim();
-                    this.createRouteFromBuffer(driverName, buffer);
-                    buffer = { empresa: '', obra: '', end: '' };
-                    count++;
-                }
-            }
-        } else {
-            for (let line of lines) {
-                const query = line.trim();
-                if(!query) continue;
-
-                if (query.includes(':')) {
-                    const parts = query.split(':');
-                    const emp = parts[0].trim();
-                    const obr = parts[1].trim();
-                    
-                    const match = State.data.addressBook.find(item => 
-                        (item.name && item.name.toLowerCase() === obr.toLowerCase()) ||
-                        (item.company && item.company.toLowerCase() === emp.toLowerCase() && item.name && item.name.toLowerCase() === obr.toLowerCase())
-                    );
-
-                    const inputs = {
-                        empresa: emp,
-                        obra: obr,
-                        qty: 1,
-                        type: State.session.type,
-                        obs: match ? "" : "NÃO ACHOU NO BANCO",
-                        to: { text: match ? match.address : "PREENCHER ENDEREÇO" },
-                        mtr: null,
-                        descarteLocal: null,
-                        status: 'pendente',
-                        completed: false
-                    };
-                    State.addTrip(driverName, inputs);
-                    count++;
-                    if (!match) notFound++;
-
-                } else {
-                    const queryLower = query.toLowerCase();
-                    const specificMatches = State.data.addressBook.filter(item => 
-                        item.name && queryLower.includes(item.name.toLowerCase())
-                    );
-
-                    let finalMatches = [];
-
-                    if (specificMatches.length > 0) {
-                        finalMatches = specificMatches;
-                    } else {
-                        const broadMatches = State.data.addressBook.filter(item => 
-                            item.company && queryLower.includes(item.company.toLowerCase())
-                        );
-                        finalMatches = broadMatches;
-                    }
-
-                    if (finalMatches.length > 0) {
-                        finalMatches.forEach(match => {
-                            const inputs = {
-                                empresa: match.company || query,
-                                obra: match.name || '',
-                                qty: 1,
-                                type: State.session.type,
-                                obs: "",
-                                to: { text: match.address },
-                                mtr: null,
-                                descarteLocal: null,
-                                status: 'pendente',
-                                completed: false
-                            };
-                            State.addTrip(driverName, inputs);
-                            count++;
+                if (finalMatches.length > 0) {
+                    finalMatches.forEach(match => {
+                        State.addTrip(driverName, {
+                            empresa: match.company || query, obra: match.name || '', qty: 1, type: State.session.type,
+                            obs: "", to: { text: match.address }, mtr: null, descarteLocal: null, status: 'pendente', completed: false
                         });
-                    } else {
-                        const inputs = {
-                            empresa: query,
-                            obra: '',
-                            qty: 1,
-                            type: State.session.type,
-                            obs: "NÃO ACHOU NO BANCO",
-                            to: { text: "PREENCHER ENDEREÇO" },
-                            mtr: null,
-                            descarteLocal: null,
-                            status: 'pendente',
-                            completed: false
-                        };
-                        State.addTrip(driverName, inputs);
                         count++;
-                        notFound++;
-                    }
+                    });
+                } else {
+                    State.addTrip(driverName, {
+                        empresa: query, obra: '', qty: 1, type: State.session.type,
+                        obs: "NÃO ACHOU NO BANCO", to: { text: "PREENCHER ENDEREÇO" }, mtr: null, descarteLocal: null, status: 'pendente', completed: false
+                    });
+                    count++;
+                    notFound++;
                 }
             }
         }
@@ -674,90 +601,49 @@ const App = {
         UI.toggleModal('paste-modal');
         document.getElementById('paste-area').value = '';
         UI.openEditor(driverName);
-        
-        if (notFound > 0) {
-            UI.toast(`${count} viagens adicionadas (${notFound} sem endereço no banco)`, "info");
-        } else {
-            UI.toast(`${count} viagens importadas com sucesso!`);
-        }
-    },
-
-    createRouteFromBuffer(driverName, data) {
-        if(!data.end) return;
-        
-        if(data.empresa || data.obra) {
-            State.addToAddressBook(data.empresa, data.obra, data.end);
-        }
-
-        const inputs = {
-            empresa: data.empresa,
-            obra: data.obra,
-            qty: 1,
-            type: 'troca',
-            obs: "",
-            to: { text: data.end }, 
-            mtr: null,
-            descarteLocal: null,
-            status: 'pendente',
-            completed: false
-        };
-
-        State.addTrip(driverName, inputs);
+        if (notFound > 0) UI.toast(`${count} viagens adicionadas (${notFound} sem endereço no banco)`, "info");
+        else UI.toast(`${count} viagens importadas com sucesso!`);
     },
 
     openDisposalModal(tripIndex) {
         const list = document.getElementById('select-disposal-list');
         list.innerHTML = '';
-        
         State.data.disposalPoints.forEach(dp => {
             const btn = document.createElement('button');
             btn.className = "w-full text-left p-3 hover:bg-green-50 rounded border-b border-slate-50 text-xs font-bold text-slate-700 flex items-center";
             btn.innerHTML = `<i class="fas fa-map-marker-alt text-green-500 mr-2"></i>${dp.name} - ${dp.address}`;
-            btn.onclick = () => App.confirmDisposalSelection(tripIndex, dp);
+            btn.onclick = () => {
+                State.updateDescarte(State.session.currentDriver, tripIndex, dp.name);
+                UI.toggleModal('select-disposal-modal');
+            };
             list.appendChild(btn);
         });
-        
-        if(State.data.disposalPoints.length === 0) {
-            list.innerHTML = '<div class="text-center text-xs text-gray-400 p-4">Nenhum aterro cadastrado.<br>Vá em Configurações > Gerenciar Aterros.</div>';
-        }
-
+        if(State.data.disposalPoints.length === 0) list.innerHTML = '<div class="text-center text-xs text-gray-400 p-4">Nenhum aterro cadastrado.</div>';
         UI.tempTripIndex = tripIndex;
-        UI.toggleModal('select-disposal-modal');
-    },
-
-    confirmDisposalSelection(tripIndex, disposal) {
-        const name = State.session.currentDriver;
-        State.updateDescarte(name, tripIndex, disposal.name);
         UI.toggleModal('select-disposal-modal');
     },
 
     clearTripDisposal() {
-        const name = State.session.currentDriver;
-        State.updateDescarte(name, UI.tempTripIndex, null);
+        State.updateDescarte(State.session.currentDriver, UI.tempTripIndex, null);
         UI.toggleModal('select-disposal-modal');
     },
 
-    openMtrModal(tripIndex) {
-        UI.tempTripIndex = tripIndex;
-        UI.toggleModal('select-mtr-modal');
-    },
+    openMtrModal(tripIndex) { UI.tempTripIndex = tripIndex; UI.toggleModal('select-mtr-modal'); },
 
     confirmMtrSelection(mtrValue) {
-        const name = State.session.currentDriver;
-        const trip = State.data.fleet[name].trips[UI.tempTripIndex];
-        if (trip) {
-            trip.mtr = mtrValue;
-            State.save();
+        const driver = State.getCurrentFleet()[State.session.currentDriver];
+        if (driver && driver.trips[UI.tempTripIndex]) {
+            driver.trips[UI.tempTripIndex].mtr = mtrValue;
+            State.saveFleet();
         }
         UI.toggleModal('select-mtr-modal');
     },
 
     clearTripMtr() {
-        const name = State.session.currentDriver;
-        const trip = State.data.fleet[name].trips[UI.tempTripIndex];
-        if (trip) {
-            trip.mtr = null;
-            State.save();
+        const driver = State.getCurrentFleet()[State.session.currentDriver];
+        if (driver && driver.trips[UI.tempTripIndex]) {
+            driver.trips[UI.tempTripIndex].mtr = null;
+            State.saveFleet();
         }
         UI.toggleModal('select-mtr-modal');
     },
@@ -766,7 +652,6 @@ const App = {
         const name = document.getElementById('new-aterro-name').value;
         const addr = document.getElementById('new-aterro-addr').value;
         if(!name) return UI.toast("Preencha o nome do aterro", "error");
-
         State.addDisposalPoint(name, addr || "Sem endereço salvo");
         document.getElementById('new-aterro-name').value = '';
         document.getElementById('new-aterro-addr').value = '';
@@ -789,45 +674,28 @@ const App = {
         State.session.shift = shift;
         document.getElementById('shift-day').className = `shift-btn ${shift==='day'?'active':''}`;
         document.getElementById('shift-night').className = `shift-btn ${shift==='night'?'active':''}`;
-        
-        const logo = document.getElementById('app-logo');
-        if (shift === 'night') {
-            document.body.classList.add('night-mode');
-            if(logo) logo.src = 'images.png';
-        } else {
-            document.body.classList.remove('night-mode');
-            if(logo) logo.src = 'images.png';
-        }
-
+        document.body.classList.toggle('night-mode', shift === 'night');
         UI.closeEditor();
         this.renderGrid();
         this.renderSpreadsheet();
     },
 
     updatePlate() {
-        const name = State.session.currentDriver;
-        if(name) State.updatePlate(name, document.getElementById('input-plate').value);
+        if(State.session.currentDriver) State.updatePlate(State.session.currentDriver, document.getElementById('input-plate').value);
     },
 
-    handleAutocomplete(input, type) {
+    handleAutocomplete(input) {
         const val = input.value.toLowerCase();
         const box = document.getElementById('suggestions-box');
-        
-        if (val.length < 2) {
-            box.classList.add('hidden');
-            return;
-        }
+        if (val.length < 2) return box.classList.add('hidden');
 
         const matches = State.searchAddressBook(val);
-        
         if (matches.length > 0) {
             box.innerHTML = matches.map(item => `
                 <div class="suggestion-item" onclick="App.selectSuggestion('${item.company || ''}', '${item.name}', '${item.address}')">
                     <div class="flex justify-between items-center">
-                        <strong>${item.name}</strong>
-                        <span class="text-[9px] bg-slate-100 px-1 rounded text-slate-500 uppercase">${item.company || 'Geral'}</span>
-                    </div>
-                    <div class="text-xs text-slate-400 truncate">${item.address}</div>
+                        <strong>${item.name}</strong><span class="text-[9px] bg-slate-100 px-1 rounded text-slate-500 uppercase">${item.company || 'Geral'}</span>
+                    </div><div class="text-xs text-slate-400 truncate">${item.address}</div>
                 </div>
             `).join('');
             box.classList.remove('hidden');
@@ -840,10 +708,8 @@ const App = {
         document.getElementById('input-empresa').value = company;
         document.getElementById('input-obra').value = name;
         document.getElementById('input-dest').value = address;
-        
         document.getElementById('input-dest').classList.add('bg-blue-50', 'border-blue-200');
         setTimeout(() => document.getElementById('input-dest').classList.remove('bg-blue-50', 'border-blue-200'), 1000);
-
         document.getElementById('suggestions-box').classList.add('hidden');
     },
 
@@ -860,48 +726,30 @@ const App = {
             type: State.session.type,
             obs: document.getElementById('input-obs').value,
             to: { text: raw },
-            mtr: null,
-            descarteLocal: null,
-            status: 'pendente',
-            completed: false
+            mtr: null, descarteLocal: null, status: 'pendente', completed: false
         };
 
         State.addTrip(name, inputs);
-        
-        if (inputs.obra || inputs.empresa) {
-            State.addToAddressBook(inputs.empresa, inputs.obra, raw);
-        }
+        if (inputs.obra || inputs.empresa) State.addToAddressBook(inputs.empresa, inputs.obra, raw);
         
         document.getElementById('input-dest').value = '';
         document.getElementById('input-obs').value = '';
-        
         UI.openEditor(name);
         UI.toast("Adicionado!");
     },
 
     addToQueue() {
-        const empresa = document.getElementById('input-empresa').value;
-        const obra = document.getElementById('input-obra').value;
         const dest = document.getElementById('input-dest').value;
-        
         if (!dest) return UI.toast("Preencha o endereço", "error");
-
-        const item = {
-            empresa,
-            obra,
-            dest,
-            qty: document.getElementById('input-qty').value,
-            type: State.session.type,
-            obs: document.getElementById('input-obs').value,
-            mtr: null
-        };
-
-        State.tempQueue.push(item);
-        
+        State.tempQueue.push({
+            empresa: document.getElementById('input-empresa').value,
+            obra: document.getElementById('input-obra').value,
+            dest, qty: document.getElementById('input-qty').value,
+            type: State.session.type, obs: document.getElementById('input-obs').value, mtr: null
+        });
         document.getElementById('input-dest').value = '';
         document.getElementById('input-obs').value = '';
         document.getElementById('input-empresa').focus(); 
-        
         this.renderQueue();
         UI.toast("Adicionado à fila!");
     },
@@ -909,10 +757,8 @@ const App = {
     renderQueue() {
         const container = document.getElementById('queue-container');
         const list = document.getElementById('queue-list');
-        const count = document.getElementById('queue-count');
-        
         list.innerHTML = '';
-        count.innerText = State.tempQueue.length;
+        document.getElementById('queue-count').innerText = State.tempQueue.length;
 
         if (State.tempQueue.length > 0) {
             container.classList.remove('hidden');
@@ -922,59 +768,34 @@ const App = {
                 div.innerHTML = `<span class="truncate font-bold text-blue-800">${index+1}. ${item.empresa || 'Empresa'} - ${item.dest}</span>`;
                 list.appendChild(div);
             });
-        } else {
-            container.classList.add('hidden');
-        }
+        } else container.classList.add('hidden');
     },
 
     processQueue() {
         const name = State.session.currentDriver;
         if (!name || State.tempQueue.length === 0) return;
-
         for (const item of State.tempQueue) {
-            this.addRouteFromData(name, item);
+            State.addTrip(name, {
+                empresa: item.empresa, obra: item.obra, qty: item.qty, type: item.type,
+                obs: item.obs, to: { text: item.dest }, mtr: item.mtr || null, descarteLocal: null, status: 'pendente', completed: false
+            });
+            if (item.obra || item.empresa) State.addToAddressBook(item.empresa, item.obra, item.dest);
         }
-
         State.tempQueue = [];
         this.renderQueue();
         UI.toast("Fila processada com sucesso!");
     },
 
-    addRouteFromData(name, data) {
-        const inputs = {
-            empresa: data.empresa,
-            obra: data.obra,
-            qty: data.qty,
-            type: data.type,
-            obs: data.obs,
-            to: { text: data.dest },
-            mtr: data.mtr || null,
-            descarteLocal: null,
-            status: 'pendente',
-            completed: false
-        };
-
-        State.addTrip(name, inputs);
-        
-        if (inputs.obra || inputs.empresa) {
-            State.addToAddressBook(inputs.empresa, inputs.obra, data.dest);
-        }
-    },
-
     addToAddressBook(company, name, address) {
         let c = company, n = name, a = address;
         let isManual = false;
-        
         if (arguments.length === 0) {
             isManual = true;
             c = document.getElementById('db-company').value;
             n = document.getElementById('db-name').value;
             a = document.getElementById('db-addr').value;
         }
-
-        const saved = State.addToAddressBook(c, n, a);
-        
-        if (saved) {
+        if (State.addToAddressBook(c, n, a)) {
             if(isManual) {
                 document.getElementById('db-company').value = '';
                 document.getElementById('db-name').value = '';
@@ -989,9 +810,7 @@ const App = {
     },
 
     deleteFromAddressBook(id) {
-        if(confirm("Remover este endereço?")) {
-            State.removeFromAddressBook(id);
-        }
+        if(confirm("Remover este endereço?")) State.removeFromAddressBook(id);
     },
 
     renderAddressBook() {
@@ -1024,13 +843,12 @@ const App = {
         State.getDriversByShift().forEach(name => {
             const d = State.getDriver(name);
             if (!d) return; 
-            const pending = d.trips ? d.trips.filter(t => !t.completed).length : 0;
+            const pending = d.trips ? d.trips.filter(t => !t.completed && t.status !== 'cancelado').length : 0;
             const card = document.createElement('div');
             card.className = `driver-card ${State.session.currentDriver===name ? 'selected' : ''}`;
             card.onclick = () => UI.openEditor(name);
             
             const plateHtml = d.plate ? `<div class="text-[8px] font-mono bg-slate-100 text-slate-500 rounded px-1 w-fit mt-1 border border-slate-200">${d.plate}</div>` : '';
-            
             card.innerHTML = `
                 <div class="flex items-center gap-3">
                     <div class="w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-sm transition-transform hover:scale-110" style="background:${d.color}">${name.substring(0,2)}</div>
@@ -1054,9 +872,14 @@ const App = {
             const realIndex = driver.trips.length - 1 - revIndex;
             const row = document.createElement('div');
             row.className = "flex justify-between items-center bg-slate-50 p-2 rounded border border-slate-100 mb-1 animate-fade-in";
-            const obsText = t.obs ? `<span class="text-[8px] text-amber-600 block italic">Obs: ${t.obs}</span>` : '';
-            const companyTag = t.empresa ? `<span class="text-[7px] bg-slate-200 px-1 rounded mr-1">${t.empresa}</span>` : '';
             
+            let obsText = '';
+            if(t.obs) {
+                const isMot = t.obs.includes('MOT:');
+                obsText = `<span class="text-[8px] ${isMot ? 'text-blue-600' : 'text-amber-600'} block italic line-clamp-1" title="${t.obs}">Obs: ${t.obs}</span>`;
+            }
+
+            const companyTag = t.empresa ? `<span class="text-[7px] bg-slate-200 px-1 rounded mr-1">${t.empresa}</span>` : '';
             let displayType = t.type ? t.type.toUpperCase() : 'TROCA';
             if(t.type === 'encher') displayType = 'ENCHER'; 
 
@@ -1075,13 +898,9 @@ const App = {
         });
     },
 
-    // ========================================================================
-    // NOVO SISTEMA DE PLANILHA (ARRASTAR + STATUS + FONTES + SOMA CORRETA)
-    // ========================================================================
     renderSpreadsheet() {
         const container = document.getElementById('spreadsheet-container');
         if (!container) return; 
-        
         container.innerHTML = '';
         const drivers = State.getDriversByShift();
         
@@ -1093,22 +912,21 @@ const App = {
             const column = document.createElement('div');
             column.className = "min-w-[220px] max-w-[260px] flex flex-col bg-white snap-start border border-slate-300";
 
-            // Lógica para SOMAR as caixas direito (Encher vale 2x)
             let totalServicos = 0;
             d.trips.forEach(t => {
-                let qtd = parseInt(t.qty) || 1;
-                if (t.type === 'encher') {
-                    totalServicos += (qtd * 2);
-                } else {
-                    totalServicos += qtd;
-                }
+                let qty = parseInt(t.qty) || 1;
+                totalServicos += (t.type === 'encher') ? (qty * 2) : qty;
             });
+
+            // Chama a função para calcular os últimos 7 dias
+            const servicosSemanais = State.getWeeklyStats(name);
 
             let headerHtml = `
                 <div class="bg-slate-300 text-center text-[10px] font-bold py-1 border-b border-slate-300">MOTORISTA</div>
                 <div class="bg-yellow-300 text-center text-xs font-bold py-1 border-b border-slate-300 text-blue-900">${d.plate || 'SEM PLACA'}</div>
                 <div class="text-center text-xs font-black py-1.5 border-b border-slate-300 uppercase tracking-wide underline" style="background-color: ${d.color}20; color: ${d.color};">${name}</div>
-                <div class="bg-fuchsia-500 text-white text-center text-[10px] font-bold py-1 border-b border-slate-300">${totalServicos} SERVIÇOS</div>
+                <div class="bg-blue-100 text-blue-800 text-center text-[9px] font-black py-1 border-b border-blue-200 shadow-inner">🔥 ${servicosSemanais} SERVIÇOS NOS ÚLTIMOS 7 DIAS</div>
+                <div class="bg-fuchsia-500 text-white text-center text-[10px] font-bold py-1 border-b border-slate-300">HOJE: ${totalServicos} SERVIÇOS</div>
             `;
             
             const bodyDiv = document.createElement('div');
@@ -1120,17 +938,26 @@ const App = {
                 let opacityClass = '';
                 
                 if (status === 'concluido') {
-                    bgClass = 'bg-[#dcfce7]'; // Verde claro
+                    bgClass = 'bg-[#dcfce7]'; 
                     opacityClass = 'opacity-80';
                 } else if (status === 'cancelado') {
-                    bgClass = 'bg-[#ffedd5]'; // Laranja claro
+                    bgClass = 'bg-[#ffedd5]'; 
                     opacityClass = 'opacity-80 line-through grayscale-[50%]';
                 }
 
                 const label = customLabel || WhatsappService.getPluralLabel(t.type || 'troca', t.qty || 1);
                 const qtdText = t.qty > 1 ? `${t.qty} ` : '';
                 
-                const obsTag = t.obs ? `<div class="mt-1 flex justify-center"><span class="text-[10px] bg-amber-100 text-amber-900 font-medium rounded px-1.5 py-0.5 border border-amber-300">Obs: ${t.obs}</span></div>` : '';
+                let obsHtml = '';
+                if (t.obs) {
+                    const parts = t.obs.split(/\|? ?MOT: /);
+                    const logObs = parts[0].trim();
+                    const motObs = parts[1] ? parts[1].trim() : '';
+
+                    if (logObs) obsHtml += `<div class="mt-1 flex justify-center"><span class="text-[9px] bg-amber-100 text-amber-900 font-medium rounded px-1.5 py-0.5 border border-amber-300"><i class="fas fa-exclamation-triangle"></i> LOG: ${logObs}</span></div>`;
+                    if (motObs) obsHtml += `<div class="mt-1 flex justify-center"><span class="text-[9px] bg-blue-100 text-blue-900 font-medium rounded px-1.5 py-0.5 border border-blue-300"><i class="fas fa-comment-dots"></i> MOT: ${motObs}</span></div>`;
+                }
+
                 const mtrTag = t.mtr ? `<div class="mt-1 flex justify-center"><span class="text-[10px] bg-indigo-100 text-indigo-900 font-medium rounded px-1.5 py-0.5 border border-indigo-200"><i class="fas fa-file-invoice"></i> MTR</span></div>` : '';
                 const descTag = t.descarteLocal ? `<div class="mt-1 flex justify-center"><span class="text-[10px] bg-red-100 text-red-900 font-medium rounded px-1.5 py-0.5 border border-red-200">DESC: ${t.descarteLocal}</span></div>` : '';
                 const timeTag = (status === 'concluido' && t.horaConclusao) 
@@ -1158,7 +985,7 @@ const App = {
                         ${qtdText}${label}
                     </div>
                     
-                    ${obsTag}
+                    ${obsHtml}
                     ${mtrTag}
                     ${descTag}
                     ${timeTag}
@@ -1168,15 +995,9 @@ const App = {
             let tripsHtml = '';
             
             d.trips.forEach((t, i) => {
-                if (t.type === 'troca') {
-                    tripsHtml += buildCell(t, i, 'text-slate-900'); 
-                } 
-                else if (t.type === 'colocacao') {
-                    tripsHtml += buildCell(t, i, 'text-red-600'); 
-                } 
-                else if (t.type === 'retirada') {
-                    tripsHtml += buildCell(t, i, 'text-purple-600'); 
-                } 
+                if (t.type === 'troca') tripsHtml += buildCell(t, i, 'text-slate-900'); 
+                else if (t.type === 'colocacao') tripsHtml += buildCell(t, i, 'text-red-600'); 
+                else if (t.type === 'retirada') tripsHtml += buildCell(t, i, 'text-purple-600'); 
                 else if (t.type === 'encher') {
                     tripsHtml += buildCell(t, i, 'text-red-600', 'COLOCAÇÃO (ENCHER)');
                     tripsHtml += buildCell(t, i, 'text-purple-600', 'RETIRADA (ENCHER)');
@@ -1209,9 +1030,7 @@ const App = {
     },
 
     handleDragOver(e) {
-        if (e.preventDefault) {
-            e.preventDefault(); 
-        }
+        if (e.preventDefault) e.preventDefault(); 
         e.dataTransfer.dropEffect = 'move';
         return false;
     },
@@ -1219,9 +1038,7 @@ const App = {
     handleDrop(e, targetDriverName, targetIndex) {
         e.stopPropagation();
         
-        document.querySelectorAll('.drag-item').forEach(el => {
-            el.classList.remove('opacity-50', 'bg-blue-50');
-        });
+        document.querySelectorAll('.drag-item').forEach(el => el.classList.remove('opacity-50', 'bg-blue-50'));
 
         const source = this.dragSource;
         if (!source || source.driver !== targetDriverName) {
@@ -1231,118 +1048,82 @@ const App = {
 
         if (source.index === targetIndex) return false;
 
-        const driver = State.getDriver(source.driver);
+        const driver = State.getCurrentFleet()[source.driver];
         const movedItem = driver.trips.splice(source.index, 1)[0];
         driver.trips.splice(targetIndex, 0, movedItem);
-        
-        State.save();
-        
+        State.saveFleet();
         return false;
     },
     
-    quickDelete(name, index) {
-        if(confirm("Excluir viagem rápida?")) {
-            State.removeTrip(name, index);
-        }
-    },
-    deleteTrip(name, index) {
-        if(confirm("Apagar esta entrega?")) {
-            State.removeTrip(name, index);
-        }
-    },
+    quickDelete(name, index) { if(confirm("Excluir viagem rápida?")) State.removeTrip(name, index); },
+    deleteTrip(name, index) { if(confirm("Apagar esta entrega?")) State.removeTrip(name, index); },
     toggleStatus(n, i) { State.toggleTripStatus(n, i); },
     setTripStatus(n, i, s) { State.setTripStatus(n, i, s); },
     
     cycleType(name, index) {
-        const d = State.getDriver(name);
+        const d = State.getCurrentFleet()[name];
         if(!d || !d.trips[index]) return;
-        
         const types = ['troca', 'colocacao', 'retirada', 'encher'];
         const current = d.trips[index].type;
-        
         let nextIndex = types.indexOf(current) + 1;
         if (nextIndex >= types.length || nextIndex === -1) nextIndex = 0;
-        
         State.updateTripType(name, index, types[nextIndex]);
     },
     
     editTripText(name, index) {
-        const d = State.getDriver(name);
+        const d = State.getCurrentFleet()[name];
         if(!d || !d.trips[index]) return;
-        
         const currentCompany = d.trips[index].empresa || '';
         const currentObra = d.trips[index].obra || '';
         const currentObs = d.trips[index].obs || ''; 
-        
         const newCompany = prompt("Editar Empresa:", currentCompany);
         if(newCompany === null) return; 
-        
         const newObra = prompt("Editar Obra:", currentObra);
         if(newObra === null) return; 
-
         const newObs = prompt("Editar Observação:", currentObs);
         if (newObs === null) return;
-
         State.updateTripText(name, index, newCompany, newObra, newObs);
     },
 
     editTripAddress(name, index) {
-        const d = State.getDriver(name);
+        const d = State.getCurrentFleet()[name];
         if(!d || !d.trips[index]) return;
-        
         const trip = d.trips[index];
         const currentAddr = (typeof trip.to === 'string' ? trip.to : (trip.to && trip.to.text ? trip.to.text : ''));
-        
         const newAddr = prompt("Digite o endereço correto:", currentAddr === "PREENCHER ENDEREÇO" ? "" : currentAddr);
-        
         if (newAddr !== null && newAddr.trim() !== "") {
-            const finalAddr = newAddr.trim();
-            trip.to = { text: finalAddr };
-            
-            if (trip.obs === "NÃO ACHOU NO BANCO") {
-                trip.obs = "";
-            }
-            State.save();
-            
-            if (trip.empresa || trip.obra) {
-                State.addToAddressBook(trip.empresa, trip.obra, finalAddr);
-            }
-            
+            trip.to = { text: newAddr.trim() };
+            if (trip.obs === "NÃO ACHOU NO BANCO") trip.obs = "";
+            State.saveFleet();
+            if (trip.empresa || trip.obra) State.addToAddressBook(trip.empresa, trip.obra, newAddr.trim());
             UI.toast("Endereço salvo na viagem e no banco!");
         }
     },
     
     editObs(name, index) {
-        const d = State.getDriver(name);
+        const d = State.getCurrentFleet()[name];
         const currentObs = d.trips[index].obs || '';
         const newObs = prompt("Adicionar/Editar Observação:", currentObs);
         if (newObs !== null) {
             d.trips[index].obs = newObs;
-            State.save();
+            State.saveFleet();
         }
     },
 
     changeQty(name, index) {
-        const d = State.getDriver(name);
+        const d = State.getCurrentFleet()[name];
         if(!d || !d.trips[index]) return;
-        
         const current = d.trips[index].qty;
         const newQty = prompt("Nova quantidade:", current);
-        
-        if(newQty !== null) {
-            State.updateTripQty(name, index, newQty);
-        }
+        if(newQty !== null) State.updateTripQty(name, index, newQty);
     },
 
-    setDescarte(n, i) {
-        this.openDisposalModal(i);
-    },
+    setDescarte(n, i) { this.openDisposalModal(i); },
 
     shareDriverRoute(name) {
-        const d = State.getDriver(name);
+        const d = State.getCurrentFleet()[name];
         const active = d.trips.filter(t => !t.completed && t.status !== 'cancelado');
         if (!active.length) return UI.toast("Sem rotas pendentes", "info");
-        
         let msg = WhatsappService.buildMessage(name, active, State.session.shift, d.plate);
         window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
     }
