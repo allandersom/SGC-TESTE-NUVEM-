@@ -91,7 +91,7 @@ Posto Ipiranga..."></textarea>
 
     <div id="app-wrapper" class="flex h-screen w-screen overflow-hidden relative transition-all duration-500 bg-slate-200">
         
-        <aside id="sidebar" class="w-full h-full bg-white flex flex-col z-[600] shadow-2xl border-r border-slate-200">
+        <aside id="sidebar" class="w-full lg:w-[420px] h-full bg-white flex flex-col z-[600] shadow-2xl border-r border-slate-200 shrink-0">
             <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between shrink-0 z-20 bg-white">
                 <div class="flex items-center gap-3">
                     <img id="app-logo" src="images.png" alt="Logo" class="h-10 w-auto object-contain">
@@ -105,7 +105,7 @@ Posto Ipiranga..."></textarea>
             <div class="flex-grow overflow-y-auto custom-scroll relative bg-white">
                 <div class="border-b border-slate-100">
                     <button onclick="UI.toggleSection('planning')" class="accordion-header group">
-                        <div class="flex items-center gap-3"><div class="accordion-icon bg-blue-50 text-blue-600"><i class="fas fa-map-location-dot"></i></div><span class="font-bold text-sm text-slate-800">Operacional</span></div><i id="arrow-planning" class="fas fa-chevron-down text-slate-300 text-xs"></i>
+                        <div class="flex items-center gap-3"><div class="accordion-icon bg-blue-50 text-blue-600"><i class="fas fa-map-location-dot"></i></div><span class="font-bold text-sm text-slate-800">Painel Operacional</span></div><i id="arrow-planning" class="fas fa-chevron-down text-slate-300 text-xs"></i>
                     </button>
                     <div id="section-planning" class="accordion-body hidden bg-slate-50/30">
                         <div class="p-4 space-y-4 max-w-4xl mx-auto">
@@ -121,7 +121,7 @@ Posto Ipiranga..."></textarea>
                                 </div>
                             </div>
                             
-                            <div id="drivers-grid" class="grid grid-cols-2 md:grid-cols-4 gap-2"></div>
+                            <div id="drivers-grid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-3 gap-2"></div>
                             
                             <div id="editor-panel" class="hidden bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden animate-slide-up">
                                 <div class="bg-slate-800 px-4 py-3 text-white flex justify-between items-center">
@@ -168,11 +168,6 @@ Posto Ipiranga..."></textarea>
                                             <button onclick="App.processQueue()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded text-xs shadow-lg">PROCESSAR FILA</button>
                                         </div>
                                     </div>
-
-                                    <div class="pt-2 border-t border-slate-100">
-                                        <div class="flex justify-between items-center mb-2"><p class="text-[9px] font-bold text-slate-400 uppercase">Viagens Adicionadas</p><p class="text-[9px] text-blue-500 cursor-pointer" onclick="UI.toggleSection('list')">Ver no Monitoramento</p></div>
-                                        <div id="mini-history" class="space-y-1 max-h-24 overflow-y-auto custom-scroll"></div>
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -181,7 +176,7 @@ Posto Ipiranga..."></textarea>
                 
                 <div class="border-b border-slate-100">
                     <button onclick="UI.toggleSection('list')" class="accordion-header group relative">
-                        <div class="flex items-center gap-3"><div class="accordion-icon bg-indigo-50 text-indigo-600"><i class="fas fa-clipboard-list"></i></div><span class="font-bold text-sm text-slate-800">Monitoramento Geral (WhatsApp)</span></div>
+                        <div class="flex items-center gap-3"><div class="accordion-icon bg-indigo-50 text-indigo-600"><i class="fas fa-clipboard-list"></i></div><span class="font-bold text-sm text-slate-800">Gerador WhatsApp</span></div>
                         <div class="flex items-center gap-4">
                             <i id="arrow-list" class="fas fa-chevron-down text-slate-300 text-xs"></i>
                         </div>
@@ -214,6 +209,28 @@ Posto Ipiranga..."></textarea>
                 </div>
             </div>
         </aside>
+
+        <main class="hidden lg:flex flex-1 flex-col h-full bg-[#f8f9fa] overflow-hidden relative">
+            <div class="px-6 py-4 border-b border-slate-200 bg-white flex justify-between items-center shadow-sm shrink-0 z-10">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center text-xl shadow-sm"><i class="fas fa-table"></i></div>
+                    <div>
+                        <h2 class="font-black text-slate-800 text-lg leading-tight">Visão de Planilha Dinâmica</h2>
+                        <div class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Monitoramento em Tempo Real das Obras</div>
+                    </div>
+                </div>
+                <div class="flex gap-4 text-[10px] font-black uppercase tracking-tight bg-slate-50 py-2 px-4 rounded-xl border border-slate-200 shadow-inner">
+                    <div class="flex items-center gap-1.5"><div class="w-3 h-3 rounded-md bg-slate-900"></div> TROCA</div>
+                    <div class="flex items-center gap-1.5"><div class="w-3 h-3 rounded-md bg-red-600"></div> COLOCAÇÃO</div>
+                    <div class="flex items-center gap-1.5"><div class="w-3 h-3 rounded-md bg-purple-600"></div> RETIRADA</div>
+                    <div class="flex items-center gap-1.5"><div class="w-3 h-3 rounded-md bg-gradient-to-r from-red-600 to-purple-600"></div> ENCHER</div>
+                </div>
+            </div>
+            
+            <div id="spreadsheet-view" class="flex-1 flex p-4 gap-4 overflow-x-auto overflow-y-hidden custom-scroll items-start relative shadow-inner">
+                </div>
+        </main>
+
     </div>
 
     <script src="script.js"></script>
