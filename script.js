@@ -36,7 +36,6 @@ const State = {
 
     init() {
         if (!this.session.routeDate) {
-            // Ajuste fuso horário para Brasil
             const d = new Date();
             const year = d.getFullYear();
             const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -50,7 +49,6 @@ const State = {
             try {
                 const val = snapshot.val() || {};
                 
-                // MIGRAR DADOS ANTIGOS PARA O SISTEMA DE MÚLTIPLOS DIAS
                 if (val.fleet) {
                     if (!val.routes) val.routes = {};
                     if (!val.routes[this.session.routeDate]) val.routes[this.session.routeDate] = { fleet: val.fleet };
@@ -137,30 +135,6 @@ const State = {
     
     getDriversByShift() { return this.session.shift === 'day' ? CONFIG.drivers.day : CONFIG.drivers.night; },
 
-    // CALCULAR SERVIÇOS DOS ÚLTIMOS 7 DIAS
-    getWeeklyStats(driverName) {
-        let total = 0;
-        // Evitar erro de fuso horário na criação da data base
-        const baseDate = new Date(this.session.routeDate + 'T12:00:00Z');
-        
-        for(let i = 0; i < 7; i++) {
-            const d = new Date(baseDate);
-            d.setDate(d.getDate() - i);
-            const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-
-            const fleetDay = this.data.routes?.[dateStr]?.fleet;
-            if(fleetDay && fleetDay[driverName] && fleetDay[driverName].trips) {
-                fleetDay[driverName].trips.forEach(t => {
-                    if(t.status === 'concluido' || t.completed) {
-                        let qty = parseInt(t.qty) || 1;
-                        total += (t.type === 'encher') ? (qty * 2) : qty;
-                    }
-                });
-            }
-        }
-        return total;
-    },
-
     addTrip(driverName, tripData) {
         const driver = this.getCurrentFleet()[driverName];
         if (!driver) return;
@@ -192,7 +166,7 @@ const State = {
             trip.status = trip.status === status ? 'pendente' : status;
             trip.completed = (trip.status === 'concluido');
             
-            if (trip.status === 'concluido') {
+            if (trip.status === 'concluido' || trip.status === 'nao_feito') {
                 const agora = new Date();
                 trip.horaConclusao = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
             } else {
@@ -316,7 +290,6 @@ const WhatsappService = {
         for (let i = 0; i < trips.length; i++) {
             const t = trips[i];
             
-            // Verifica se tem observação de logística
             if (t.obs) {
                 const logObs = t.obs.replace(/\|? ?MOT:.*$/g, '').trim();
                 if(logObs) msg += `*\`OBS: ${logObs.toUpperCase()}\`*\n`;
@@ -327,9 +300,7 @@ const WhatsappService = {
             let typeHeader = "";
             if (t.type === 'encher') {
                 const q = t.qty;
-                const l1 = q > 1 ? 'COLOCAÇÕES' : 'COLOCAÇÃO';
-                const l2 = q > 1 ? 'RETIRADAS' : 'RETIRADA';
-                typeHeader = `${q} ${l1} + ${q} ${l2}`;
+                typeHeader = `${q} COLOCAÇÃO + ${q} RETIRADA`;
             } else {
                 typeHeader = `${t.qty} ${this.getPluralLabel(t.type, t.qty)}`;
             }
@@ -360,7 +331,7 @@ const WhatsappService = {
         drivers.forEach(name => {
             const driver = State.getDriver(name);
             if(!driver || !driver.trips) return;
-            const activeTrips = driver.trips.filter(t => t.status !== 'concluido' && t.status !== 'cancelado');
+            const activeTrips = driver.trips.filter(t => t.status !== 'concluido' && t.status !== 'cancelado' && t.status !== 'nao_feito');
             
             if (activeTrips.length > 0) {
                 hasContent = true;
@@ -379,7 +350,7 @@ const WhatsappService = {
                     let header = "";
                     if (t.type === 'encher') {
                         const q = t.qty;
-                        header = `*${q} ${q > 1 ? 'COLOCAÇÕES' : 'COLOCAÇÃO'} + ${q} ${q > 1 ? 'RETIRADAS' : 'RETIRADA'}*`;
+                        header = `*${q} COLOCAÇÃO + ${q} RETIRADA*`;
                     } else {
                         header = `*${t.qty} ${this.getPluralLabel(t.type, t.qty)}*`;
                     }
@@ -927,14 +898,10 @@ const App = {
                 totalServicos += (t.type === 'encher') ? (qty * 2) : qty;
             });
 
-            // Chama a função para calcular os últimos 7 dias
-            const servicosSemanais = State.getWeeklyStats(name);
-
             let headerHtml = `
                 <div class="bg-slate-300 text-center text-[10px] font-bold py-1 border-b border-slate-300">MOTORISTA</div>
                 <div class="bg-yellow-300 text-center text-xs font-bold py-1 border-b border-slate-300 text-blue-900">${d.plate || 'SEM PLACA'}</div>
                 <div class="text-center text-xs font-black py-1.5 border-b border-slate-300 uppercase tracking-wide underline" style="background-color: ${d.color}20; color: ${d.color};">${name}</div>
-                <div class="bg-blue-100 text-blue-800 text-center text-[9px] font-black py-1 border-b border-blue-200 shadow-inner">🔥 ${servicosSemanais} SERVIÇOS (ÚLTIMOS 7 DIAS)</div>
                 <div class="bg-fuchsia-500 text-white text-center text-[10px] font-bold py-1 border-b border-slate-300">HOJE: ${totalServicos} SERVIÇOS</div>
             `;
             
@@ -952,6 +919,9 @@ const App = {
                 } else if (status === 'cancelado') {
                     bgClass = 'bg-[#ffedd5]'; 
                     opacityClass = 'opacity-80 line-through grayscale-[50%]';
+                } else if (status === 'nao_feito') {
+                    bgClass = 'bg-[#fee2e2]'; // vermelho claro
+                    opacityClass = 'opacity-90 border-red-300';
                 }
 
                 const label = customLabel || WhatsappService.getPluralLabel(t.type || 'troca', t.qty || 1);
@@ -969,8 +939,8 @@ const App = {
 
                 const mtrTag = t.mtr ? `<div class="mt-1 flex justify-center"><span class="text-[10px] bg-indigo-100 text-indigo-900 font-medium rounded px-1.5 py-0.5 border border-indigo-200"><i class="fas fa-file-invoice"></i> MTR</span></div>` : '';
                 const descTag = t.descarteLocal ? `<div class="mt-1 flex justify-center"><span class="text-[10px] bg-red-100 text-red-900 font-medium rounded px-1.5 py-0.5 border border-red-200">DESC: ${t.descarteLocal}</span></div>` : '';
-                const timeTag = (status === 'concluido' && t.horaConclusao) 
-                ? `<div class="mt-1.5 text-[10px] font-black text-green-800 bg-green-200/50 rounded px-2 w-fit mx-auto border border-green-300"><i class="far fa-clock"></i> FEITO ÀS ${t.horaConclusao}</div>` 
+                const timeTag = ((status === 'concluido' || status === 'nao_feito') && t.horaConclusao) 
+                ? `<div class="mt-1.5 text-[10px] font-black ${status==='concluido'?'text-green-800 bg-green-200/50 border-green-300':'text-red-800 bg-red-200/50 border-red-300'} rounded px-2 w-fit mx-auto border"><i class="far fa-clock"></i> ${status==='concluido'?'FEITO':'NÃO FEITO'} ÀS ${t.horaConclusao}</div>` 
                 : '';
 
                 return `
@@ -1092,7 +1062,6 @@ const App = {
         const newObs = prompt("Editar Observação:", currentObs.replace(/\|? ?MOT:.*$/g, '').trim());
         if (newObs === null) return;
         
-        // Mantém a observação do motorista intacta ao editar a observação da logística
         const parts = currentObs.split(/\|? ?MOT: /);
         const motObs = parts[1] ? ` | MOT: ${parts[1]}` : '';
         const finalObs = newObs ? `${newObs}${motObs}` : motObs.replace(' | ', '');
@@ -1141,7 +1110,7 @@ const App = {
 
     shareDriverRoute(name) {
         const d = State.getCurrentFleet()[name];
-        const active = d.trips.filter(t => !t.completed && t.status !== 'cancelado');
+        const active = d.trips.filter(t => t.status !== 'concluido' && t.status !== 'cancelado' && t.status !== 'nao_feito');
         if (!active.length) return UI.toast("Sem rotas pendentes", "info");
         let msg = WhatsappService.buildMessage(name, active, State.session.shift, d.plate);
         window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
