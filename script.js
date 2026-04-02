@@ -1,7 +1,7 @@
 'use strict';
 
 // ============================================================================
-// CHAVES DO FIREBASE (Já com as suas chaves da foto!)
+// CHAVES DO FIREBASE
 // ============================================================================
 const firebaseConfig = {
     apiKey: "AIzaSyCUwkGHLnSQBIiDhZN6MfF-R-RhZQx-kg4",
@@ -44,42 +44,50 @@ const State = {
         UI.loading(true);
 
         db.ref('sgc_data').on('value', (snapshot) => {
-            const val = snapshot.val();
-            if (val) {
-                // VACINA DO FIREBASE: Conserta a lixeira
-                if (val.fleet) {
-                    for (const key in val.fleet) {
-                        if (val.fleet[key].trips && !Array.isArray(val.fleet[key].trips)) {
-                            val.fleet[key].trips = Object.values(val.fleet[key].trips);
-                        }
-                        if (!val.fleet[key].trips) {
-                            val.fleet[key].trips = [];
+            try {
+                const val = snapshot.val();
+                if (val) {
+                    // ARMADURA ANTIBUG: Limpa lixo do Firebase antes de ler
+                    if (val.fleet) {
+                        for (const key in val.fleet) {
+                            if (val.fleet[key].trips && !Array.isArray(val.fleet[key].trips)) {
+                                val.fleet[key].trips = Object.values(val.fleet[key].trips);
+                            }
+                            if (!val.fleet[key].trips) {
+                                val.fleet[key].trips = [];
+                            }
+                            // Remove viagens fantasmas (null)
+                            val.fleet[key].trips = val.fleet[key].trips.filter(t => t !== null && typeof t === 'object');
                         }
                     }
+                    this.data = val;
+                    if(!this.data.addressBook) this.data.addressBook = [];
+                    if(!this.data.disposalPoints) this.data.disposalPoints = [];
+                    if(!this.data.fleet) this.data.fleet = {};
+                } else {
+                    this.resetFleet();
                 }
-                this.data = val;
-                if(!this.data.addressBook) this.data.addressBook = [];
-                if(!this.data.disposalPoints) this.data.disposalPoints = [];
-                if(!this.data.fleet) this.data.fleet = {};
-            } else {
-                this.resetFleet();
-            }
-            
-            this.integrityCheck();
+                
+                this.integrityCheck();
 
-            // Renderiza TODA A TELA (Painel esquerdo e a Planilha Direita)
-            App.renderGrid();
-            App.renderList();
-            App.renderAddressBook();
-            App.renderDisposalList();
-            App.renderSpreadsheet(); 
-            
-            if (this.session.currentDriver) {
-                App.renderMiniHistory(this.session.currentDriver);
-            }
+                // Renderiza a Tela com segurança
+                App.renderGrid();
+                App.renderList();
+                App.renderAddressBook();
+                App.renderDisposalList();
+                App.renderSpreadsheet(); 
+                
+                if (this.session.currentDriver) {
+                    App.renderMiniHistory(this.session.currentDriver);
+                }
 
-            if (this.isInitializing) {
-                this.isInitializing = false;
+                if (this.isInitializing) {
+                    this.isInitializing = false;
+                    UI.loading(false);
+                }
+            } catch (erro) {
+                console.error("Erro ao desenhar a tela:", erro);
+                UI.toast("Erro ao ler algumas rotas antigas. Veja o console.", "error");
                 UI.loading(false);
             }
         });
@@ -105,7 +113,8 @@ const State = {
 
     save() {
         if (this.isInitializing) return;
-        // Salva com array limpo pra evitar lixo na nuvem
+        
+        // ARMADURA: Limpa dados fantasmas antes de mandar pra nuvem
         const dataToSave = JSON.parse(JSON.stringify(this.data));
         for (const key in dataToSave.fleet) {
             if (dataToSave.fleet[key].trips) {
@@ -240,9 +249,9 @@ const WhatsappService = {
     generateShiftIcon(shift) { return shift === 'day' ? 'DIA' : 'NOITE'; },
     
     getPluralLabel(type, qty) {
-        const q = parseInt(qty);
-        const t = type.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        let label = type.toUpperCase();
+        const q = parseInt(qty) || 1;
+        const t = (type || 'troca').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        let label = (type || 'troca').toUpperCase();
         if (t.includes('troca')) label = q > 1 ? 'TROCAS' : 'TROCA';
         if (t.includes('coloca')) label = q > 1 ? 'COLOCAÇÕES' : 'COLOCAÇÃO';
         if (t.includes('retira')) label = q > 1 ? 'RETIRADAS' : 'RETIRADA';
@@ -278,27 +287,31 @@ const WhatsappService = {
 
         for (let i = 0; i < trips.length; i++) {
             const t = trips[i];
-            if (t.obs) msg += `*\`OBS: ${t.obs.toUpperCase()}\`*\n`;
-            if (t.empresa) msg += `${t.empresa.toUpperCase()}\n`;
+            if(!t) continue;
+            
+            const tType = t.type || 'troca';
+            const tQty = t.qty || 1;
+            
+            if (t.obs) msg += `*\`OBS: ${String(t.obs).toUpperCase()}\`*\n`;
+            if (t.empresa) msg += `${String(t.empresa).toUpperCase()}\n`;
 
             let typeHeader = "";
-            if (t.type === 'encher') {
-                const q = t.qty;
-                const l1 = q > 1 ? 'COLOCAÇÕES' : 'COLOCAÇÃO';
-                const l2 = q > 1 ? 'RETIRADAS' : 'RETIRADA';
-                typeHeader = `${q} ${l1} + ${q} ${l2}`;
+            if (tType === 'encher') {
+                const l1 = tQty > 1 ? 'COLOCAÇÕES' : 'COLOCAÇÃO';
+                const l2 = tQty > 1 ? 'RETIRADAS' : 'RETIRADA';
+                typeHeader = `${tQty} ${l1} + ${tQty} ${l2}`;
             } else {
-                typeHeader = `${t.qty} ${this.getPluralLabel(t.type, t.qty)}`;
+                typeHeader = `${tQty} ${this.getPluralLabel(tType, tQty)}`;
             }
             msg += `*${typeHeader}*\n`;
 
-            if (t.obra) msg += `OBRA: ${t.obra.toUpperCase()}\n`;
+            if (t.obra) msg += `OBRA: ${String(t.obra).toUpperCase()}\n`;
 
             const addressText = typeof t.to === 'string' ? t.to : (t.to && t.to.text ? t.to.text : '');
             const displayEnd = this.formatAddress(addressText).toUpperCase();
             msg += `END: ${displayEnd}\n`;
 
-            if (t.descarteLocal) msg += `*DESCARTE: ${t.descarteLocal.toUpperCase()}*\n`;
+            if (t.descarteLocal) msg += `*DESCARTE: ${String(t.descarteLocal).toUpperCase()}*\n`;
             if (t.mtr) msg += `\`${t.mtr}\`\n`;
             msg += `\n`; 
         }
@@ -317,7 +330,7 @@ const WhatsappService = {
 
         drivers.forEach(name => {
             const driver = State.getDriver(name);
-            const activeTrips = driver.trips.filter(t => !t.completed);
+            const activeTrips = (driver.trips || []).filter(t => t && !t.completed);
             
             if (activeTrips.length > 0) {
                 hasContent = true;
@@ -326,27 +339,31 @@ const WhatsappService = {
                 
                 for (let i = 0; i < activeTrips.length; i++) {
                     const t = activeTrips[i];
-                    if(t.obs) msg += `*\`OBS: ${t.obs.toUpperCase()}\`*\n`;
-                    if (t.empresa) msg += `${t.empresa.toUpperCase()}\n`;
+                    if(!t) continue;
+                    
+                    const tType = t.type || 'troca';
+                    const tQty = t.qty || 1;
+                    
+                    if(t.obs) msg += `*\`OBS: ${String(t.obs).toUpperCase()}\`*\n`;
+                    if (t.empresa) msg += `${String(t.empresa).toUpperCase()}\n`;
 
                     let header = "";
-                    if (t.type === 'encher') {
-                        const q = t.qty;
-                        const l1 = q > 1 ? 'COLOCAÇÕES' : 'COLOCAÇÃO';
-                        const l2 = q > 1 ? 'RETIRADAS' : 'RETIRADA';
-                        header = `*${q} ${l1} + ${q} ${l2}*`;
+                    if (tType === 'encher') {
+                        const l1 = tQty > 1 ? 'COLOCAÇÕES' : 'COLOCAÇÃO';
+                        const l2 = tQty > 1 ? 'RETIRADAS' : 'RETIRADA';
+                        header = `*${tQty} ${l1} + ${tQty} ${l2}*`;
                     } else {
-                        header = `*${t.qty} ${this.getPluralLabel(t.type, t.qty)}*`;
+                        header = `*${tQty} ${this.getPluralLabel(tType, tQty)}*`;
                     }
                     msg += `${header}\n`;
 
-                    if (t.obra) msg += `OBRA: ${t.obra.toUpperCase()}\n`;
+                    if (t.obra) msg += `OBRA: ${String(t.obra).toUpperCase()}\n`;
                     
                     const addressText = typeof t.to === 'string' ? t.to : (t.to && t.to.text ? t.to.text : '');
                     const displayEnd = this.formatAddress(addressText).toUpperCase();
                     msg += `END: ${displayEnd}\n`;
                     
-                    if(t.descarteLocal) msg += `*DESCARTE: ${t.descarteLocal.toUpperCase()}*\n`;
+                    if(t.descarteLocal) msg += `*DESCARTE: ${String(t.descarteLocal).toUpperCase()}*\n`;
                     if (t.mtr) msg += `\`${t.mtr}\`\n`;
                     msg += `\n`;
                 }
@@ -756,8 +773,6 @@ const App = {
 
         UI.closeEditor();
         this.renderGrid();
-        
-        // Atualiza todos os painéis ao trocar o turno
         this.renderList();
         this.renderSpreadsheet();
     },
@@ -982,7 +997,7 @@ const App = {
         State.getDriversByShift().forEach(name => {
             const d = State.getDriver(name);
             if (!d) return; 
-            const pending = d.trips ? d.trips.filter(t => !t.completed).length : 0;
+            const pending = d.trips ? d.trips.filter(t => t && !t.completed).length : 0;
             const card = document.createElement('div');
             card.className = `driver-card ${State.session.currentDriver===name ? 'selected' : ''}`;
             card.onclick = () => UI.openEditor(name);
@@ -1003,7 +1018,7 @@ const App = {
     },
 
     // =========================================================================
-    // PLANILHA GIGANTE
+    // PLANILHA GIGANTE MÁGICA
     // =========================================================================
     renderSpreadsheet() {
         const container = document.getElementById('spreadsheet-view');
@@ -1031,22 +1046,29 @@ const App = {
 
             if (d.trips && d.trips.length > 0) {
                 d.trips.forEach((t, i) => {
+                    if (!t) return; // Armadura contra viagens nulas
+                    
                     const tripCard = document.createElement('div');
                     tripCard.className = `p-2 border border-slate-200 rounded-md text-[10px] leading-tight relative shadow-sm ${t.completed ? 'opacity-50 grayscale bg-slate-200' : 'bg-white hover:border-blue-300'} transition cursor-pointer`;
                     
+                    const tType = t.type || 'troca';
+                    const tQty = t.qty || 1;
+                    const tEmpresa = t.empresa || '';
+                    const tObra = t.obra || '';
+                    
                     let typeHtml = '';
-                    if (t.type === 'colocacao') {
-                        typeHtml = `<span class="text-red-600 font-black text-[11px]"><i class="fas fa-arrow-down"></i> ${t.qty} COLOCAÇÃO</span>`;
-                    } else if (t.type === 'retirada') {
-                        typeHtml = `<span class="text-purple-600 font-black text-[11px]"><i class="fas fa-arrow-up"></i> ${t.qty} RETIRADA</span>`;
-                    } else if (t.type === 'troca') {
-                        typeHtml = `<span class="text-slate-900 font-black text-[11px]"><i class="fas fa-sync-alt"></i> ${t.qty} TROCA</span>`;
-                    } else if (t.type === 'encher') {
-                        typeHtml = `<span class="text-red-600 font-black text-[11px]"><i class="fas fa-fill"></i> ${t.qty} ENCHER</span> E <span class="text-purple-600 font-black text-[11px]">NA HORA</span>`;
+                    if (tType === 'colocacao') {
+                        typeHtml = `<span class="text-red-600 font-black text-[11px]"><i class="fas fa-arrow-down"></i> ${tQty} COLOCAÇÃO</span>`;
+                    } else if (tType === 'retirada') {
+                        typeHtml = `<span class="text-purple-600 font-black text-[11px]"><i class="fas fa-arrow-up"></i> ${tQty} RETIRADA</span>`;
+                    } else if (tType === 'troca') {
+                        typeHtml = `<span class="text-slate-900 font-black text-[11px]"><i class="fas fa-sync-alt"></i> ${tQty} TROCA</span>`;
+                    } else if (tType === 'encher') {
+                        typeHtml = `<span class="text-red-600 font-black text-[11px]"><i class="fas fa-fill"></i> ${tQty} ENCHER</span> E <span class="text-purple-600 font-black text-[11px]">NA HORA</span>`;
                     }
                     
-                    const empresaHtml = t.empresa ? `<div class="font-bold mt-1.5 text-[11px] text-slate-800">${t.empresa.toUpperCase()}</div>` : '';
-                    const obraHtml = t.obra ? `<div class="text-slate-600 font-semibold italic mt-0.5">${t.obra.toUpperCase()}</div>` : '';
+                    const empresaHtml = tEmpresa ? `<div class="font-bold mt-1.5 text-[11px] text-slate-800">${tEmpresa.toUpperCase()}</div>` : '';
+                    const obraHtml = tObra ? `<div class="text-slate-600 font-semibold italic mt-0.5">${tObra.toUpperCase()}</div>` : '';
                     
                     const addressText = typeof t.to === 'string' ? t.to : (t.to && t.to.text ? t.to.text : '');
                     const displayEnd = WhatsappService.formatAddress(addressText).toUpperCase();
@@ -1083,19 +1105,23 @@ const App = {
         if(!driver || !driver.trips || driver.trips.length === 0) { el.innerHTML = '<div class="text-[9px] text-slate-300 text-center py-2">Sem viagens hoje</div>'; return; }
         
         driver.trips.slice().reverse().forEach((t, revIndex) => {
+            if (!t) return;
             const realIndex = driver.trips.length - 1 - revIndex;
             const row = document.createElement('div');
             row.className = "flex justify-between items-center bg-slate-50 p-2 rounded border border-slate-100 mb-1 animate-fade-in";
             const obsText = t.obs ? `<span class="text-[8px] text-amber-600 block italic">Obs: ${t.obs}</span>` : '';
             const companyTag = t.empresa ? `<span class="text-[7px] bg-slate-200 px-1 rounded mr-1">${t.empresa}</span>` : '';
             
-            let displayType = t.type.toUpperCase();
-            if(t.type === 'encher') displayType = 'ENCHER'; 
+            const tType = t.type || 'troca';
+            const tQty = t.qty || 1;
+            
+            let displayType = tType.toUpperCase();
+            if(tType === 'encher') displayType = 'ENCHER'; 
 
             row.innerHTML = `
                 <div class="truncate pr-2">
                     <div class="flex gap-1">
-                        <button onclick="App.changeQty('${name}',${realIndex})" class="text-[9px] font-bold text-slate-700 hover:text-blue-600 border-b border-dotted border-slate-300 w-4 text-center" title="Mudar Qtd">${t.qty}</button>
+                        <button onclick="App.changeQty('${name}',${realIndex})" class="text-[9px] font-bold text-slate-700 hover:text-blue-600 border-b border-dotted border-slate-300 w-4 text-center" title="Mudar Qtd">${tQty}</button>
                         <button onclick="App.cycleType('${name}',${realIndex})" class="text-[9px] font-bold text-slate-700 hover:text-blue-600 border-b border-dotted border-slate-300" title="Mudar Tipo">${displayType}</button>
                     </div>
                     <div class="text-[8px] text-slate-400 truncate">${companyTag}${t.obra || 'Sem nome'}</div>
@@ -1174,6 +1200,7 @@ const App = {
             `;
 
             d.trips.forEach((t, i) => {
+                if (!t) return;
                 const descarteClass = t.descarteLocal ? 'active bg-red-50 border-red-200 text-red-500' : 'text-slate-300 hover:text-slate-500 border-transparent';
                 
                 const descarteDisplay = t.descarteLocal 
@@ -1185,8 +1212,11 @@ const App = {
                 const obsDisplay = t.obs ? `<div class="mt-1 text-[9px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 w-fit"><i class="fas fa-comment-dots text-[8px] mr-1"></i>${t.obs}</div>` : '';
                 const companyDisplay = t.empresa ? `<span class="text-[8px] font-bold text-blue-600 bg-blue-50 px-1 rounded mr-1">${t.empresa}</span>` : '';
 
-                let displayType = t.type.toUpperCase();
-                if(t.type === 'encher') displayType = 'ENCHER NA HORA';
+                const tType = t.type || 'troca';
+                const tQty = t.qty || 1;
+
+                let displayType = tType.toUpperCase();
+                if(tType === 'encher') displayType = 'ENCHER NA HORA';
                 
                 const addressText = typeof t.to === 'string' ? t.to : (t.to && t.to.text ? t.to.text : '');
 
@@ -1213,7 +1243,7 @@ const App = {
                                 <div class="mr-1.5 text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing" title="Arrastar para reordenar"><i class="fas fa-grip-vertical text-[10px]"></i></div>
                                 
                                 <div class="flex items-center gap-1 mr-1">
-                                     <button onclick="App.changeQty('${name}',${i})" class="text-[10px] font-black text-slate-800 hover:text-blue-600 border-b border-dotted border-slate-300 min-w-[1.2rem]" title="Mudar Qtd">${t.qty}</button>
+                                     <button onclick="App.changeQty('${name}',${i})" class="text-[10px] font-black text-slate-800 hover:text-blue-600 border-b border-dotted border-slate-300 min-w-[1.2rem]" title="Mudar Qtd">${tQty}</button>
                                      <button onclick="App.cycleType('${name}',${i})" class="text-[10px] font-black text-slate-800 hover:text-blue-600 border-b border-dotted border-slate-300" title="Mudar Tipo">${displayType}</button>
                                 </div>
                                 <span class="text-[10px] text-slate-500 truncate">- ${companyDisplay}${t.obra || ''}</span>
@@ -1264,7 +1294,7 @@ const App = {
         if(!d || !d.trips[index]) return;
         
         const types = ['troca', 'colocacao', 'retirada', 'encher'];
-        const current = d.trips[index].type;
+        const current = d.trips[index].type || 'troca';
         
         let nextIndex = types.indexOf(current) + 1;
         if (nextIndex >= types.length || nextIndex === -1) nextIndex = 0;
@@ -1332,7 +1362,7 @@ const App = {
         const d = State.getDriver(name);
         if(!d || !d.trips[index]) return;
         
-        const current = d.trips[index].qty;
+        const current = d.trips[index].qty || 1;
         const newQty = prompt("Nova quantidade:", current);
         
         if(newQty !== null) {
@@ -1346,7 +1376,7 @@ const App = {
 
     shareDriverRoute(name) {
         const d = State.getDriver(name);
-        const active = d.trips.filter(t => !t.completed);
+        const active = (d.trips || []).filter(t => t && !t.completed);
         if (!active.length) return UI.toast("Sem rotas pendentes", "info");
         
         let msg = WhatsappService.buildMessage(name, active, State.session.shift, d.plate);
