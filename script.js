@@ -368,10 +368,23 @@ const WhatsappService = {
 
 const DataService = {
     export() {
-        UI.toast("O Backup é feito automaticamente na nuvem agora!", "info");
+        const blob = new Blob([JSON.stringify(State.data)], {type: 'application/json'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `SGC_Nuvem_${new Date().toISOString().slice(0,10)}.json`;
+        a.click();
     },
     import(input) {
-        UI.toast("A Restauração foi desativada para não corromper a nuvem.", "error");
+        const r = new FileReader();
+        r.onload = e => { 
+            try { 
+                State.data = JSON.parse(e.target.result); 
+                State.save(); // Isso aqui envia o seu backup direto pra NUVEM!
+                UI.toast("Backup enviado para a Nuvem com sucesso!");
+                setTimeout(() => location.reload(), 1500);
+            } catch { UI.toast("Arquivo inválido", "error"); }
+        };
+        if(input.files[0]) r.readAsText(input.files[0]);
     },
     reset() {
         if(confirm("Deseja iniciar um novo dia?\n\nISSO APAGARÁ TODAS AS ROTAS PARA TODO MUNDO, mas manterá os endereços salvos.")) {
