@@ -3,18 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
-    <link rel="apple-touch-icon" href="images.png">
 
+    <link rel="apple-touch-icon" href="images.png">
     <meta name="theme-color" content="#2563eb">
     <title>Motorista - SGC Logística</title>
     <link rel="icon" type="image/png" href="images.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -57,12 +56,12 @@
     <div id="app-screen" class="hidden flex-col h-full">
         <header class="bg-blue-600 text-white p-4 shadow-md shrink-0 flex justify-between items-center z-10">
             <div>
-                <div class="text-[10px] font-bold text-blue-200 uppercase tracking-wider mb-0.5" id="date-display">Rota de Hoje</div>
-                <div class="font-black text-xl flex items-center gap-2">
+                <input type="date" id="driver-date" onchange="App.changeDate(this.value)" class="text-[10px] font-bold text-blue-800 bg-blue-200 rounded px-2 py-1 uppercase tracking-wider mb-0.5 outline-none border-none shadow-inner w-full cursor-pointer">
+                <div class="font-black text-xl flex items-center gap-2 mt-1">
                     <i class="fas fa-user-circle"></i> <span id="header-driver-name">NOME</span>
                 </div>
             </div>
-            <button onclick="App.logout()" class="w-10 h-10 rounded-full bg-blue-700 hover:bg-blue-800 flex items-center justify-center btn-press">
+            <button onclick="App.logout()" class="w-10 h-10 rounded-full bg-blue-700 hover:bg-blue-800 flex items-center justify-center btn-press shadow-inner">
                 <i class="fas fa-sign-out-alt"></i>
             </button>
         </header>
@@ -99,10 +98,16 @@
 
         const App = {
             myName: localStorage.getItem('sgc_driver_name'),
+            currentDate: '',
             trips: [],
 
             init() {
-                document.getElementById('date-display').innerText = new Date().toLocaleDateString('pt-BR');
+                const d = new Date();
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                this.currentDate = `${year}-${month}-${day}`;
+                document.getElementById('driver-date').value = this.currentDate;
                 
                 if (this.myName) {
                     this.showApp();
@@ -112,17 +117,21 @@
                 }
             },
 
+            changeDate(val) {
+                if(!val) return;
+                this.currentDate = val;
+                this.listenToMyRoute();
+            },
+
             loadDriversList() {
-                db.ref('sgc_data/fleet').once('value', snapshot => {
+                db.ref('sgc_data/routes/' + this.currentDate + '/fleet').once('value', snapshot => {
                     const select = document.getElementById('driver-select');
                     select.innerHTML = '<option value="">-- Escolha seu nome --</option>';
                     const fleet = snapshot.val();
                     
                     if (fleet) {
                         const nomes = Object.keys(fleet).sort();
-                        nomes.forEach(nome => {
-                            select.innerHTML += `<option value="${nome}">${nome}</option>`;
-                        });
+                        nomes.forEach(nome => select.innerHTML += `<option value="${nome}">${nome}</option>`);
                     } else {
                         select.innerHTML = '<option value="">Nenhuma rota criada hoje</option>';
                     }
@@ -136,7 +145,6 @@
                 const password = passInput ? passInput.value : '';
 
                 if (!name) return alert('Por favor, selecione seu nome na lista!');
-                
                 if (password !== '12345') {
                     alert('Senha incorreta!');
                     if(passInput) passInput.value = ''; 
@@ -164,7 +172,7 @@
             },
 
             listenToMyRoute() {
-                const path = `sgc_data/fleet/${this.myName}/trips`;
+                const path = `sgc_data/routes/${this.currentDate}/fleet/${this.myName}/trips`;
                 db.ref(path).on('value', snapshot => {
                     const data = snapshot.val();
                     if (data) {
@@ -175,8 +183,8 @@
                         document.getElementById('trips-container').innerHTML = `
                             <div class="text-center text-slate-400 mt-20">
                                 <i class="fas fa-mug-hot text-5xl mb-4 opacity-50"></i>
-                                <h3 class="text-lg font-black">Nenhuma rota pra você ainda!</h3>
-                                <p class="text-xs">Fique tranquilo, a logística logo envia.</p>
+                                <h3 class="text-lg font-black">Nenhuma rota pra você!</h3>
+                                <p class="text-xs mt-2">Escolha outra data acima se necessário.</p>
                             </div>
                         `;
                         this.updateProgress();
@@ -194,21 +202,16 @@
                 return type.toUpperCase();
             },
 
-            // NOVA FUNÇÃO: MARCA COMO CONCLUIDO OU CANCELADO
             markService(index, novoStatus) {
-                const path = `sgc_data/fleet/${this.myName}/trips/${index}`;
+                const path = `sgc_data/routes/${this.currentDate}/fleet/${this.myName}/trips/${index}`;
                 const trip = this.trips[index];
-                
-                // Pega a observação do motorista
                 const obsInput = document.getElementById(`obs-driver-${index}`);
                 const driverObs = obsInput ? obsInput.value.trim() : '';
                 
-                // Junta a observação antiga da logística com a nova do motorista
                 let finalObs = trip.obs || '';
                 if (driverObs) {
-                    if (!finalObs.includes(driverObs)) { // evita duplicar se ele clicar várias vezes
-                        finalObs = finalObs ? `${finalObs} | MOT: ${driverObs}` : `MOT: ${driverObs}`;
-                    }
+                    finalObs = finalObs.replace(/\|? ?MOT:.*$/g, '').trim();
+                    finalObs = finalObs ? `${finalObs} | MOT: ${driverObs}` : `MOT: ${driverObs}`;
                 }
 
                 let hora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -221,84 +224,89 @@
                 });
             },
 
-            // NOVA FUNÇÃO: DESFAZ A AÇÃO
             undoService(index) {
-                const path = `sgc_data/fleet/${this.myName}/trips/${index}`;
-                db.ref(path).update({
-                    status: 'pendente',
-                    completed: false,
-                    horaConclusao: null
-                });
+                const path = `sgc_data/routes/${this.currentDate}/fleet/${this.myName}/trips/${index}`;
+                db.ref(path).update({ status: 'pendente', completed: false, horaConclusao: null });
+            },
+
+            removeDriverObs(index) {
+                if(confirm("Apagar sua observação?")) {
+                    const path = `sgc_data/routes/${this.currentDate}/fleet/${this.myName}/trips/${index}`;
+                    let finalObs = this.trips[index].obs || '';
+                    finalObs = finalObs.replace(/\|? ?MOT:.*$/g, '').trim();
+                    db.ref(path).update({ obs: finalObs });
+                }
             },
 
             updateProgress() {
                 const total = this.trips.length;
-                // Conta como resolvido tanto os concluidos quanto os cancelados
                 const resolvidos = this.trips.filter(t => t.status === 'concluido' || t.completed || t.status === 'cancelado').length;
-                
                 document.getElementById('progress-text').innerText = `${resolvidos} de ${total}`;
-                
-                let perc = 0;
-                if (total > 0) perc = (resolvidos / total) * 100;
+                let perc = total > 0 ? (resolvidos / total) * 100 : 0;
                 document.getElementById('progress-bar').style.width = `${perc}%`;
                 
                 if(perc === 100 && total > 0) {
-                    document.getElementById('progress-bar').classList.remove('bg-blue-600');
-                    document.getElementById('progress-bar').classList.add('bg-green-500');
+                    document.getElementById('progress-bar').classList.replace('bg-blue-600', 'bg-green-500');
                 } else {
-                    document.getElementById('progress-bar').classList.add('bg-blue-600');
-                    document.getElementById('progress-bar').classList.remove('bg-green-500');
+                    document.getElementById('progress-bar').classList.replace('bg-green-500', 'bg-blue-600');
                 }
             },
 
             renderTrips() {
                 const container = document.getElementById('trips-container');
                 container.innerHTML = '';
-                
                 this.updateProgress();
 
                 this.trips.forEach((t, index) => {
                     const isDone = (t.status === 'concluido' || t.completed);
                     const isFailed = (t.status === 'cancelado');
                     const isPending = (!isDone && !isFailed);
-
                     const qty = t.qty || 1;
                     const label = this.getLabel(t.type, qty);
                     const end = (t.to && t.to.text) ? t.to.text.replace(/, Brasil$/i, '') : 'Endereço não informado';
+                    const mapLink = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(end);
 
-                    const obsHtml = t.obs ? `<div class="bg-amber-100 text-amber-900 text-xs font-bold p-2 rounded mb-2 border border-amber-200"><i class="fas fa-exclamation-triangle mr-1"></i> OBS: ${t.obs}</div>` : '';
+                    let obsHtml = '';
+                    if (t.obs) {
+                        const parts = t.obs.split(/\|? ?MOT: /);
+                        const logObs = parts[0].trim();
+                        const motObs = parts[1] ? parts[1].trim() : '';
+
+                        if (logObs) obsHtml += `<div class="bg-amber-100 text-amber-900 text-xs font-bold p-2 rounded mb-2 border border-amber-200"><i class="fas fa-exclamation-triangle mr-1"></i> LOGÍSTICA: ${logObs}</div>`;
+                        if (motObs) obsHtml += `
+                            <div class="bg-blue-50 text-blue-800 text-xs font-bold p-2 rounded mb-2 border border-blue-200 flex justify-between items-center shadow-sm">
+                                <div><i class="fas fa-comment-dots mr-1"></i> MINHA OBS: ${motObs}</div>
+                                <button onclick="App.removeDriverObs(${index})" class="text-blue-400 hover:text-red-500 p-2 btn-press" title="Apagar minha observação"><i class="fas fa-trash"></i></button>
+                            </div>`;
+                    }
+
                     const mtrHtml = t.mtr ? `<div class="bg-indigo-100 text-indigo-900 text-[10px] font-bold p-1.5 rounded mb-2 w-fit border border-indigo-200"><i class="fas fa-file-invoice mr-1"></i> ${t.mtr}</div>` : '';
                     const descarteHtml = t.descarteLocal ? `<div class="bg-red-100 text-red-900 text-xs font-black p-2 rounded mb-2 border border-red-300 flex items-center gap-2"><i class="fas fa-recycle text-lg"></i> <span>DESCARTAR EM:<br>${t.descarteLocal}</span></div>` : '';
 
-                    // Define as cores do Card
                     let cardClass = 'bg-white border-slate-200 shadow-md';
                     if (isDone) cardClass = 'bg-green-50 border-green-300 opacity-90';
                     if (isFailed) cardClass = 'bg-red-50 border-red-300 opacity-90';
 
-                    // Define a badge do topo
                     let statusBadge = '';
                     if (isDone) statusBadge = '<span class="text-green-600 font-black flex items-center gap-1"><i class="fas fa-check-double"></i> FEITO</span>';
                     if (isFailed) statusBadge = '<span class="text-red-600 font-black flex items-center gap-1"><i class="fas fa-times-circle"></i> NÃO FEITO</span>';
 
                     let botoesAcao = '';
-                    
-                    // Se estiver PENDENTE, mostra input + botões Feito / Não Feito
                     if (isPending) {
                         botoesAcao = `
                             <div class="mt-4 pt-4 border-t border-slate-200">
-                                <input type="text" id="obs-driver-${index}" placeholder="Alguma observação? (Opcional)" class="w-full p-3 border border-slate-300 rounded-xl text-sm bg-slate-50 mb-3 outline-none focus:border-blue-500">
+                                <input type="text" id="obs-driver-${index}" placeholder="Alguma observação? (Opcional)" class="w-full p-3 border border-slate-300 rounded-xl text-sm bg-slate-50 mb-3 outline-none focus:border-blue-500 shadow-inner">
                                 <div class="flex gap-2">
-                                    <button onclick="App.markService(${index}, 'cancelado')" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-black py-3 rounded-xl shadow-md btn-press">
-                                        <i class="fas fa-times"></i> NÃO FEITO
+                                    <button onclick="App.markService(${index}, 'cancelado')" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-black py-3 rounded-xl shadow-md btn-press flex items-center justify-center gap-1">
+                                        <i class="fas fa-times"></i> NÃO
                                     </button>
-                                    <button onclick="App.markService(${index}, 'concluido')" class="flex-[2] bg-green-600 hover:bg-green-700 text-white font-black py-3 rounded-xl shadow-md btn-press">
+                                    <button onclick="App.markService(${index}, 'concluido')" class="flex-[2] bg-green-600 hover:bg-green-700 text-white font-black py-3 rounded-xl shadow-md btn-press flex items-center justify-center gap-1">
                                         <i class="fas fa-check"></i> CONCLUIR
                                     </button>
                                 </div>
                             </div>
                         `;
                     } else {
-                        // Se já resolveu (feito ou não feito), mostra botão de desfazer
                         botoesAcao = `
                             <button onclick="App.undoService(${index})" class="w-full mt-3 py-3 rounded-xl text-sm font-bold btn-press flex items-center justify-center gap-2 bg-slate-200 hover:bg-slate-300 text-slate-700 border border-slate-300 transition-colors">
                                 <i class="fas fa-undo"></i> DESFAZER (${t.horaConclusao || 'agora'})
@@ -309,27 +317,28 @@
                     const html = `
                     <div class="rounded-2xl border p-4 ${cardClass} transition-all">
                         <div class="flex justify-between items-start mb-3">
-                            <div>
-                                <span class="bg-slate-800 text-white text-[10px] font-black px-2 py-1 rounded tracking-widest">${qty} ${label}</span>
-                            </div>
+                            <div><span class="bg-slate-800 text-white text-[10px] font-black px-2 py-1 rounded tracking-widest">${qty} ${label}</span></div>
                             ${statusBadge}
                         </div>
                         
                         <h2 class="text-lg font-black leading-tight text-slate-800 mb-1">${t.obra || 'Sem nome de Obra'}</h2>
                         <h3 class="text-sm font-bold text-slate-500 uppercase mb-3">${t.empresa || ''}</h3>
                         
-                        <div class="flex items-start gap-2 text-sm font-semibold text-slate-700 bg-slate-100/50 p-2 rounded mb-3">
-                            <i class="fas fa-map-marker-alt text-red-500 mt-1"></i>
-                            <span>${end}</span>
+                        <div class="flex justify-between items-center bg-slate-100/50 p-2 rounded mb-3 border border-slate-200">
+                            <div class="flex items-start gap-2 text-xs font-semibold text-slate-700 pr-2">
+                                <i class="fas fa-map-marker-alt text-red-500 mt-0.5"></i>
+                                <span>${end}</span>
+                            </div>
+                            <a href="${mapLink}" target="_blank" class="bg-blue-100 text-blue-700 px-3 py-2 rounded-lg text-[10px] font-black flex flex-col items-center justify-center hover:bg-blue-200 shrink-0 shadow-sm btn-press">
+                                <i class="fas fa-location-arrow text-sm mb-0.5"></i> MAPS
+                            </a>
                         </div>
 
                         ${obsHtml}
                         ${descarteHtml}
                         ${mtrHtml}
-
                         ${botoesAcao}
                     </div>`;
-
                     container.innerHTML += html;
                 });
             }
