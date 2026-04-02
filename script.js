@@ -609,6 +609,7 @@ const App = {
                         to: { text: match ? match.address : "PREENCHER ENDEREÇO" },
                         mtr: null,
                         descarteLocal: null,
+                        status: 'pendente',
                         completed: false
                     };
                     State.addTrip(driverName, inputs);
@@ -643,6 +644,7 @@ const App = {
                                 to: { text: match.address },
                                 mtr: null,
                                 descarteLocal: null,
+                                status: 'pendente',
                                 completed: false
                             };
                             State.addTrip(driverName, inputs);
@@ -658,6 +660,7 @@ const App = {
                             to: { text: "PREENCHER ENDEREÇO" },
                             mtr: null,
                             descarteLocal: null,
+                            status: 'pendente',
                             completed: false
                         };
                         State.addTrip(driverName, inputs);
@@ -695,6 +698,7 @@ const App = {
             to: { text: data.end }, 
             mtr: null,
             descarteLocal: null,
+            status: 'pendente',
             completed: false
         };
 
@@ -1072,7 +1076,7 @@ const App = {
     },
 
     // ========================================================================
-    // NOVO SISTEMA DE PLANILHA (ARRASTAR + STATUS + FONTES MELHORADAS)
+    // NOVO SISTEMA DE PLANILHA (ARRASTAR + STATUS + FONTES + SOMA CORRETA)
     // ========================================================================
     renderSpreadsheet() {
         const container = document.getElementById('spreadsheet-container');
@@ -1089,11 +1093,22 @@ const App = {
             const column = document.createElement('div');
             column.className = "min-w-[220px] max-w-[260px] flex flex-col bg-white snap-start border border-slate-300";
 
+            // Lógica para SOMAR as caixas direito (Encher vale 2x)
+            let totalServicos = 0;
+            d.trips.forEach(t => {
+                let qtd = parseInt(t.qty) || 1;
+                if (t.type === 'encher') {
+                    totalServicos += (qtd * 2);
+                } else {
+                    totalServicos += qtd;
+                }
+            });
+
             let headerHtml = `
                 <div class="bg-slate-300 text-center text-[10px] font-bold py-1 border-b border-slate-300">MOTORISTA</div>
                 <div class="bg-yellow-300 text-center text-xs font-bold py-1 border-b border-slate-300 text-blue-900">${d.plate || 'SEM PLACA'}</div>
                 <div class="text-center text-xs font-black py-1.5 border-b border-slate-300 uppercase tracking-wide underline" style="background-color: ${d.color}20; color: ${d.color};">${name}</div>
-                <div class="bg-fuchsia-500 text-white text-center text-[10px] font-bold py-1 border-b border-slate-300">${d.trips.length} SERVIÇOS</div>
+                <div class="bg-fuchsia-500 text-white text-center text-[10px] font-bold py-1 border-b border-slate-300">${totalServicos} SERVIÇOS</div>
             `;
             
             const bodyDiv = document.createElement('div');
@@ -1121,6 +1136,7 @@ const App = {
                 const timeTag = (status === 'concluido' && t.horaConclusao) 
                 ? `<div class="mt-1.5 text-[10px] font-black text-green-800 bg-green-200/50 rounded px-2 w-fit mx-auto border border-green-300"><i class="far fa-clock"></i> FEITO ÀS ${t.horaConclusao}</div>` 
                 : '';
+
                 return `
                 <div draggable="true" 
                      ondragstart="App.handleDragStart(event, '${name}', ${i})"
