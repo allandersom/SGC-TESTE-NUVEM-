@@ -1,0 +1,330 @@
+:root {
+    --primary: #0f172a;
+    --accent: #2563eb;
+    --bg-app: #f8fafc;
+    --border: #e2e8f0;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.5s ease, color 0.5s ease;
+}
+
+/* --- MODO NOTURNO (NIGHT MODE) --- */
+body.night-mode {
+    background-color: #0f172a; /* Slate 900 */
+    color: #e2e8f0;
+}
+
+/* Sidebar e Fundos Principais no Modo Noite */
+body.night-mode #sidebar,
+body.night-mode .bg-white {
+    background-color: #1e293b; /* Slate 800 */
+    border-color: #334155;
+    color: #e2e8f0;
+}
+
+/* Inputs no Modo Noite */
+body.night-mode input, 
+body.night-mode textarea, 
+body.night-mode select {
+    background-color: #0f172a;
+    border-color: #334155;
+    color: #fff;
+}
+body.night-mode input::placeholder,
+body.night-mode textarea::placeholder {
+    color: #64748b;
+}
+
+/* Acordeão e Listas no Modo Noite */
+body.night-mode .accordion-header {
+    background-color: #1e293b;
+    color: #e2e8f0;
+}
+body.night-mode .accordion-header:hover {
+    background-color: #334155;
+}
+body.night-mode .accordion-body {
+    background-color: #0f172a;
+}
+
+/* Cartões de Motorista no Modo Noite */
+body.night-mode .driver-card {
+    background-color: #1e293b;
+    border-color: #334155;
+}
+body.night-mode .driver-card:hover {
+    border-color: #64748b;
+    background-color: #334155;
+}
+body.night-mode .driver-card.selected {
+    background-color: #1e293b;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 1px #3b82f6;
+}
+
+/* Textos Específicos no Modo Noite */
+body.night-mode .text-slate-800, 
+body.night-mode .text-slate-900 {
+    color: #f1f5f9 !important;
+}
+body.night-mode .text-slate-700 {
+    color: #cbd5e1 !important;
+}
+body.night-mode .text-slate-500 {
+    color: #94a3b8 !important;
+}
+body.night-mode .text-slate-400 {
+    color: #64748b !important;
+}
+
+/* Ajustes de Bordas e Divisórias */
+body.night-mode .border-slate-100,
+body.night-mode .border-slate-200 {
+    border-color: #334155 !important;
+}
+body.night-mode .divide-slate-100 > * + * {
+    border-color: #334155 !important;
+}
+
+/* Fundo do Mapa Wrapper */
+body.night-mode #map-wrapper {
+    background-color: #0f172a;
+}
+
+/* Modal e Popups */
+body.night-mode .bg-slate-50 {
+    background-color: #0f172a; 
+}
+body.night-mode .timeline-item::before {
+    background: #334155;
+}
+body.night-mode #section-planning .bg-slate-100 {
+    background-color: #0f172a;
+    border: 1px solid #334155;
+}
+
+/* --- SIDEBAR EXPANDIDA (TELA CHEIA) --- */
+#sidebar.sidebar-expanded {
+    width: 100vw !important;
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 9999 !important;
+    transform: none !important;
+}
+
+/* ---------------------------------- */
+
+.custom-scroll::-webkit-scrollbar { width: 4px; }
+.custom-scroll::-webkit-scrollbar-track { background: transparent; }
+.custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+.custom-scroll::-webkit-scrollbar-thumb:hover { background-color: #94a3b8; }
+
+.accordion-header {
+    width: 100%;
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: white;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+.accordion-header:hover { background-color: #f8fafc; }
+.accordion-icon {
+    width: 2rem; height: 2rem;
+    border-radius: 0.5rem;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.3s;
+    font-size: 0.9rem;
+}
+.accordion-body { overflow: hidden; animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+.driver-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    padding: 0.75rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+.driver-card:hover { border-color: #cbd5e1; transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+.driver-card.selected { background-color: #eff6ff; border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+
+.input-modern {
+    width: 100%;
+    padding: 0.6rem 0.75rem;
+    background-color: white;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    font-size: 0.8rem;
+    color: #1e293b;
+    outline: none;
+    transition: all 0.2s;
+}
+.input-modern:focus { border-color: var(--accent); }
+
+.type-sel {
+    display: flex; align-items: center; justify-content: center;
+    height: 2.5rem; border-radius: 0.5rem; font-weight: 800; font-size: 1rem;
+    border: 1px solid var(--border); color: #64748b; background: white;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer;
+}
+.type-sel:hover { background-color: #f8fafc; color: #334155; }
+.type-sel:active { transform: scale(0.95); }
+
+.shift-btn {
+    flex: 1; padding: 0.4rem; font-size: 0.7rem; font-weight: 700; border-radius: 0.5rem;
+    color: #64748b; transition: all 0.2s;
+}
+.shift-btn:hover { color: #334155; }
+.shift-btn.active { background: white; color: var(--accent); box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+/* Ajuste Shift Btn Night Mode */
+body.night-mode .shift-btn.active { background: #334155; color: #60a5fa; box-shadow: 0 1px 2px rgba(0,0,0,0.3); }
+body.night-mode .shift-btn:hover { color: #e2e8f0; }
+
+.timeline-item {
+    position: relative; padding-left: 2rem; padding-bottom: 1.5rem;
+    border-left: 2px solid #e2e8f0; margin-left: 0.6rem;
+}
+.timeline-item:last-child { border-left: 2px solid transparent; padding-bottom: 0; }
+.timeline-item::before { content: ''; position: absolute; left: -2px; top: 0; bottom: 0; width: 2px; background: #e2e8f0; }
+
+.timeline-dot {
+    position: absolute; left: -0.45rem; top: 0.15rem;
+    width: 1.1rem; height: 1.1rem; border-radius: 50%;
+    background: white; border: 2px solid #94a3b8; color: white;
+    display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10;
+    transition: all 0.2s; font-size: 0.6rem;
+}
+/* Dot Night Mode */
+body.night-mode .timeline-dot { background: #1e293b; border-color: #64748b; }
+
+.timeline-dot:hover { transform: scale(1.15); border-color: var(--accent); }
+.timeline-dot.completed { background-color: #10b981; border-color: #10b981; }
+
+.btn-descarte {
+    width: 1.75rem; height: 1.75rem; border-radius: 0.4rem;
+    display: flex; align-items: center; justify-content: center;
+    color: #cbd5e1; border: 1px solid transparent; transition: all 0.2s;
+}
+.btn-descarte:hover { color: #ef4444; background: #fef2f2; }
+.btn-descarte.active { color: #ef4444; background: #fef2f2; border-color: #fecaca; }
+
+/* Descarte Night Mode */
+body.night-mode .btn-descarte { color: #475569; }
+body.night-mode .btn-descarte:hover { background: #450a0a; color: #fca5a5; }
+body.night-mode .btn-descarte.active { background: #450a0a; color: #fca5a5; border-color: #7f1d1d; }
+
+.action-list-btn {
+    width: 100%; display: flex; align-items: center; gap: 1rem;
+    padding: 0.75rem; background: white; border: 1px solid #e2e8f0;
+    border-radius: 0.75rem; transition: all 0.2s;
+}
+.action-list-btn:hover { border-color: #cbd5e1; background-color: #f8fafc; }
+body.night-mode .action-list-btn:hover { background-color: #334155; border-color: #475569; }
+
+.icon-box {
+    width: 2.25rem; height: 2.25rem; border-radius: 0.6rem;
+    display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+}
+
+.suggestion-item {
+    padding: 0.75rem 1rem; font-size: 0.85rem; cursor: pointer;
+    border-bottom: 1px solid #f1f5f9; color: #334155; transition: background-color 0.2s;
+}
+body.night-mode .suggestion-item {
+    border-bottom-color: #334155; color: #e2e8f0;
+}
+
+.suggestion-item:last-child { border-bottom: none; }
+.suggestion-item:hover { background-color: #f8fafc; }
+body.night-mode .suggestion-item:hover { background-color: #334155; }
+
+.suggestion-item strong { display: block; color: var(--primary); font-size: 0.9rem; margin-bottom: 2px; }
+body.night-mode .suggestion-item strong { color: #fff; }
+
+.suggestion-item span.company-badge {
+    display: inline-block; font-size: 0.65rem; background-color: #eff6ff; color: var(--accent);
+    padding: 2px 8px; border-radius: 4px; border: 1px solid #dbeafe;
+    text-transform: uppercase; font-weight: 600; margin-left: 0.5rem; vertical-align: middle;
+}
+body.night-mode .suggestion-item span.company-badge {
+    background-color: #1e3a8a; border-color: #1e40af; color: #bfdbfe;
+}
+
+/* --- NOVO LOADER ESTÉTICO --- */
+.loading-glass-panel {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    border-radius: 1.5rem;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.truck-loader-container {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    margin-bottom: 1.5rem;
+}
+
+.truck-icon-pulse {
+    font-size: 2.5rem;
+    color: #3b82f6;
+    animation: truckBounce 1s infinite alternate ease-in-out;
+    z-index: 10;
+    position: relative;
+}
+
+.road-line {
+    width: 60px;
+    height: 4px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 2px;
+    margin-top: 5px;
+    position: relative;
+    overflow: hidden;
+}
+
+.road-line::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; height: 100%; width: 30%;
+    background: #3b82f6;
+    animation: roadMove 1s infinite linear;
+    border-radius: 2px;
+}
+
+@keyframes truckBounce {
+    0% { transform: translateY(0); text-shadow: 0 10px 20px rgba(59, 130, 246, 0.2); }
+    100% { transform: translateY(-5px); text-shadow: 0 20px 30px rgba(59, 130, 246, 0.4); }
+}
+
+@keyframes roadMove {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(300%); }
+}
+
+/* ----------------------------- */
+
+.custom-div-icon { background: transparent; border: none; }
+.cursor-crosshair { cursor: crosshair !important; }
+.modal-backdrop { background-color: rgba(15, 23, 42, 0.85); backdrop-filter: blur(4px); }
+.animate-fade-in { animation: fadeIn 0.2s ease-out forwards; }
+@keyframes fadeIn { from { opacity: 0; scale: 0.98; } to { opacity: 1; scale: 1; } }
+@keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.animate-slide-up { animation: slideUp 0.3s ease-out forwards; }
