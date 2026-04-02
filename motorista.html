@@ -137,7 +137,6 @@
 
                 if (!name) return alert('Por favor, selecione seu nome na lista!');
                 
-                // VERIFICA A SENHA (12345)
                 if (password !== '12345') {
                     alert('Senha incorreta!');
                     if(passInput) passInput.value = ''; 
@@ -195,34 +194,52 @@
                 return type.toUpperCase();
             },
 
-            toggleService(index, currentStatus) {
+            // NOVA FUNÇÃO: MARCA COMO CONCLUIDO OU CANCELADO
+            markService(index, novoStatus) {
                 const path = `sgc_data/fleet/${this.myName}/trips/${index}`;
+                const trip = this.trips[index];
                 
-                const isPendente = (currentStatus === 'pendente' || !currentStatus);
-                const novoStatus = isPendente ? 'concluido' : 'pendente';
-                const completed = isPendente ? true : false;
+                // Pega a observação do motorista
+                const obsInput = document.getElementById(`obs-driver-${index}`);
+                const driverObs = obsInput ? obsInput.value.trim() : '';
                 
-                // SALVA A HORA QUANDO CONCLUIR
-                let hora = null;
-                if (isPendente) {
-                    hora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                // Junta a observação antiga da logística com a nova do motorista
+                let finalObs = trip.obs || '';
+                if (driverObs) {
+                    if (!finalObs.includes(driverObs)) { // evita duplicar se ele clicar várias vezes
+                        finalObs = finalObs ? `${finalObs} | MOT: ${driverObs}` : `MOT: ${driverObs}`;
+                    }
                 }
+
+                let hora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
                 db.ref(path).update({
                     status: novoStatus,
-                    completed: completed,
-                    horaConclusao: hora
+                    completed: novoStatus === 'concluido',
+                    horaConclusao: hora,
+                    obs: finalObs
+                });
+            },
+
+            // NOVA FUNÇÃO: DESFAZ A AÇÃO
+            undoService(index) {
+                const path = `sgc_data/fleet/${this.myName}/trips/${index}`;
+                db.ref(path).update({
+                    status: 'pendente',
+                    completed: false,
+                    horaConclusao: null
                 });
             },
 
             updateProgress() {
                 const total = this.trips.length;
-                const concluidos = this.trips.filter(t => t.status === 'concluido' || t.completed).length;
+                // Conta como resolvido tanto os concluidos quanto os cancelados
+                const resolvidos = this.trips.filter(t => t.status === 'concluido' || t.completed || t.status === 'cancelado').length;
                 
-                document.getElementById('progress-text').innerText = `${concluidos} de ${total}`;
+                document.getElementById('progress-text').innerText = `${resolvidos} de ${total}`;
                 
                 let perc = 0;
-                if (total > 0) perc = (concluidos / total) * 100;
+                if (total > 0) perc = (resolvidos / total) * 100;
                 document.getElementById('progress-bar').style.width = `${perc}%`;
                 
                 if(perc === 100 && total > 0) {
@@ -241,9 +258,10 @@
                 this.updateProgress();
 
                 this.trips.forEach((t, index) => {
-                    if(t.status === 'cancelado') return;
-
                     const isDone = (t.status === 'concluido' || t.completed);
+                    const isFailed = (t.status === 'cancelado');
+                    const isPending = (!isDone && !isFailed);
+
                     const qty = t.qty || 1;
                     const label = this.getLabel(t.type, qty);
                     const end = (t.to && t.to.text) ? t.to.text.replace(/, Brasil$/i, '') : 'Endereço não informado';
@@ -252,14 +270,41 @@
                     const mtrHtml = t.mtr ? `<div class="bg-indigo-100 text-indigo-900 text-[10px] font-bold p-1.5 rounded mb-2 w-fit border border-indigo-200"><i class="fas fa-file-invoice mr-1"></i> ${t.mtr}</div>` : '';
                     const descarteHtml = t.descarteLocal ? `<div class="bg-red-100 text-red-900 text-xs font-black p-2 rounded mb-2 border border-red-300 flex items-center gap-2"><i class="fas fa-recycle text-lg"></i> <span>DESCARTAR EM:<br>${t.descarteLocal}</span></div>` : '';
 
-                    const cardClass = isDone ? 'bg-green-50 border-green-300 opacity-90' : 'bg-white border-slate-200 shadow-md';
-                    const btnClass = isDone 
-                        ? 'bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold border border-slate-300' 
-                        : 'bg-green-600 hover:bg-green-700 text-white font-black shadow-lg';
-                        
-                    const btnText = isDone 
-                        ? `<i class="fas fa-undo"></i> DESFAZER (Feito às ${t.horaConclusao || 'agora'})` 
-                        : `<i class="fas fa-check-circle text-lg"></i> CONCLUIR SERVIÇO`;
+                    // Define as cores do Card
+                    let cardClass = 'bg-white border-slate-200 shadow-md';
+                    if (isDone) cardClass = 'bg-green-50 border-green-300 opacity-90';
+                    if (isFailed) cardClass = 'bg-red-50 border-red-300 opacity-90';
+
+                    // Define a badge do topo
+                    let statusBadge = '';
+                    if (isDone) statusBadge = '<span class="text-green-600 font-black flex items-center gap-1"><i class="fas fa-check-double"></i> FEITO</span>';
+                    if (isFailed) statusBadge = '<span class="text-red-600 font-black flex items-center gap-1"><i class="fas fa-times-circle"></i> NÃO FEITO</span>';
+
+                    let botoesAcao = '';
+                    
+                    // Se estiver PENDENTE, mostra input + botões Feito / Não Feito
+                    if (isPending) {
+                        botoesAcao = `
+                            <div class="mt-4 pt-4 border-t border-slate-200">
+                                <input type="text" id="obs-driver-${index}" placeholder="Alguma observação? (Opcional)" class="w-full p-3 border border-slate-300 rounded-xl text-sm bg-slate-50 mb-3 outline-none focus:border-blue-500">
+                                <div class="flex gap-2">
+                                    <button onclick="App.markService(${index}, 'cancelado')" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-black py-3 rounded-xl shadow-md btn-press">
+                                        <i class="fas fa-times"></i> NÃO FEITO
+                                    </button>
+                                    <button onclick="App.markService(${index}, 'concluido')" class="flex-[2] bg-green-600 hover:bg-green-700 text-white font-black py-3 rounded-xl shadow-md btn-press">
+                                        <i class="fas fa-check"></i> CONCLUIR
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        // Se já resolveu (feito ou não feito), mostra botão de desfazer
+                        botoesAcao = `
+                            <button onclick="App.undoService(${index})" class="w-full mt-3 py-3 rounded-xl text-sm font-bold btn-press flex items-center justify-center gap-2 bg-slate-200 hover:bg-slate-300 text-slate-700 border border-slate-300 transition-colors">
+                                <i class="fas fa-undo"></i> DESFAZER (${t.horaConclusao || 'agora'})
+                            </button>
+                        `;
+                    }
 
                     const html = `
                     <div class="rounded-2xl border p-4 ${cardClass} transition-all">
@@ -267,7 +312,7 @@
                             <div>
                                 <span class="bg-slate-800 text-white text-[10px] font-black px-2 py-1 rounded tracking-widest">${qty} ${label}</span>
                             </div>
-                            ${isDone ? '<span class="text-green-600 font-black flex items-center gap-1"><i class="fas fa-check-double"></i> PRONTO</span>' : ''}
+                            ${statusBadge}
                         </div>
                         
                         <h2 class="text-lg font-black leading-tight text-slate-800 mb-1">${t.obra || 'Sem nome de Obra'}</h2>
@@ -282,9 +327,7 @@
                         ${descarteHtml}
                         ${mtrHtml}
 
-                        <button onclick="App.toggleService(${index}, '${t.status}')" class="w-full py-4 mt-2 rounded-xl text-sm btn-press flex items-center justify-center gap-2 transition-colors ${btnClass}">
-                            ${btnText}
-                        </button>
+                        ${botoesAcao}
                     </div>`;
 
                     container.innerHTML += html;
