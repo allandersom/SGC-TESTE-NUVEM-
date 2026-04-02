@@ -14,7 +14,6 @@ const firebaseConfig = {
     measurementId: "G-3Q4B4HLE65"
 };
 
-// Inicializa o Firebase
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
@@ -23,7 +22,6 @@ const db = firebase.database();
 
 const CONFIG = {
     drivers: {
-        // NOMES LIMPOS (SEM PONTO FINAL PRA NÃO TRAVAR O FIREBASE)
         day: ["MARIO", "ADRIELSON", "MESSIAS", "MARCELO A", "JAMERSON", "MANSUETO", "JOAO VICTOR", "LUIZ CARLOS RODRIGUES", "JONES", "EMERSON", "MATHEUS", "JACKSON", "ROBERTO C", "RODRIGO", "CLOVIS", "JOELITON"],
         night: ["ELCIDES", "MARCONI", "LUIZ RODRIGO", "MAYKEL", "PLATINIS", "BRUNO"]
     },
@@ -44,50 +42,53 @@ const State = {
         UI.loading(true);
 
         db.ref('sgc_data').on('value', (snapshot) => {
-            try {
-                const val = snapshot.val();
-                if (val) {
-                    // ARMADURA ANTIBUG: Limpa lixo do Firebase antes de ler
-                    if (val.fleet) {
-                        for (const key in val.fleet) {
-                            if (val.fleet[key].trips && !Array.isArray(val.fleet[key].trips)) {
-                                val.fleet[key].trips = Object.values(val.fleet[key].trips);
+            const val = snapshot.val();
+            
+            // ARMADURA BLINDADA: Filtra qualquer lixo ou erro do banco antigo
+            if (val) {
+                if (typeof val === 'object') {
+                    if (!val.fleet || typeof val.fleet !== 'object') val.fleet = {};
+                    if (!val.addressBook || !Array.isArray(val.addressBook)) val.addressBook = [];
+                    if (!val.disposalPoints || !Array.isArray(val.disposalPoints)) val.disposalPoints = [];
+                    
+                    for (const key in val.fleet) {
+                        const driverData = val.fleet[key];
+                        if (driverData && typeof driverData === 'object') {
+                            if (driverData.trips) {
+                                if (!Array.isArray(driverData.trips)) {
+                                    driverData.trips = Object.values(driverData.trips);
+                                }
+                                driverData.trips = driverData.trips.filter(t => t !== null && typeof t === 'object');
+                            } else {
+                                driverData.trips = [];
                             }
-                            if (!val.fleet[key].trips) {
-                                val.fleet[key].trips = [];
-                            }
-                            // Remove viagens fantasmas (null)
-                            val.fleet[key].trips = val.fleet[key].trips.filter(t => t !== null && typeof t === 'object');
+                        } else {
+                            val.fleet[key] = { trips: [], plate: '', color: '#000' };
                         }
                     }
                     this.data = val;
-                    if(!this.data.addressBook) this.data.addressBook = [];
-                    if(!this.data.disposalPoints) this.data.disposalPoints = [];
-                    if(!this.data.fleet) this.data.fleet = {};
                 } else {
                     this.resetFleet();
                 }
-                
-                this.integrityCheck();
+            } else {
+                this.resetFleet();
+            }
+            
+            this.integrityCheck();
 
-                // Renderiza a Tela com segurança
-                App.renderGrid();
-                App.renderList();
-                App.renderAddressBook();
-                App.renderDisposalList();
-                App.renderSpreadsheet(); 
-                
-                if (this.session.currentDriver) {
-                    App.renderMiniHistory(this.session.currentDriver);
-                }
+            // RENDERIZAÇÃO PROTEGIDA (Se um falhar, o outro desenha)
+            try { App.renderGrid(); } catch(e) { console.error(e); }
+            try { App.renderList(); } catch(e) { console.error(e); }
+            try { App.renderAddressBook(); } catch(e) { console.error(e); }
+            try { App.renderDisposalList(); } catch(e) { console.error(e); }
+            try { App.renderSpreadsheet(); } catch(e) { console.error(e); }
+            
+            if (this.session.currentDriver) {
+                try { App.renderMiniHistory(this.session.currentDriver); } catch(e){}
+            }
 
-                if (this.isInitializing) {
-                    this.isInitializing = false;
-                    UI.loading(false);
-                }
-            } catch (erro) {
-                console.error("Erro ao desenhar a tela:", erro);
-                UI.toast("Erro ao ler algumas rotas antigas. Veja o console.", "error");
+            if (this.isInitializing) {
+                this.isInitializing = false;
                 UI.loading(false);
             }
         });
@@ -95,6 +96,8 @@ const State = {
 
     integrityCheck() {
         let changed = false;
+        if (!this.data.fleet) this.data.fleet = {};
+        
         const all = [...CONFIG.drivers.day, ...CONFIG.drivers.night];
         all.forEach((name, i) => {
             if (!this.data.fleet[name]) {
@@ -113,12 +116,14 @@ const State = {
 
     save() {
         if (this.isInitializing) return;
-        
-        // ARMADURA: Limpa dados fantasmas antes de mandar pra nuvem
         const dataToSave = JSON.parse(JSON.stringify(this.data));
-        for (const key in dataToSave.fleet) {
-            if (dataToSave.fleet[key].trips) {
-                dataToSave.fleet[key].trips = dataToSave.fleet[key].trips.filter(t => t !== null);
+        
+        // Remove espaços vazios antes de mandar pra nuvem
+        if (dataToSave.fleet) {
+            for (const key in dataToSave.fleet) {
+                if (dataToSave.fleet[key] && dataToSave.fleet[key].trips) {
+                    dataToSave.fleet[key].trips = dataToSave.fleet[key].trips.filter(t => t !== null);
+                }
             }
         }
         db.ref('sgc_data').set(dataToSave);
@@ -250,8 +255,8 @@ const WhatsappService = {
     
     getPluralLabel(type, qty) {
         const q = parseInt(qty) || 1;
-        const t = (type || 'troca').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        let label = (type || 'troca').toUpperCase();
+        const t = String(type || 'troca').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        let label = String(type || 'troca').toUpperCase();
         if (t.includes('troca')) label = q > 1 ? 'TROCAS' : 'TROCA';
         if (t.includes('coloca')) label = q > 1 ? 'COLOCAÇÕES' : 'COLOCAÇÃO';
         if (t.includes('retira')) label = q > 1 ? 'RETIRADAS' : 'RETIRADA';
@@ -469,7 +474,7 @@ const UI = {
         
         document.getElementById('editor-panel').classList.remove('hidden');
         document.getElementById('editor-driver-name').innerText = name;
-        document.getElementById('input-plate').value = d.plate || '';
+        document.getElementById('input-plate').value = (d && d.plate) ? d.plate : '';
         document.getElementById('input-empresa').value = '';
         document.getElementById('input-obra').value = '';
         document.getElementById('input-dest').value = '';
@@ -496,6 +501,7 @@ const UI = {
         const types = ['troca', 'colocacao', 'retirada', 'encher'];
         types.forEach(type => {
             const btn = document.getElementById(`btn-type-${type}`);
+            if(!btn) return;
             btn.className = 'type-sel transition-all duration-200 font-bold text-lg border text-slate-500 border-slate-200 hover:bg-slate-50';
             if (t === type) {
                 if(type === 'troca') btn.className = 'type-sel active bg-slate-900 text-white border-slate-900 shadow-md scale-105';
@@ -773,6 +779,8 @@ const App = {
 
         UI.closeEditor();
         this.renderGrid();
+        
+        // Atualiza todos os painéis ao trocar o turno
         this.renderList();
         this.renderSpreadsheet();
     },
@@ -795,7 +803,7 @@ const App = {
         
         if (matches.length > 0) {
             box.innerHTML = matches.map(item => `
-                <div class="suggestion-item" onclick="App.selectSuggestion('${item.company || ''}', '${item.name}', '${item.address}')">
+                <div class="suggestion-item" onclick="App.selectSuggestion('${item.company || ''}', '${String(item.name).replace(/'/g, "\\'")}', '${String(item.address).replace(/'/g, "\\'")}')">
                     <div class="flex justify-between items-center">
                         <strong>${item.name}</strong>
                         <span class="text-[9px] bg-slate-100 px-1 rounded text-slate-500 uppercase">${item.company || 'Geral'}</span>
@@ -980,7 +988,7 @@ const App = {
                 <div class="flex-1 min-w-0 pr-2">
                     <div class="flex items-center gap-2">
                         <div class="font-bold text-xs text-slate-700 truncate">${item.name}</div>
-                        ${item.company ? `<span class="text-[8px] bg-blue-50 text-blue-500 px-1 rounded uppercase">${item.company}</span>` : ''}
+                        ${item.company ? `<span class="text-[8px] bg-blue-50 text-blue-500 px-1 rounded uppercase">${String(item.company).toUpperCase()}</span>` : ''}
                     </div>
                     <div class="text-[9px] text-slate-400 truncate">${item.address}</div>
                 </div>
@@ -1046,7 +1054,7 @@ const App = {
 
             if (d.trips && d.trips.length > 0) {
                 d.trips.forEach((t, i) => {
-                    if (!t) return; // Armadura contra viagens nulas
+                    if (!t) return; 
                     
                     const tripCard = document.createElement('div');
                     tripCard.className = `p-2 border border-slate-200 rounded-md text-[10px] leading-tight relative shadow-sm ${t.completed ? 'opacity-50 grayscale bg-slate-200' : 'bg-white hover:border-blue-300'} transition cursor-pointer`;
@@ -1067,8 +1075,8 @@ const App = {
                         typeHtml = `<span class="text-red-600 font-black text-[11px]"><i class="fas fa-fill"></i> ${tQty} ENCHER</span> E <span class="text-purple-600 font-black text-[11px]">NA HORA</span>`;
                     }
                     
-                    const empresaHtml = tEmpresa ? `<div class="font-bold mt-1.5 text-[11px] text-slate-800">${tEmpresa.toUpperCase()}</div>` : '';
-                    const obraHtml = tObra ? `<div class="text-slate-600 font-semibold italic mt-0.5">${tObra.toUpperCase()}</div>` : '';
+                    const empresaHtml = tEmpresa ? `<div class="font-bold mt-1.5 text-[11px] text-slate-800">${String(tEmpresa).toUpperCase()}</div>` : '';
+                    const obraHtml = tObra ? `<div class="text-slate-600 font-semibold italic mt-0.5">${String(tObra).toUpperCase()}</div>` : '';
                     
                     const addressText = typeof t.to === 'string' ? t.to : (t.to && t.to.text ? t.to.text : '');
                     const displayEnd = WhatsappService.formatAddress(addressText).toUpperCase();
@@ -1080,8 +1088,8 @@ const App = {
                         ${empresaHtml}
                         ${obraHtml}
                         <div class="text-[9px] text-slate-500 mt-1.5 leading-snug"><i class="fas fa-map-marker-alt text-red-400 mr-1"></i>${displayEnd}</div>
-                        ${t.obs ? `<div class="text-[9px] text-amber-700 bg-amber-50 mt-1.5 p-1 rounded border border-amber-200 font-bold"><i class="fas fa-exclamation-triangle mr-1"></i>${t.obs}</div>` : ''}
-                        ${t.mtr ? `<div class="text-[8px] text-indigo-700 bg-indigo-50 mt-1 p-1 rounded border border-indigo-200 font-bold"><i class="fas fa-file-invoice mr-1"></i>${t.mtr}</div>` : ''}
+                        ${t.obs ? `<div class="text-[9px] text-amber-700 bg-amber-50 mt-1.5 p-1 rounded border border-amber-200 font-bold"><i class="fas fa-exclamation-triangle mr-1"></i>${String(t.obs)}</div>` : ''}
+                        ${t.mtr ? `<div class="text-[8px] text-indigo-700 bg-indigo-50 mt-1 p-1 rounded border border-indigo-200 font-bold"><i class="fas fa-file-invoice mr-1"></i>${String(t.mtr)}</div>` : ''}
                     `;
                     
                     tripCard.onclick = () => App.toggleStatus(name, i);
@@ -1109,13 +1117,13 @@ const App = {
             const realIndex = driver.trips.length - 1 - revIndex;
             const row = document.createElement('div');
             row.className = "flex justify-between items-center bg-slate-50 p-2 rounded border border-slate-100 mb-1 animate-fade-in";
-            const obsText = t.obs ? `<span class="text-[8px] text-amber-600 block italic">Obs: ${t.obs}</span>` : '';
-            const companyTag = t.empresa ? `<span class="text-[7px] bg-slate-200 px-1 rounded mr-1">${t.empresa}</span>` : '';
+            const obsText = t.obs ? `<span class="text-[8px] text-amber-600 block italic">Obs: ${String(t.obs)}</span>` : '';
+            const companyTag = t.empresa ? `<span class="text-[7px] bg-slate-200 px-1 rounded mr-1">${String(t.empresa).toUpperCase()}</span>` : '';
             
             const tType = t.type || 'troca';
             const tQty = t.qty || 1;
             
-            let displayType = tType.toUpperCase();
+            let displayType = String(tType).toUpperCase();
             if(tType === 'encher') displayType = 'ENCHER'; 
 
             row.innerHTML = `
@@ -1124,7 +1132,7 @@ const App = {
                         <button onclick="App.changeQty('${name}',${realIndex})" class="text-[9px] font-bold text-slate-700 hover:text-blue-600 border-b border-dotted border-slate-300 w-4 text-center" title="Mudar Qtd">${tQty}</button>
                         <button onclick="App.cycleType('${name}',${realIndex})" class="text-[9px] font-bold text-slate-700 hover:text-blue-600 border-b border-dotted border-slate-300" title="Mudar Tipo">${displayType}</button>
                     </div>
-                    <div class="text-[8px] text-slate-400 truncate">${companyTag}${t.obra || 'Sem nome'}</div>
+                    <div class="text-[8px] text-slate-400 truncate">${companyTag}${t.obra ? String(t.obra).toUpperCase() : 'Sem nome'}</div>
                     ${obsText}
                 </div>
                 <button onclick="App.quickDelete('${name}', ${realIndex})" class="w-5 h-5 rounded hover:bg-red-50 text-slate-300 hover:text-red-500 flex items-center justify-center"><i class="fas fa-times text-xs"></i></button>
@@ -1205,17 +1213,17 @@ const App = {
                 
                 const descarteDisplay = t.descarteLocal 
                     ? `<div class="mt-1.5 flex flex-wrap items-center gap-1">
-                          <div class="text-[9px] font-bold text-red-500 flex items-center gap-1.5 p-1 bg-red-50 rounded border border-red-100 w-fit"><i class="fas fa-trash-arrow-up"></i> DESCARTAR EM: ${t.descarteLocal}</div>
+                          <div class="text-[9px] font-bold text-red-500 flex items-center gap-1.5 p-1 bg-red-50 rounded border border-red-100 w-fit"><i class="fas fa-trash-arrow-up"></i> DESCARTAR EM: ${String(t.descarteLocal).toUpperCase()}</div>
                         </div>` 
                     : '';
 
-                const obsDisplay = t.obs ? `<div class="mt-1 text-[9px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 w-fit"><i class="fas fa-comment-dots text-[8px] mr-1"></i>${t.obs}</div>` : '';
-                const companyDisplay = t.empresa ? `<span class="text-[8px] font-bold text-blue-600 bg-blue-50 px-1 rounded mr-1">${t.empresa}</span>` : '';
+                const obsDisplay = t.obs ? `<div class="mt-1 text-[9px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 w-fit"><i class="fas fa-comment-dots text-[8px] mr-1"></i>${String(t.obs)}</div>` : '';
+                const companyDisplay = t.empresa ? `<span class="text-[8px] font-bold text-blue-600 bg-blue-50 px-1 rounded mr-1">${String(t.empresa).toUpperCase()}</span>` : '';
 
                 const tType = t.type || 'troca';
                 const tQty = t.qty || 1;
 
-                let displayType = tType.toUpperCase();
+                let displayType = String(tType).toUpperCase();
                 if(tType === 'encher') displayType = 'ENCHER NA HORA';
                 
                 const addressText = typeof t.to === 'string' ? t.to : (t.to && t.to.text ? t.to.text : '');
@@ -1225,7 +1233,7 @@ const App = {
                     : `<div onclick="App.editTripAddress('${name}',${i})" class="text-[10px] text-slate-400 truncate cursor-pointer hover:text-blue-500" title="Clique para editar endereço">${WhatsappService.formatAddress(addressText)} <i class="fas fa-pen text-[8px] opacity-50"></i></div>`;
 
                 const mtrDisplay = t.mtr 
-                    ? `<div class="mt-1 text-[8px] font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-200 w-fit"><i class="fas fa-file-invoice mr-1"></i>${t.mtr.includes('MOTORISTA') ? 'MTR: PEGAR NA OBRA' : t.mtr.includes('LOGÍSTICA') ? 'MTR: RESP. LOGÍSTICA' : 'MTR: DIRETO BALANÇA'}</div>`
+                    ? `<div class="mt-1 text-[8px] font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-200 w-fit"><i class="fas fa-file-invoice mr-1"></i>${String(t.mtr)}</div>`
                     : '';
 
                 html += `
@@ -1246,7 +1254,7 @@ const App = {
                                      <button onclick="App.changeQty('${name}',${i})" class="text-[10px] font-black text-slate-800 hover:text-blue-600 border-b border-dotted border-slate-300 min-w-[1.2rem]" title="Mudar Qtd">${tQty}</button>
                                      <button onclick="App.cycleType('${name}',${i})" class="text-[10px] font-black text-slate-800 hover:text-blue-600 border-b border-dotted border-slate-300" title="Mudar Tipo">${displayType}</button>
                                 </div>
-                                <span class="text-[10px] text-slate-500 truncate">- ${companyDisplay}${t.obra || ''}</span>
+                                <span class="text-[10px] text-slate-500 truncate">- ${companyDisplay}${t.obra ? String(t.obra).toUpperCase() : ''}</span>
                                 <button onclick="App.editTripText('${name}',${i})" class="text-[10px] text-blue-400 hover:text-blue-600 ml-1" title="Editar Texto"><i class="fas fa-pen"></i></button>
                             </div>
                             ${addressHtml}
