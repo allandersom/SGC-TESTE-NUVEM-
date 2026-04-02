@@ -152,6 +152,17 @@ const State = {
         trip.completed = !trip.completed;
         this.save();
     },
+
+    setTripStatus(driverName, index, status) {
+        const trip = this.data.fleet[driverName].trips[index];
+        if (trip) {
+            // Alterna o status se clicar no mesmo botão, ou define o novo
+            trip.status = trip.status === status ? 'pendente' : status;
+            // Mantém a compatibilidade com o sistema antigo
+            trip.completed = (trip.status === 'concluido');
+            this.save();
+        }
+    },
     
     updateTripType(driverName, index, newType) {
         if(this.data.fleet[driverName] && this.data.fleet[driverName].trips[index]) {
@@ -1086,29 +1097,53 @@ const App = {
             bodyDiv.className = "flex-1 flex flex-col bg-white overflow-y-auto custom-scroll";
             
             const buildCell = (t, i, colorClass, customLabel = null) => {
-                const completedClass = t.completed ? 'line-through opacity-50 bg-slate-100' : 'hover:bg-slate-50 cursor-pointer';
+                // Descobre a cor de fundo baseado no status
+                let status = t.status || (t.completed ? 'concluido' : 'pendente');
+                let bgClass = 'bg-white hover:bg-slate-50'; 
+                let opacityClass = '';
+                
+                if (status === 'concluido') {
+                    bgClass = 'bg-[#dcfce7]'; // Verde clarinho
+                    opacityClass = 'opacity-80';
+                } else if (status === 'cancelado') {
+                    bgClass = 'bg-[#ffedd5]'; // Laranja clarinho
+                    opacityClass = 'opacity-80 line-through';
+                }
+
                 const label = customLabel || WhatsappService.getPluralLabel(t.type || 'troca', t.qty || 1);
                 const qtdText = t.qty > 1 ? `${t.qty} ` : '';
                 
-                const obsTag = t.obs ? `<div class="mt-1 flex justify-center"><span class="text-[9px] bg-amber-100 text-amber-800 rounded px-1.5 py-0.5 border border-amber-200">Obs: ${t.obs}</span></div>` : '';
-                const mtrTag = t.mtr ? `<div class="mt-1 flex justify-center"><span class="text-[9px] bg-indigo-100 text-indigo-800 rounded px-1.5 py-0.5"><i class="fas fa-file-invoice"></i> MTR</span></div>` : '';
-                const descTag = t.descarteLocal ? `<div class="mt-1 flex justify-center"><span class="text-[9px] bg-red-100 text-red-800 rounded px-1.5 py-0.5">DESC: ${t.descarteLocal}</span></div>` : '';
+                const obsTag = t.obs ? `<div class="mt-1 flex justify-center"><span class="text-[10px] bg-amber-100 text-amber-900 font-medium rounded px-1.5 py-0.5 border border-amber-300">Obs: ${t.obs}</span></div>` : '';
+                const mtrTag = t.mtr ? `<div class="mt-1 flex justify-center"><span class="text-[10px] bg-indigo-100 text-indigo-900 font-medium rounded px-1.5 py-0.5 border border-indigo-200"><i class="fas fa-file-invoice"></i> MTR</span></div>` : '';
+                const descTag = t.descarteLocal ? `<div class="mt-1 flex justify-center"><span class="text-[10px] bg-red-100 text-red-900 font-medium rounded px-1.5 py-0.5 border border-red-200">DESC: ${t.descarteLocal}</span></div>` : '';
                 
                 return `
-                <div onclick="App.toggleStatus('${name}', ${i})" class="p-3 border-b border-slate-200 text-center flex flex-col justify-center min-h-[60px] transition-all ${completedClass}">
-                    <div class="${colorClass} font-black text-xs uppercase leading-tight">
-                        ${t.empresa ? `<span>${t.empresa}</span><br>` : ''}
-                        ${t.obra ? `<span>${t.obra}</span>` : ''}
+                <div draggable="true" 
+                     ondragstart="App.handleDragStart(event, '${name}', ${i})"
+                     ondragover="App.handleDragOver(event)"
+                     ondrop="App.handleDrop(event, '${name}', ${i})"
+                     class="p-2 border-b border-slate-300 text-center flex flex-col justify-center min-h-[70px] transition-all cursor-grab active:cursor-grabbing ${bgClass} ${opacityClass}">
+                    
+                    <div class="flex justify-between items-center mb-1 px-2">
+                        <button onclick="App.setTripStatus('${name}', ${i}, 'concluido')" class="w-6 h-6 rounded-full flex items-center justify-center text-green-600 hover:bg-green-200 shadow-sm border border-green-200 bg-white" title="Marcar Concluído"><i class="fas fa-check text-[10px]"></i></button>
+                        <button onclick="App.setTripStatus('${name}', ${i}, 'cancelado')" class="w-6 h-6 rounded-full flex items-center justify-center text-orange-500 hover:bg-orange-200 shadow-sm border border-orange-200 bg-white" title="Marcar Cancelado"><i class="fas fa-times text-[10px]"></i></button>
                     </div>
-                    <div class="${colorClass} text-[10px] font-bold mt-1 tracking-wider opacity-80">
-                        [ ${qtdText}${label} ]
+
+                    <div class="${colorClass} font-bold text-[11px] uppercase leading-tight tracking-wide">
+                        ${t.empresa ? `<span class="opacity-75">${t.empresa}</span><br>` : ''}
+                        ${t.obra ? `<span class="text-[13px] font-black">${t.obra}</span>` : ''}
                     </div>
+                    
+                    <div class="${colorClass} text-[10px] font-black mt-1.5 tracking-wider opacity-90 bg-slate-100/60 rounded-md py-0.5 w-fit mx-auto px-2 border border-slate-200">
+                        ${qtdText}${label}
+                    </div>
+                    
                     ${obsTag}
                     ${mtrTag}
                     ${descTag}
                 </div>`;
             };
-
+            
             let tripsHtml = '';
             
             d.trips.forEach((t, i) => {
@@ -1196,6 +1231,8 @@ const App = {
         }
     },
     toggleStatus(n, i) { State.toggleTripStatus(n, i); },
+
+    setTripStatus(n, i, s) { State.setTripStatus(n, i, s); },
     
     cycleType(name, index) {
         const d = State.getDriver(name);
