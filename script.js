@@ -316,7 +316,12 @@ const WhatsappService = {
         for (let i = 0; i < trips.length; i++) {
             const t = trips[i];
             
-            if (t.obs) msg += `*\`OBS: ${t.obs.toUpperCase()}\`*\n`;
+            // Verifica se tem observação de logística
+            if (t.obs) {
+                const logObs = t.obs.replace(/\|? ?MOT:.*$/g, '').trim();
+                if(logObs) msg += `*\`OBS: ${logObs.toUpperCase()}\`*\n`;
+            }
+            
             if (t.empresa) msg += `${t.empresa.toUpperCase()}\n`;
 
             let typeHeader = "";
@@ -364,7 +369,11 @@ const WhatsappService = {
                 
                 for (let i = 0; i < activeTrips.length; i++) {
                     const t = activeTrips[i];
-                    if(t.obs) msg += `*\`OBS: ${t.obs.toUpperCase()}\`*\n`;
+                    
+                    if(t.obs) {
+                        const logObs = t.obs.replace(/\|? ?MOT:.*$/g, '').trim();
+                        if(logObs) msg += `*\`OBS: ${logObs.toUpperCase()}\`*\n`;
+                    }
                     if (t.empresa) msg += `${t.empresa.toUpperCase()}\n`;
 
                     let header = "";
@@ -875,8 +884,8 @@ const App = {
             
             let obsText = '';
             if(t.obs) {
-                const isMot = t.obs.includes('MOT:');
-                obsText = `<span class="text-[8px] ${isMot ? 'text-blue-600' : 'text-amber-600'} block italic line-clamp-1" title="${t.obs}">Obs: ${t.obs}</span>`;
+                const logObs = t.obs.replace(/\|? ?MOT:.*$/g, '').trim();
+                obsText = `<span class="text-[8px] ${t.obs.includes('MOT:') ? 'text-blue-600' : 'text-amber-600'} block italic line-clamp-1" title="${t.obs}">Obs: ${logObs}</span>`;
             }
 
             const companyTag = t.empresa ? `<span class="text-[7px] bg-slate-200 px-1 rounded mr-1">${t.empresa}</span>` : '';
@@ -925,7 +934,7 @@ const App = {
                 <div class="bg-slate-300 text-center text-[10px] font-bold py-1 border-b border-slate-300">MOTORISTA</div>
                 <div class="bg-yellow-300 text-center text-xs font-bold py-1 border-b border-slate-300 text-blue-900">${d.plate || 'SEM PLACA'}</div>
                 <div class="text-center text-xs font-black py-1.5 border-b border-slate-300 uppercase tracking-wide underline" style="background-color: ${d.color}20; color: ${d.color};">${name}</div>
-                <div class="bg-blue-100 text-blue-800 text-center text-[9px] font-black py-1 border-b border-blue-200 shadow-inner">🔥 ${servicosSemanais} SERVIÇOS NOS ÚLTIMOS 7 DIAS</div>
+                <div class="bg-blue-100 text-blue-800 text-center text-[9px] font-black py-1 border-b border-blue-200 shadow-inner">🔥 ${servicosSemanais} SERVIÇOS (ÚLTIMOS 7 DIAS)</div>
                 <div class="bg-fuchsia-500 text-white text-center text-[10px] font-bold py-1 border-b border-slate-300">HOJE: ${totalServicos} SERVIÇOS</div>
             `;
             
@@ -1080,9 +1089,15 @@ const App = {
         if(newCompany === null) return; 
         const newObra = prompt("Editar Obra:", currentObra);
         if(newObra === null) return; 
-        const newObs = prompt("Editar Observação:", currentObs);
+        const newObs = prompt("Editar Observação:", currentObs.replace(/\|? ?MOT:.*$/g, '').trim());
         if (newObs === null) return;
-        State.updateTripText(name, index, newCompany, newObra, newObs);
+        
+        // Mantém a observação do motorista intacta ao editar a observação da logística
+        const parts = currentObs.split(/\|? ?MOT: /);
+        const motObs = parts[1] ? ` | MOT: ${parts[1]}` : '';
+        const finalObs = newObs ? `${newObs}${motObs}` : motObs.replace(' | ', '');
+
+        State.updateTripText(name, index, newCompany, newObra, finalObs);
     },
 
     editTripAddress(name, index) {
@@ -1103,9 +1118,13 @@ const App = {
     editObs(name, index) {
         const d = State.getCurrentFleet()[name];
         const currentObs = d.trips[index].obs || '';
-        const newObs = prompt("Adicionar/Editar Observação:", currentObs);
+        const parts = currentObs.split(/\|? ?MOT: /);
+        const logObs = parts[0].trim();
+        const motObs = parts[1] ? ` | MOT: ${parts[1]}` : '';
+
+        const newObs = prompt("Adicionar/Editar Observação (Logística):", logObs);
         if (newObs !== null) {
-            d.trips[index].obs = newObs;
+            d.trips[index].obs = newObs ? `${newObs}${motObs}` : motObs.replace(' | ', '');
             State.saveFleet();
         }
     },
