@@ -129,6 +129,8 @@ const State = {
         if (!driver) return;
         
         tripData.id = Date.now() + Math.random();
+        // Inicializa o status
+        tripData.status = 'pendente';
         driver.trips.push(tripData);
         this.save();
     },
@@ -150,20 +152,20 @@ const State = {
     toggleTripStatus(driverName, index) {
         const trip = this.data.fleet[driverName].trips[index];
         trip.completed = !trip.completed;
+        trip.status = trip.completed ? 'concluido' : 'pendente';
         this.save();
     },
-
+    
+    // NOVA FUNÇÃO PARA OS STATUS DE CORES
     setTripStatus(driverName, index, status) {
         const trip = this.data.fleet[driverName].trips[index];
         if (trip) {
-            // Alterna o status se clicar no mesmo botão, ou define o novo
             trip.status = trip.status === status ? 'pendente' : status;
-            // Mantém a compatibilidade com o sistema antigo
             trip.completed = (trip.status === 'concluido');
             this.save();
         }
     },
-    
+
     updateTripType(driverName, index, newType) {
         if(this.data.fleet[driverName] && this.data.fleet[driverName].trips[index]) {
             this.data.fleet[driverName].trips[index].type = newType;
@@ -340,7 +342,7 @@ const WhatsappService = {
         drivers.forEach(name => {
             const driver = State.getDriver(name);
             if(!driver || !driver.trips) return;
-            const activeTrips = driver.trips.filter(t => !t.completed);
+            const activeTrips = driver.trips.filter(t => !t.completed && t.status !== 'cancelado');
             
             if (activeTrips.length > 0) {
                 hasContent = true;
@@ -385,7 +387,7 @@ const WhatsappService = {
         if (hasContent) {
             window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
         } else {
-            UI.toast("Nenhuma rota para enviar.", "info");
+            UI.toast("Nenhuma rota pendente para enviar.", "info");
         }
     }
 };
@@ -854,6 +856,7 @@ const App = {
             to: { text: raw },
             mtr: null,
             descarteLocal: null,
+            status: 'pendente',
             completed: false
         };
 
@@ -941,6 +944,7 @@ const App = {
             to: { text: data.dest },
             mtr: data.mtr || null,
             descarteLocal: null,
+            status: 'pendente',
             completed: false
         };
 
@@ -1066,7 +1070,7 @@ const App = {
     },
 
     // ========================================================================
-    // NOVO SISTEMA DE PLANILHA COM BOTÃO DO WHATSAPP
+    // NOVO SISTEMA DE PLANILHA (ARRASTAR + STATUS + FONTES MELHORADAS)
     // ========================================================================
     renderSpreadsheet() {
         const container = document.getElementById('spreadsheet-container');
@@ -1080,11 +1084,9 @@ const App = {
             if(!d || !d.trips) return;
             if(d.trips.length === 0) return; 
             
-            // Container da coluna do motorista (flex para empurrar o rodapé para baixo)
             const column = document.createElement('div');
             column.className = "min-w-[220px] max-w-[260px] flex flex-col bg-white snap-start border border-slate-300";
 
-            // Header da planilha
             let headerHtml = `
                 <div class="bg-slate-300 text-center text-[10px] font-bold py-1 border-b border-slate-300">MOTORISTA</div>
                 <div class="bg-yellow-300 text-center text-xs font-bold py-1 border-b border-slate-300 text-blue-900">${d.plate || 'SEM PLACA'}</div>
@@ -1092,22 +1094,20 @@ const App = {
                 <div class="bg-fuchsia-500 text-white text-center text-[10px] font-bold py-1 border-b border-slate-300">${d.trips.length} SERVIÇOS</div>
             `;
             
-            // Corpo da coluna flex-1 empurra o botão para baixo
             const bodyDiv = document.createElement('div');
             bodyDiv.className = "flex-1 flex flex-col bg-white overflow-y-auto custom-scroll";
             
             const buildCell = (t, i, colorClass, customLabel = null) => {
-                // Descobre a cor de fundo baseado no status
                 let status = t.status || (t.completed ? 'concluido' : 'pendente');
                 let bgClass = 'bg-white hover:bg-slate-50'; 
                 let opacityClass = '';
                 
                 if (status === 'concluido') {
-                    bgClass = 'bg-[#dcfce7]'; // Verde clarinho
+                    bgClass = 'bg-[#dcfce7]'; // Verde claro
                     opacityClass = 'opacity-80';
                 } else if (status === 'cancelado') {
-                    bgClass = 'bg-[#ffedd5]'; // Laranja clarinho
-                    opacityClass = 'opacity-80 line-through';
+                    bgClass = 'bg-[#ffedd5]'; // Laranja claro
+                    opacityClass = 'opacity-80 line-through grayscale-[50%]';
                 }
 
                 const label = customLabel || WhatsappService.getPluralLabel(t.type || 'troca', t.qty || 1);
@@ -1122,7 +1122,7 @@ const App = {
                      ondragstart="App.handleDragStart(event, '${name}', ${i})"
                      ondragover="App.handleDragOver(event)"
                      ondrop="App.handleDrop(event, '${name}', ${i})"
-                     class="p-2 border-b border-slate-300 text-center flex flex-col justify-center min-h-[70px] transition-all cursor-grab active:cursor-grabbing ${bgClass} ${opacityClass}">
+                     class="drag-item p-2 border-b border-slate-300 text-center flex flex-col justify-center min-h-[70px] transition-all cursor-grab active:cursor-grabbing ${bgClass} ${opacityClass}">
                     
                     <div class="flex justify-between items-center mb-1 px-2">
                         <button onclick="App.setTripStatus('${name}', ${i}, 'concluido')" class="w-6 h-6 rounded-full flex items-center justify-center text-green-600 hover:bg-green-200 shadow-sm border border-green-200 bg-white" title="Marcar Concluído"><i class="fas fa-check text-[10px]"></i></button>
@@ -1143,7 +1143,7 @@ const App = {
                     ${descTag}
                 </div>`;
             };
-            
+
             let tripsHtml = '';
             
             d.trips.forEach((t, i) => {
@@ -1164,7 +1164,6 @@ const App = {
 
             bodyDiv.innerHTML = tripsHtml;
 
-            // BOTÃO DO WHATSAPP (Rodapé da Coluna)
             const footerHtml = `
                 <div class="mt-auto p-2 border-t border-slate-300 bg-slate-100">
                     <button onclick="App.shareDriverRoute('${name}')" class="w-full py-2.5 bg-slate-900 hover:bg-black text-white text-[10px] font-bold rounded-lg shadow flex items-center justify-center gap-2 transition transform hover:scale-[1.02]">
@@ -1199,7 +1198,7 @@ const App = {
     handleDrop(e, targetDriverName, targetIndex) {
         e.stopPropagation();
         
-        document.querySelectorAll('.timeline-item').forEach(el => {
+        document.querySelectorAll('.drag-item').forEach(el => {
             el.classList.remove('opacity-50', 'bg-blue-50');
         });
 
@@ -1231,7 +1230,6 @@ const App = {
         }
     },
     toggleStatus(n, i) { State.toggleTripStatus(n, i); },
-
     setTripStatus(n, i, s) { State.setTripStatus(n, i, s); },
     
     cycleType(name, index) {
@@ -1321,7 +1319,7 @@ const App = {
 
     shareDriverRoute(name) {
         const d = State.getDriver(name);
-        const active = d.trips.filter(t => !t.completed);
+        const active = d.trips.filter(t => !t.completed && t.status !== 'cancelado');
         if (!active.length) return UI.toast("Sem rotas pendentes", "info");
         
         let msg = WhatsappService.buildMessage(name, active, State.session.shift, d.plate);
