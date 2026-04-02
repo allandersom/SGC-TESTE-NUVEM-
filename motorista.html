@@ -55,13 +55,13 @@
 
     <div id="app-screen" class="hidden flex-col h-full">
         <header class="bg-blue-600 text-white p-4 shadow-md shrink-0 flex justify-between items-center z-10">
-            <div>
-                <input type="date" id="driver-date" onchange="App.changeDate(this.value)" class="text-[10px] font-bold text-blue-800 bg-blue-200 rounded px-2 py-1 uppercase tracking-wider mb-0.5 outline-none border-none shadow-inner w-full cursor-pointer">
+            <div class="flex-1 mr-4">
+                <input type="date" id="driver-date" onchange="App.changeDate(this.value)" class="text-[10px] font-bold text-blue-800 bg-blue-200 rounded px-2 py-1 uppercase tracking-wider mb-0.5 outline-none border-none shadow-inner w-full max-w-[150px] cursor-pointer">
                 <div class="font-black text-xl flex items-center gap-2 mt-1">
-                    <i class="fas fa-user-circle"></i> <span id="header-driver-name">NOME</span>
+                    <i class="fas fa-user-circle"></i> <span id="header-driver-name" class="truncate">NOME</span>
                 </div>
             </div>
-            <button onclick="App.logout()" class="w-10 h-10 rounded-full bg-blue-700 hover:bg-blue-800 flex items-center justify-center btn-press shadow-inner">
+            <button onclick="App.logout()" class="w-10 h-10 rounded-full bg-blue-700 hover:bg-blue-800 flex items-center justify-center btn-press shadow-inner shrink-0">
                 <i class="fas fa-sign-out-alt"></i>
             </button>
         </header>
@@ -107,7 +107,9 @@
                 const month = String(d.getMonth() + 1).padStart(2, '0');
                 const day = String(d.getDate()).padStart(2, '0');
                 this.currentDate = `${year}-${month}-${day}`;
-                document.getElementById('driver-date').value = this.currentDate;
+                
+                const dateInput = document.getElementById('driver-date');
+                if(dateInput) dateInput.value = this.currentDate;
                 
                 if (this.myName) {
                     this.showApp();
@@ -131,7 +133,9 @@
                     
                     if (fleet) {
                         const nomes = Object.keys(fleet).sort();
-                        nomes.forEach(nome => select.innerHTML += `<option value="${nome}">${nome}</option>`);
+                        nomes.forEach(nome => {
+                            select.innerHTML += `<option value="${nome}">${nome}</option>`;
+                        });
                     } else {
                         select.innerHTML = '<option value="">Nenhuma rota criada hoje</option>';
                     }
@@ -145,6 +149,7 @@
                 const password = passInput ? passInput.value : '';
 
                 if (!name) return alert('Por favor, selecione seu nome na lista!');
+                
                 if (password !== '12345') {
                     alert('Senha incorreta!');
                     if(passInput) passInput.value = ''; 
@@ -205,6 +210,7 @@
             markService(index, novoStatus) {
                 const path = `sgc_data/routes/${this.currentDate}/fleet/${this.myName}/trips/${index}`;
                 const trip = this.trips[index];
+                
                 const obsInput = document.getElementById(`obs-driver-${index}`);
                 const driverObs = obsInput ? obsInput.value.trim() : '';
                 
@@ -264,7 +270,9 @@
                     const qty = t.qty || 1;
                     const label = this.getLabel(t.type, qty);
                     const end = (t.to && t.to.text) ? t.to.text.replace(/, Brasil$/i, '') : 'Endereço não informado';
-                    const mapLink = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(end);
+                    
+                    // Link Dinâmico pro Google Maps
+                    const mapLink = "https://maps.google.com/?q=" + encodeURIComponent(end);
 
                     let obsHtml = '';
                     if (t.obs) {
@@ -272,7 +280,7 @@
                         const logObs = parts[0].trim();
                         const motObs = parts[1] ? parts[1].trim() : '';
 
-                        if (logObs) obsHtml += `<div class="bg-amber-100 text-amber-900 text-xs font-bold p-2 rounded mb-2 border border-amber-200"><i class="fas fa-exclamation-triangle mr-1"></i> LOGÍSTICA: ${logObs}</div>`;
+                        if (logObs) obsHtml += `<div class="bg-amber-100 text-amber-900 text-xs font-bold p-2 rounded mb-2 border border-amber-200 shadow-sm"><i class="fas fa-exclamation-triangle mr-1"></i> LOGÍSTICA: ${logObs}</div>`;
                         if (motObs) obsHtml += `
                             <div class="bg-blue-50 text-blue-800 text-xs font-bold p-2 rounded mb-2 border border-blue-200 flex justify-between items-center shadow-sm">
                                 <div><i class="fas fa-comment-dots mr-1"></i> MINHA OBS: ${motObs}</div>
@@ -280,8 +288,8 @@
                             </div>`;
                     }
 
-                    const mtrHtml = t.mtr ? `<div class="bg-indigo-100 text-indigo-900 text-[10px] font-bold p-1.5 rounded mb-2 w-fit border border-indigo-200"><i class="fas fa-file-invoice mr-1"></i> ${t.mtr}</div>` : '';
-                    const descarteHtml = t.descarteLocal ? `<div class="bg-red-100 text-red-900 text-xs font-black p-2 rounded mb-2 border border-red-300 flex items-center gap-2"><i class="fas fa-recycle text-lg"></i> <span>DESCARTAR EM:<br>${t.descarteLocal}</span></div>` : '';
+                    const mtrHtml = t.mtr ? `<div class="bg-indigo-100 text-indigo-900 text-[10px] font-bold p-1.5 rounded mb-2 w-fit border border-indigo-200 shadow-sm"><i class="fas fa-file-invoice mr-1"></i> ${t.mtr}</div>` : '';
+                    const descarteHtml = t.descarteLocal ? `<div class="bg-red-100 text-red-900 text-xs font-black p-2 rounded mb-2 border border-red-300 flex items-center gap-2 shadow-sm"><i class="fas fa-recycle text-lg"></i> <span>DESCARTAR EM:<br>${t.descarteLocal}</span></div>` : '';
 
                     let cardClass = 'bg-white border-slate-200 shadow-md';
                     if (isDone) cardClass = 'bg-green-50 border-green-300 opacity-90';
@@ -308,7 +316,7 @@
                         `;
                     } else {
                         botoesAcao = `
-                            <button onclick="App.undoService(${index})" class="w-full mt-3 py-3 rounded-xl text-sm font-bold btn-press flex items-center justify-center gap-2 bg-slate-200 hover:bg-slate-300 text-slate-700 border border-slate-300 transition-colors">
+                            <button onclick="App.undoService(${index})" class="w-full mt-3 py-3 rounded-xl text-sm font-bold btn-press flex items-center justify-center gap-2 bg-slate-200 hover:bg-slate-300 text-slate-700 border border-slate-300 transition-colors shadow-sm">
                                 <i class="fas fa-undo"></i> DESFAZER (${t.horaConclusao || 'agora'})
                             </button>
                         `;
@@ -329,7 +337,7 @@
                                 <i class="fas fa-map-marker-alt text-red-500 mt-0.5"></i>
                                 <span>${end}</span>
                             </div>
-                            <a href="${mapLink}" target="_blank" class="bg-blue-100 text-blue-700 px-3 py-2 rounded-lg text-[10px] font-black flex flex-col items-center justify-center hover:bg-blue-200 shrink-0 shadow-sm btn-press">
+                            <a href="${mapLink}" target="_blank" class="bg-blue-100 text-blue-700 px-3 py-2 rounded-lg text-[10px] font-black flex flex-col items-center justify-center hover:bg-blue-200 shrink-0 shadow-sm btn-press border border-blue-200">
                                 <i class="fas fa-location-arrow text-sm mb-0.5"></i> MAPS
                             </a>
                         </div>
