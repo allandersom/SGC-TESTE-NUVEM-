@@ -162,13 +162,15 @@ const State = {
         if (trip) {
             trip.status = trip.status === status ? 'pendente' : status;
             trip.completed = (trip.status === 'concluido');
-            this.save();
-        }
-    },
-
-    updateTripType(driverName, index, newType) {
-        if(this.data.fleet[driverName] && this.data.fleet[driverName].trips[index]) {
-            this.data.fleet[driverName].trips[index].type = newType;
+            
+            // Registra o horário quando marcar como concluído pelo painel também
+            if (trip.status === 'concluido') {
+                const agora = new Date();
+                trip.horaConclusao = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            } else {
+                trip.horaConclusao = null;
+            }
+            
             this.save();
         }
     },
@@ -1116,7 +1118,9 @@ const App = {
                 const obsTag = t.obs ? `<div class="mt-1 flex justify-center"><span class="text-[10px] bg-amber-100 text-amber-900 font-medium rounded px-1.5 py-0.5 border border-amber-300">Obs: ${t.obs}</span></div>` : '';
                 const mtrTag = t.mtr ? `<div class="mt-1 flex justify-center"><span class="text-[10px] bg-indigo-100 text-indigo-900 font-medium rounded px-1.5 py-0.5 border border-indigo-200"><i class="fas fa-file-invoice"></i> MTR</span></div>` : '';
                 const descTag = t.descarteLocal ? `<div class="mt-1 flex justify-center"><span class="text-[10px] bg-red-100 text-red-900 font-medium rounded px-1.5 py-0.5 border border-red-200">DESC: ${t.descarteLocal}</span></div>` : '';
-                
+                const timeTag = (status === 'concluido' && t.horaConclusao) 
+                ? `<div class="mt-1.5 text-[10px] font-black text-green-800 bg-green-200/50 rounded px-2 w-fit mx-auto border border-green-300"><i class="far fa-clock"></i> FEITO ÀS ${t.horaConclusao}</div>` 
+                : '';
                 return `
                 <div draggable="true" 
                      ondragstart="App.handleDragStart(event, '${name}', ${i})"
@@ -1141,6 +1145,7 @@ const App = {
                     ${obsTag}
                     ${mtrTag}
                     ${descTag}
+                    ${timeTag}
                 </div>`;
             };
 
