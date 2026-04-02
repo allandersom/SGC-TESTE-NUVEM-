@@ -1,7 +1,7 @@
 'use strict';
 
 // ============================================================================
-// CHAVES DO FIREBASE 
+// SUAS CHAVES DO FIREBASE
 // ============================================================================
 const firebaseConfig = {
     apiKey: "AIzaSyCUwkGHLnSQBIiDhZN6MfF-R-RhZQx-kg4",
@@ -14,7 +14,6 @@ const firebaseConfig = {
     measurementId: "G-3Q4B4HLE65"
 };
 
-// Inicializa o Firebase
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
@@ -23,11 +22,13 @@ const db = firebase.database();
 
 const CONFIG = {
     drivers: {
+        // NOMES LIMPOS (SEM PONTO FINAL PRA NÃO TRAVAR O FIREBASE)
         day: ["MARIO", "ADRIELSON", "MESSIAS", "MARCELO A", "JAMERSON", "MANSUETO", "JOAO VICTOR", "LUIZ CARLOS RODRIGUES", "JONES", "EMERSON", "MATHEUS", "JACKSON", "ROBERTO C", "RODRIGO", "CLOVIS", "JOELITON"],
         night: ["ELCIDES", "MARCONI", "LUIZ RODRIGO", "MAYKEL", "PLATINIS", "BRUNO"]
     },
     colors: ['#2563eb', '#16a34a', '#d97706', '#9333ea', '#db2777', '#dc2626', '#0891b2', '#ea580c']
 };
+
 const State = {
     data: { fleet: {}, addressBook: [], disposalPoints: [] }, 
     session: { currentDriver: null, shift: 'day', type: 'troca', routeDate: '' },
@@ -41,7 +42,6 @@ const State = {
         
         UI.loading(true);
 
-        // ESCUTADOR DA NUVEM: Fica lendo o Firebase o tempo todo
         db.ref('sgc_data').on('value', (snapshot) => {
             const val = snapshot.val();
             if (val) {
@@ -55,11 +55,11 @@ const State = {
             
             this.integrityCheck();
 
-            // Atualiza tudo visualmente pra quem tiver com o app aberto
             App.renderGrid();
             App.renderList();
             App.renderAddressBook();
             App.renderDisposalList();
+            App.renderSpreadsheet(); 
             
             if (this.session.currentDriver) {
                 App.renderMiniHistory(this.session.currentDriver);
@@ -92,7 +92,6 @@ const State = {
 
     save() {
         if (this.isInitializing) return;
-        // SALVA NA NUVEM em vez de salvar só no computador local
         db.ref('sgc_data').set(this.data);
     },
 
@@ -115,7 +114,6 @@ const State = {
     addTrip(driverName, tripData) {
         const driver = this.data.fleet[driverName];
         if (!driver) return;
-        
         tripData.id = Date.now() + Math.random();
         driver.trips.push(tripData);
         this.save();
@@ -229,7 +227,6 @@ const WhatsappService = {
         if (t.includes('coloca')) label = q > 1 ? 'COLOCAÇÕES' : 'COLOCAÇÃO';
         if (t.includes('retira')) label = q > 1 ? 'RETIRADAS' : 'RETIRADA';
         if (t.includes('encher')) label = 'ENCHER';
-        
         return label;
     },
 
@@ -261,14 +258,8 @@ const WhatsappService = {
 
         for (let i = 0; i < trips.length; i++) {
             const t = trips[i];
-            
-            if (t.obs) {
-                msg += `*\`OBS: ${t.obs.toUpperCase()}\`*\n`;
-            }
-
-            if (t.empresa) {
-                msg += `${t.empresa.toUpperCase()}\n`;
-            }
+            if (t.obs) msg += `*\`OBS: ${t.obs.toUpperCase()}\`*\n`;
+            if (t.empresa) msg += `${t.empresa.toUpperCase()}\n`;
 
             let typeHeader = "";
             if (t.type === 'encher') {
@@ -281,25 +272,16 @@ const WhatsappService = {
             }
             msg += `*${typeHeader}*\n`;
 
-            if (t.obra) {
-                msg += `OBRA: ${t.obra.toUpperCase()}\n`;
-            }
+            if (t.obra) msg += `OBRA: ${t.obra.toUpperCase()}\n`;
 
             const addressText = typeof t.to === 'string' ? t.to : (t.to && t.to.text ? t.to.text : '');
             const displayEnd = this.formatAddress(addressText).toUpperCase();
             msg += `END: ${displayEnd}\n`;
 
-            if (t.descarteLocal) {
-                msg += `*DESCARTE: ${t.descarteLocal.toUpperCase()}*\n`;
-            }
-
-            if (t.mtr) {
-                msg += `\`${t.mtr}\`\n`;
-            }
-
+            if (t.descarteLocal) msg += `*DESCARTE: ${t.descarteLocal.toUpperCase()}*\n`;
+            if (t.mtr) msg += `\`${t.mtr}\`\n`;
             msg += `\n`; 
         }
-
         return msg;
     },
 
@@ -324,7 +306,6 @@ const WhatsappService = {
                 
                 for (let i = 0; i < activeTrips.length; i++) {
                     const t = activeTrips[i];
-                    
                     if(t.obs) msg += `*\`OBS: ${t.obs.toUpperCase()}\`*\n`;
                     if (t.empresa) msg += `${t.empresa.toUpperCase()}\n`;
 
@@ -346,11 +327,7 @@ const WhatsappService = {
                     msg += `END: ${displayEnd}\n`;
                     
                     if(t.descarteLocal) msg += `*DESCARTE: ${t.descarteLocal.toUpperCase()}*\n`;
-
-                    if (t.mtr) {
-                        msg += `\`${t.mtr}\`\n`;
-                    }
-
+                    if (t.mtr) msg += `\`${t.mtr}\`\n`;
                     msg += `\n`;
                 }
                 msg += `------------------------\n`;
@@ -378,8 +355,6 @@ const DataService = {
         r.onload = e => { 
             try { 
                 const importedData = JSON.parse(e.target.result); 
-                
-                // Tira os pontos dos nomes do backup antigo para não bugar a nuvem
                 if (importedData.fleet) {
                     const cleanFleet = {};
                     for (const key in importedData.fleet) {
@@ -388,7 +363,6 @@ const DataService = {
                     }
                     importedData.fleet = cleanFleet;
                 }
-
                 State.data = importedData; 
                 State.save(); 
                 UI.toast("Backup enviado para a Nuvem com sucesso!");
@@ -403,17 +377,13 @@ const DataService = {
         }
     }
 };
+
 const UI = {
     tempTripIndex: null,
 
     init() {
-        State.init();
-        
         const dateInput = document.getElementById('route-date');
-        if(dateInput) {
-            dateInput.value = State.session.routeDate;
-        }
-
+        if(dateInput) dateInput.value = State.session.routeDate;
         this.toggleSection('planning');
         App.initDBForm();
     },
@@ -423,14 +393,14 @@ const UI = {
             const el = document.getElementById(`section-${s}`);
             const arrow = document.getElementById(`arrow-${s}`);
             if (s === id) {
-                if (el.classList.contains('hidden')) {
+                if (el && el.classList.contains('hidden')) {
                     el.classList.remove('hidden');
                     if(arrow) arrow.style.transform = 'rotate(180deg)';
-                } else {
+                } else if (el) {
                     el.classList.add('hidden');
                     if(arrow) arrow.style.transform = 'rotate(0deg)';
                 }
-            } else {
+            } else if (el) {
                 el.classList.add('hidden');
                 if(arrow) arrow.style.transform = 'rotate(0deg)';
             }
@@ -491,10 +461,10 @@ const UI = {
             const btn = document.getElementById(`btn-type-${type}`);
             btn.className = 'type-sel transition-all duration-200 font-bold text-lg border text-slate-500 border-slate-200 hover:bg-slate-50';
             if (t === type) {
-                if(type === 'troca') btn.className = 'type-sel active bg-blue-600 text-white border-blue-600 shadow-md scale-105';
+                if(type === 'troca') btn.className = 'type-sel active bg-slate-900 text-white border-slate-900 shadow-md scale-105';
                 if(type === 'colocacao') btn.className = 'type-sel active bg-red-600 text-white border-red-600 shadow-md scale-105';
                 if(type === 'retirada') btn.className = 'type-sel active bg-purple-600 text-white border-purple-600 shadow-md scale-105';
-                if(type === 'encher') btn.className = 'type-sel active bg-amber-500 text-white border-amber-500 shadow-md scale-105';
+                if(type === 'encher') btn.className = 'type-sel active bg-gradient-to-r from-red-600 to-purple-600 text-white shadow-md scale-105 border-0';
             }
         });
     }
@@ -958,6 +928,7 @@ const App = {
 
     renderAddressBook() {
         const el = document.getElementById('db-list');
+        if(!el) return;
         el.innerHTML = '';
         if(State.data.addressBook.length === 0) {
             el.innerHTML = '<div class="text-center text-xs text-slate-400 py-4">Nenhum endereço salvo</div>';
@@ -982,6 +953,7 @@ const App = {
 
     renderGrid() {
         const el = document.getElementById('drivers-grid');
+        if(!el) return;
         el.innerHTML = '';
         State.getDriversByShift().forEach(name => {
             const d = State.getDriver(name);
@@ -1006,8 +978,84 @@ const App = {
         });
     },
 
+    // =========================================================================
+    // NOVO CÓDIGO DA PLANILHA GIGANTE NA DIREITA
+    // =========================================================================
+    renderSpreadsheet() {
+        const container = document.getElementById('spreadsheet-view');
+        if(!container) return;
+        container.innerHTML = '';
+        
+        const drivers = State.getDriversByShift();
+        
+        drivers.forEach(name => {
+            const d = State.getDriver(name);
+            if (!d) return;
+            
+            const col = document.createElement('div');
+            col.className = "flex-shrink-0 w-[280px] flex flex-col bg-slate-100 border border-slate-300 rounded shadow-sm max-h-full overflow-hidden";
+            
+            const header = document.createElement('div');
+            header.className = "text-center font-black text-[12px] py-2 uppercase shadow-sm shrink-0 flex items-center justify-center gap-2";
+            header.style.backgroundColor = d.color;
+            header.style.color = "#ffffff";
+            header.innerHTML = `<i class="fas fa-truck"></i> ${name}`;
+            col.appendChild(header);
+
+            const tripsContainer = document.createElement('div');
+            tripsContainer.className = "p-2 space-y-2 overflow-y-auto custom-scroll flex-1";
+
+            if (d.trips && d.trips.length > 0) {
+                d.trips.forEach((t, i) => {
+                    const tripCard = document.createElement('div');
+                    tripCard.className = `p-2 border border-slate-200 rounded-md text-[10px] leading-tight relative shadow-sm ${t.completed ? 'opacity-50 grayscale bg-slate-200' : 'bg-white hover:border-blue-300'} transition cursor-pointer`;
+                    
+                    // CORES DOS SERVIÇOS
+                    let typeHtml = '';
+                    if (t.type === 'colocacao') {
+                        typeHtml = `<span class="text-red-600 font-black text-[11px]"><i class="fas fa-arrow-down"></i> ${t.qty} COLOCAÇÃO</span>`;
+                    } else if (t.type === 'retirada') {
+                        typeHtml = `<span class="text-purple-600 font-black text-[11px]"><i class="fas fa-arrow-up"></i> ${t.qty} RETIRADA</span>`;
+                    } else if (t.type === 'troca') {
+                        typeHtml = `<span class="text-slate-900 font-black text-[11px]"><i class="fas fa-sync-alt"></i> ${t.qty} TROCA</span>`;
+                    } else if (t.type === 'encher') {
+                        typeHtml = `<span class="text-red-600 font-black text-[11px]"><i class="fas fa-fill"></i> ${t.qty} ENCHER</span> E <span class="text-purple-600 font-black text-[11px]">NA HORA</span>`;
+                    }
+                    
+                    const empresaHtml = t.empresa ? `<div class="font-bold mt-1.5 text-[11px] text-slate-800">${t.empresa.toUpperCase()}</div>` : '';
+                    const obraHtml = t.obra ? `<div class="text-slate-600 font-semibold italic mt-0.5">${t.obra.toUpperCase()}</div>` : '';
+                    
+                    const addressText = typeof t.to === 'string' ? t.to : (t.to && t.to.text ? t.to.text : '');
+                    const displayEnd = WhatsappService.formatAddress(addressText).toUpperCase();
+
+                    tripCard.innerHTML = `
+                        <div class="border-b border-slate-100 pb-1 mb-1 text-center bg-slate-50 -mx-2 -mt-2 p-1 rounded-t-md">
+                            ${typeHtml}
+                        </div>
+                        ${empresaHtml}
+                        ${obraHtml}
+                        <div class="text-[9px] text-slate-500 mt-1.5 leading-snug"><i class="fas fa-map-marker-alt text-red-400 mr-1"></i>${displayEnd}</div>
+                        ${t.obs ? `<div class="text-[9px] text-amber-700 bg-amber-50 mt-1.5 p-1 rounded border border-amber-200 font-bold"><i class="fas fa-exclamation-triangle mr-1"></i>${t.obs}</div>` : ''}
+                        ${t.mtr ? `<div class="text-[8px] text-indigo-700 bg-indigo-50 mt-1 p-1 rounded border border-indigo-200 font-bold"><i class="fas fa-file-invoice mr-1"></i>${t.mtr}</div>` : ''}
+                    `;
+                    
+                    // Clicar na viagem na planilha marca como completada
+                    tripCard.onclick = () => App.toggleStatus(name, i);
+                    
+                    tripsContainer.appendChild(tripCard);
+                });
+            } else {
+                tripsContainer.innerHTML = '<div class="text-center text-[10px] text-slate-400 py-4 font-semibold opacity-50"><i class="fas fa-check-circle text-2xl mb-2 block"></i>Livre</div>';
+            }
+            
+            col.appendChild(tripsContainer);
+            container.appendChild(col);
+        });
+    },
+
     renderMiniHistory(name) {
         const el = document.getElementById('mini-history');
+        if(!el) return;
         el.innerHTML = '';
         const driver = State.getDriver(name);
         if(!driver || !driver.trips || driver.trips.length === 0) { el.innerHTML = '<div class="text-[9px] text-slate-300 text-center py-2">Sem viagens hoje</div>'; return; }
@@ -1078,6 +1126,7 @@ const App = {
 
     renderList() {
         const container = document.getElementById('monitoring-list');
+        if(!container) return;
         container.innerHTML = '';
         const drivers = State.getDriversByShift();
         
