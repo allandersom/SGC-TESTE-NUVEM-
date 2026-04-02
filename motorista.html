@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
-
     <link rel="apple-touch-icon" href="images.png">
+
     <meta name="theme-color" content="#2563eb">
     <title>Motorista - SGC Logística</title>
     <link rel="icon" type="image/png" href="images.png">
@@ -30,20 +31,25 @@
     <div id="login-screen" class="fixed inset-0 bg-slate-900 z-50 flex flex-col items-center justify-center p-6 transition-all duration-300">
         <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center">
             <div class="w-20 h-20 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-4xl mx-auto mb-4">
-                <i class="fas fa-truck-fast"></i>
+                <i class="fas fa-lock"></i>
             </div>
-            <h1 class="text-2xl font-black mb-2 text-slate-800">SGC Motorista</h1>
+            <h1 class="text-2xl font-black mb-2 text-slate-800">SGC Acesso</h1>
             <p class="text-xs text-slate-500 mb-6 font-semibold uppercase">Identifique-se para ver sua rota</p>
             
-            <div class="text-left mb-6">
-                <label class="text-xs font-bold text-slate-700 block mb-2">SELECIONE SEU NOME:</label>
+            <div class="text-left mb-4">
+                <label class="text-xs font-bold text-slate-700 block mb-2">MOTORISTA:</label>
                 <select id="driver-select" class="w-full bg-slate-100 border border-slate-300 text-slate-800 font-bold p-3 rounded-lg outline-none focus:border-blue-500">
                     <option value="">Carregando motoristas...</option>
                 </select>
             </div>
+
+            <div class="text-left mb-6">
+                <label class="text-xs font-bold text-slate-700 block mb-2">SENHA DE ACESSO:</label>
+                <input type="password" id="driver-password" placeholder="Digite a senha" class="w-full bg-slate-100 border border-slate-300 text-slate-800 font-bold p-3 rounded-lg outline-none focus:border-blue-500 text-center tracking-widest">
+            </div>
             
             <button onclick="App.login()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-xl shadow-lg btn-press flex justify-center items-center gap-2">
-                ACESSAR MINHA ROTA <i class="fas fa-arrow-right"></i>
+                ENTRAR <i class="fas fa-arrow-right"></i>
             </button>
         </div>
     </div>
@@ -98,7 +104,6 @@
             init() {
                 document.getElementById('date-display').innerText = new Date().toLocaleDateString('pt-BR');
                 
-                // Se já estiver "logado", vai direto pra rota
                 if (this.myName) {
                     this.showApp();
                     this.listenToMyRoute();
@@ -126,8 +131,18 @@
 
             login() {
                 const select = document.getElementById('driver-select');
+                const passInput = document.getElementById('driver-password');
                 const name = select.value;
+                const password = passInput ? passInput.value : '';
+
                 if (!name) return alert('Por favor, selecione seu nome na lista!');
+                
+                // VERIFICA A SENHA (12345)
+                if (password !== '12345') {
+                    alert('Senha incorreta!');
+                    if(passInput) passInput.value = ''; 
+                    return;
+                }
                 
                 this.myName = name;
                 localStorage.setItem('sgc_driver_name', name);
@@ -154,7 +169,6 @@
                 db.ref(path).on('value', snapshot => {
                     const data = snapshot.val();
                     if (data) {
-                        // Converte objeto do firebase para array e renderiza
                         this.trips = Array.isArray(data) ? data : Object.values(data);
                         this.renderTrips();
                     } else {
@@ -184,18 +198,16 @@
             toggleService(index, currentStatus) {
                 const path = `sgc_data/fleet/${this.myName}/trips/${index}`;
                 
-                // Se está pendente (ou undefined), marca como concluido. Se já tá concluido, volta pra pendente.
                 const isPendente = (currentStatus === 'pendente' || !currentStatus);
-                
                 const novoStatus = isPendente ? 'concluido' : 'pendente';
                 const completed = isPendente ? true : false;
                 
+                // SALVA A HORA QUANDO CONCLUIR
                 let hora = null;
                 if (isPendente) {
                     hora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
                 }
 
-                // Atualiza SÓ esse serviço no Firebase (não mexe nos outros)
                 db.ref(path).update({
                     status: novoStatus,
                     completed: completed,
@@ -229,23 +241,18 @@
                 this.updateProgress();
 
                 this.trips.forEach((t, index) => {
-                    // Ignora serviços cancelados pela logística
                     if(t.status === 'cancelado') return;
 
                     const isDone = (t.status === 'concluido' || t.completed);
                     const qty = t.qty || 1;
                     const label = this.getLabel(t.type, qty);
-                    
                     const end = (t.to && t.to.text) ? t.to.text.replace(/, Brasil$/i, '') : 'Endereço não informado';
 
-                    // Tags Adicionais
                     const obsHtml = t.obs ? `<div class="bg-amber-100 text-amber-900 text-xs font-bold p-2 rounded mb-2 border border-amber-200"><i class="fas fa-exclamation-triangle mr-1"></i> OBS: ${t.obs}</div>` : '';
                     const mtrHtml = t.mtr ? `<div class="bg-indigo-100 text-indigo-900 text-[10px] font-bold p-1.5 rounded mb-2 w-fit border border-indigo-200"><i class="fas fa-file-invoice mr-1"></i> ${t.mtr}</div>` : '';
                     const descarteHtml = t.descarteLocal ? `<div class="bg-red-100 text-red-900 text-xs font-black p-2 rounded mb-2 border border-red-300 flex items-center gap-2"><i class="fas fa-recycle text-lg"></i> <span>DESCARTAR EM:<br>${t.descarteLocal}</span></div>` : '';
 
-                    // Visual dependendo se está concluído ou não
                     const cardClass = isDone ? 'bg-green-50 border-green-300 opacity-90' : 'bg-white border-slate-200 shadow-md';
-                    
                     const btnClass = isDone 
                         ? 'bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold border border-slate-300' 
                         : 'bg-green-600 hover:bg-green-700 text-white font-black shadow-lg';
