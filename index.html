@@ -17,9 +17,13 @@
 <body class="bg-slate-50 text-slate-800 antialiased overflow-hidden">
     
     <div id="toast-container" class="fixed top-6 right-6 z-[9999] flex flex-col gap-3 pointer-events-none"></div>
-    <div id="loading-overlay" class="fixed inset-0 z-[9998] bg-slate-900/90 backdrop-blur-md hidden flex-col items-center justify-center">
-        <div class="modern-spinner"><div class="spinner-core"></div><div class="spinner-ring"></div></div>
-        <span class="mt-8 text-sm font-bold tracking-[0.2em] uppercase text-white animate-pulse">Sincronizando Nuvem...</span>
+    <div id="loading-overlay" class="fixed inset-0 z-[9998] bg-slate-900/95 backdrop-blur-sm hidden flex-col items-center justify-center transition-all duration-300">
+        <div class="relative flex justify-center items-center">
+            <div class="absolute animate-ping w-24 h-24 rounded-full bg-blue-500 opacity-20"></div>
+            <div class="w-20 h-20 border-4 border-slate-700 border-t-blue-500 border-b-blue-500 rounded-full animate-spin shadow-lg"></div>
+            <i class="fas fa-truck-fast absolute text-2xl text-blue-500 drop-shadow-[0_0_8px_rgba(59,130,246,0.8)]"></i>
+        </div>
+        <span class="mt-6 text-sm font-black tracking-[0.3em] uppercase text-blue-400 animate-pulse drop-shadow-md">Carregando...</span>
     </div>
 
     <div id="paste-modal" class="hidden fixed inset-0 z-[10005] modal-backdrop flex items-center justify-center p-4">
@@ -75,11 +79,41 @@ Posto Ipiranga..."></textarea>
     </div>
 
     <div id="settings-modal" class="hidden fixed inset-0 z-[10001] modal-backdrop flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full animate-fade-in">
-            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center"><h3 class="font-bold">Configurações</h3><button onclick="UI.toggleModal('settings-modal')"><i class="fas fa-times"></i></button></div>
-            <div class="p-6 space-y-3">
-                <button onclick="UI.toggleModal('disposal-modal'); UI.toggleModal('settings-modal')" class="action-list-btn group"><div class="icon-box bg-green-50 text-green-600"><i class="fas fa-dumpster"></i></div><div class="font-semibold text-xs">Gerenciar Aterros</div></button>
-                <button onclick="DataService.reset()" class="action-list-btn group hover:border-red-200"><div class="icon-box bg-red-50 text-red-500"><i class="fas fa-trash-alt"></i></div><div class="font-semibold text-sm text-red-600">Apagar Dados de Hoje</div></button>
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full animate-fade-in overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h3 class="font-black text-slate-800"><i class="fas fa-cog text-slate-400 mr-2"></i> Configurações</h3>
+                <button onclick="UI.toggleModal('settings-modal')" class="text-slate-400 hover:text-slate-600 transition-colors"><i class="fas fa-times text-lg"></i></button>
+            </div>
+            
+            <div class="p-6 space-y-3 bg-white">
+                <button onclick="UI.toggleModal('disposal-modal'); UI.toggleModal('settings-modal')" class="w-full flex items-center gap-4 p-3 bg-slate-50 hover:bg-green-50 rounded-xl border border-slate-200 transition-all group">
+                    <div class="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center text-green-600 group-hover:scale-110 transition-transform"><i class="fas fa-dumpster text-lg"></i></div>
+                    <div class="font-bold text-sm text-slate-700">Gerenciar Aterros</div>
+                </button>
+                
+                <button onclick="DataService.export()" class="w-full flex items-center gap-4 p-3 bg-slate-50 hover:bg-blue-50 rounded-xl border border-slate-200 transition-all group">
+                    <div class="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform"><i class="fas fa-cloud-download-alt text-lg"></i></div>
+                    <div class="text-left">
+                        <div class="font-bold text-sm text-slate-700">Fazer Backup (Exportar)</div>
+                        <div class="text-[10px] font-semibold text-slate-500 uppercase mt-0.5">Salva as rotas e endereços</div>
+                    </div>
+                </button>
+                
+                <label class="w-full flex items-center gap-4 p-3 bg-slate-50 hover:bg-purple-50 rounded-xl border border-slate-200 transition-all group cursor-pointer">
+                    <div class="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center text-purple-600 group-hover:scale-110 transition-transform"><i class="fas fa-cloud-upload-alt text-lg"></i></div>
+                    <div class="text-left flex-1">
+                        <div class="font-bold text-sm text-slate-700">Restaurar Backup</div>
+                        <div class="text-[10px] font-semibold text-slate-500 uppercase mt-0.5">Puxar arquivo salvo</div>
+                    </div>
+                    <input type="file" class="hidden" accept=".json" onchange="DataService.import(this)">
+                </label>
+
+                <div class="h-px bg-slate-200 my-2"></div>
+
+                <button onclick="DataService.reset()" class="w-full flex items-center gap-4 p-3 bg-red-50 hover:bg-red-100 rounded-xl border border-red-200 transition-all group">
+                    <div class="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center text-red-600 group-hover:scale-110 transition-transform"><i class="fas fa-trash-alt text-lg"></i></div>
+                    <div class="font-black text-sm text-red-600">Apagar Dados de Hoje</div>
+                </button>
             </div>
         </div>
     </div>
