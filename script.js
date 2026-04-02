@@ -58,7 +58,7 @@ const State = {
 
             // Atualiza tudo visualmente pra quem tiver com o app aberto
             App.renderGrid();
-            App.renderList();
+            App.renderSpreadsheet(); // RENDERIZA A NOVA PLANILHA
             App.renderAddressBook();
             App.renderDisposalList();
             
@@ -93,7 +93,6 @@ const State = {
 
     save() {
         if (this.isInitializing) return;
-        // SALVA NA NUVEM em vez de salvar só no computador local
         db.ref('sgc_data').set(this.data);
     },
 
@@ -380,7 +379,6 @@ const DataService = {
             try { 
                 const importedData = JSON.parse(e.target.result); 
                 
-                // Tira os pontos dos nomes do backup antigo para não bugar a nuvem
                 if (importedData.fleet) {
                     const cleanFleet = {};
                     for (const key in importedData.fleet) {
@@ -404,6 +402,7 @@ const DataService = {
         }
     }
 };
+
 const UI = {
     tempTripIndex: null,
 
@@ -492,7 +491,7 @@ const UI = {
             const btn = document.getElementById(`btn-type-${type}`);
             btn.className = 'type-sel transition-all duration-200 font-bold text-lg border text-slate-500 border-slate-200 hover:bg-slate-50';
             if (t === type) {
-                if(type === 'troca') btn.className = 'type-sel active bg-blue-600 text-white border-blue-600 shadow-md scale-105';
+                if(type === 'troca') btn.className = 'type-sel active bg-slate-800 text-white border-slate-800 shadow-md scale-105';
                 if(type === 'colocacao') btn.className = 'type-sel active bg-red-600 text-white border-red-600 shadow-md scale-105';
                 if(type === 'retirada') btn.className = 'type-sel active bg-purple-600 text-white border-purple-600 shadow-md scale-105';
                 if(type === 'encher') btn.className = 'type-sel active bg-amber-500 text-white border-amber-500 shadow-md scale-105';
@@ -767,6 +766,7 @@ const App = {
 
         UI.closeEditor();
         this.renderGrid();
+        this.renderSpreadsheet();
     },
 
     updatePlate() {
@@ -1038,6 +1038,92 @@ const App = {
         });
     },
 
+    // ========================================================================
+    // NOVO SISTEMA DE PLANILHA (SUBSTITUI A LISTA ANTIGA)
+    // ========================================================================
+    renderSpreadsheet() {
+        const container = document.getElementById('spreadsheet-container');
+        container.innerHTML = '';
+        const drivers = State.getDriversByShift();
+        
+        drivers.forEach(name => {
+            const d = State.getDriver(name);
+            if(!d || !d.trips) return;
+            
+            // Container da coluna do motorista
+            const column = document.createElement('div');
+            column.className = "min-w-[220px] max-w-[260px] flex flex-col bg-white snap-start border border-slate-300";
+
+            // Header da planilha (Nome, Placa, Qtd Caixas)
+            let headerHtml = `
+                <div class="bg-slate-300 text-center text-[10px] font-bold py-1 border-b border-slate-300">MOTORISTA</div>
+                <div class="bg-yellow-300 text-center text-xs font-bold py-1 border-b border-slate-300 text-blue-900">${d.plate || 'SEM PLACA'}</div>
+                <div class="text-center text-xs font-black py-1.5 border-b border-slate-300 uppercase tracking-wide underline" style="background-color: ${d.color}20; color: ${d.color};">${name}</div>
+                <div class="bg-fuchsia-500 text-white text-center text-[10px] font-bold py-1 border-b border-slate-300">${d.trips.length} SERVIÇOS</div>
+            `;
+            
+            // Corpo da coluna
+            const bodyDiv = document.createElement('div');
+            bodyDiv.className = "flex-1 flex flex-col bg-white";
+            
+            // Função para montar cada "célula" do serviço com a cor pedida
+            const buildCell = (t, i, colorClass, customLabel = null) => {
+                const completedClass = t.completed ? 'line-through opacity-50 bg-slate-100' : 'hover:bg-slate-50 cursor-pointer';
+                const label = customLabel || WhatsappService.getPluralLabel(t.type, t.qty);
+                const qtdText = t.qty > 1 ? `${t.qty} ` : '';
+                
+                const obsTag = t.obs ? `<div class="mt-1 flex justify-center"><span class="text-[9px] bg-amber-100 text-amber-800 rounded px-1.5 py-0.5 border border-amber-200">Obs: ${t.obs}</span></div>` : '';
+                const mtrTag = t.mtr ? `<div class="mt-1 flex justify-center"><span class="text-[9px] bg-indigo-100 text-indigo-800 rounded px-1.5 py-0.5"><i class="fas fa-file-invoice"></i> MTR</span></div>` : '';
+                const descTag = t.descarteLocal ? `<div class="mt-1 flex justify-center"><span class="text-[9px] bg-red-100 text-red-800 rounded px-1.5 py-0.5">DESC: ${t.descarteLocal}</span></div>` : '';
+                
+                return `
+                <div onclick="App.toggleStatus('${name}', ${i})" class="p-3 border-b border-slate-200 text-center flex flex-col justify-center min-h-[60px] transition-all ${completedClass}">
+                    <div class="${colorClass} font-black text-xs uppercase leading-tight">
+                        ${t.empresa ? `<span>${t.empresa}</span><br>` : ''}
+                        ${t.obra ? `<span>${t.obra}</span>` : ''}
+                    </div>
+                    <div class="${colorClass} text-[10px] font-bold mt-1 tracking-wider opacity-80">
+                        [ ${qtdText}${label} ]
+                    </div>
+                    ${obsTag}
+                    ${mtrTag}
+                    ${descTag}
+                </div>`;
+            };
+
+            let tripsHtml = '';
+            
+            d.trips.forEach((t, i) => {
+                // REGRA DE CORES
+                // Troca = Preto | Colocação = Vermelho | Retirada = Roxo
+                if (t.type === 'troca') {
+                    tripsHtml += buildCell(t, i, 'text-slate-900'); // Preto
+                } 
+                else if (t.type === 'colocacao') {
+                    tripsHtml += buildCell(t, i, 'text-red-600'); // Vermelho
+                } 
+                else if (t.type === 'retirada') {
+                    tripsHtml += buildCell(t, i, 'text-purple-600'); // Roxo
+                } 
+                else if (t.type === 'encher') {
+                    // Encher = 2 Serviços (Um vermelho e Um roxo)
+                    tripsHtml += buildCell(t, i, 'text-red-600', 'COLOCAÇÃO (ENCHER)');
+                    tripsHtml += buildCell(t, i, 'text-purple-600', 'RETIRADA (ENCHER)');
+                }
+            });
+
+            if(d.trips.length === 0) {
+                tripsHtml = '<div class="p-4 text-center text-xs text-slate-400 font-bold italic">NENHUM SERVIÇO</div>';
+            }
+
+            bodyDiv.innerHTML = tripsHtml;
+            column.innerHTML = headerHtml;
+            column.appendChild(bodyDiv);
+            
+            container.appendChild(column);
+        });
+    },
+
     handleDragStart(e, driverName, index) {
         this.dragSource = { driver: driverName, index: index };
         e.dataTransfer.effectAllowed = 'move';
@@ -1075,106 +1161,6 @@ const App = {
         State.save();
         
         return false;
-    },
-
-    renderList() {
-        const container = document.getElementById('monitoring-list');
-        container.innerHTML = '';
-        const drivers = State.getDriversByShift();
-        
-        drivers.forEach(name => {
-            const d = State.getDriver(name);
-            if(!d || !d.trips || !d.trips.length) return;
-            
-            const card = document.createElement('div');
-            card.className = "bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm";
-            
-            let html = `
-                <div onclick="this.nextElementSibling.classList.toggle('hidden')" class="p-3 bg-slate-50/50 flex justify-between items-center cursor-pointer hover:bg-slate-100 transition border-b border-slate-100">
-                    <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 rounded-lg text-white text-xs flex items-center justify-center font-bold shadow-sm" style="background:${d.color}">${name.substring(0,2)}</div>
-                        <div>
-                            <span class="font-bold text-xs text-slate-700 block">${name}</span>
-                            ${d.plate ? '<span class="text-[9px] text-slate-400 font-mono tracking-tight">'+d.plate+'</span>' : ''}
-                        </div>
-                    </div>
-                    <span class="text-[10px] bg-white px-2 py-0.5 rounded-full border border-slate-200 font-bold text-slate-500">${d.trips.length} rotas</span>
-                </div>
-                <div class="p-3 space-y-3">
-            `;
-
-            d.trips.forEach((t, i) => {
-                const descarteClass = t.descarteLocal ? 'active bg-red-50 border-red-200 text-red-500' : 'text-slate-300 hover:text-slate-500 border-transparent';
-                
-                const descarteDisplay = t.descarteLocal 
-                    ? `<div class="mt-1.5 flex flex-wrap items-center gap-1">
-                          <div class="text-[9px] font-bold text-red-500 flex items-center gap-1.5 p-1 bg-red-50 rounded border border-red-100 w-fit"><i class="fas fa-trash-arrow-up"></i> DESCARTAR EM: ${t.descarteLocal}</div>
-                        </div>` 
-                    : '';
-
-                const obsDisplay = t.obs ? `<div class="mt-1 text-[9px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 w-fit"><i class="fas fa-comment-dots text-[8px] mr-1"></i>${t.obs}</div>` : '';
-                const companyDisplay = t.empresa ? `<span class="text-[8px] font-bold text-blue-600 bg-blue-50 px-1 rounded mr-1">${t.empresa}</span>` : '';
-
-                let displayType = t.type.toUpperCase();
-                if(t.type === 'encher') displayType = 'ENCHER NA HORA';
-                
-                const addressText = typeof t.to === 'string' ? t.to : (t.to && t.to.text ? t.to.text : '');
-
-                const addressHtml = addressText === "PREENCHER ENDEREÇO" 
-                    ? `<button onclick="App.editTripAddress('${name}',${i})" class="mt-0.5 text-[9px] bg-red-50 text-red-600 font-bold px-1.5 py-0.5 rounded border border-red-200 hover:bg-red-100 animate-pulse"><i class="fas fa-map-marker-alt"></i> CLIQUE PARA PREENCHER ENDEREÇO</button>`
-                    : `<div onclick="App.editTripAddress('${name}',${i})" class="text-[10px] text-slate-400 truncate cursor-pointer hover:text-blue-500" title="Clique para editar endereço">${WhatsappService.formatAddress(addressText)} <i class="fas fa-pen text-[8px] opacity-50"></i></div>`;
-
-                const mtrDisplay = t.mtr 
-                    ? `<div class="mt-1 text-[8px] font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-200 w-fit"><i class="fas fa-file-invoice mr-1"></i>${t.mtr.includes('MOTORISTA') ? 'MTR: PEGAR NA OBRA' : t.mtr.includes('LOGÍSTICA') ? 'MTR: RESP. LOGÍSTICA' : 'MTR: DIRETO BALANÇA'}</div>`
-                    : '';
-
-                html += `
-                <div class="timeline-item ${t.completed ? 'opacity-50 grayscale' : ''}"
-                     draggable="true"
-                     ondragstart="App.handleDragStart(event, '${name}', ${i})"
-                     ondragover="App.handleDragOver(event)"
-                     ondrop="App.handleDrop(event, '${name}', ${i})"
-                     style="cursor: grab;"
-                >
-                    <div onclick="App.toggleStatus('${name}',${i})" class="timeline-dot ${t.completed?'completed':''}">${t.completed?'<i class="fas fa-check text-[8px]"></i>':''}</div>
-                    <div class="flex justify-between items-start pl-2">
-                        <div class="flex-1 min-w-0 pr-2">
-                            <div class="flex flex-wrap gap-1 mb-0.5 items-center">
-                                <div class="mr-1.5 text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing" title="Arrastar para reordenar"><i class="fas fa-grip-vertical text-[10px]"></i></div>
-                                
-                                <div class="flex items-center gap-1 mr-1">
-                                     <button onclick="App.changeQty('${name}',${i})" class="text-[10px] font-black text-slate-800 hover:text-blue-600 border-b border-dotted border-slate-300 min-w-[1.2rem]" title="Mudar Qtd">${t.qty}</button>
-                                     <button onclick="App.cycleType('${name}',${i})" class="text-[10px] font-black text-slate-800 hover:text-blue-600 border-b border-dotted border-slate-300" title="Mudar Tipo">${displayType}</button>
-                                </div>
-                                <span class="text-[10px] text-slate-500 truncate">- ${companyDisplay}${t.obra || ''}</span>
-                                <button onclick="App.editTripText('${name}',${i})" class="text-[10px] text-blue-400 hover:text-blue-600 ml-1" title="Editar Texto"><i class="fas fa-pen"></i></button>
-                            </div>
-                            ${addressHtml}
-                            ${mtrDisplay}
-                            ${obsDisplay}
-                            ${descarteDisplay}
-                        </div>
-                        <div class="flex gap-1 shrink-0">
-                            <button onclick="App.editObs('${name}',${i})" class="btn-descarte w-7 h-7 border rounded flex items-center justify-center text-blue-400 hover:bg-blue-50 border-blue-100" title="Adicionar Observação"><i class="fas fa-cloud text-xs"></i></button>
-                            <button onclick="App.openMtrModal(${i})" class="btn-descarte w-7 h-7 border rounded flex items-center justify-center ${t.mtr ? 'text-indigo-500 bg-indigo-50 border-indigo-200' : 'text-slate-300 hover:text-slate-500 border-transparent'}" title="Definir MTR"><i class="fas fa-file-invoice text-xs"></i></button>
-                            <button onclick="App.openDisposalModal(${i})" class="btn-descarte w-7 h-7 border rounded flex items-center justify-center ${descarteClass}" title="Definir Descarte"><i class="fas fa-recycle text-xs"></i></button>
-                            <button onclick="App.deleteTrip('${name}',${i})" class="w-7 h-7 rounded flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 transition"><i class="fas fa-times text-xs"></i></button>
-                        </div>
-                    </div>
-                </div>`;
-            });
-
-            html += `
-                <div class="mt-3 pt-3 border-t border-slate-100">
-                    <button onclick="App.shareDriverRoute('${name}')" class="w-full py-3 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-2 shadow-md">
-                        <i class="fab fa-whatsapp text-lg"></i> ENVIAR ROTA (MOTORISTA)
-                    </button>
-                </div>
-                </div>`;
-            
-            card.innerHTML = html;
-            container.appendChild(card);
-        });
     },
     
     quickDelete(name, index) {
@@ -1271,7 +1257,7 @@ const App = {
     },
 
     setDescarte(n, i) {
-       this.openDisposalModal(i);
+        this.openDisposalModal(i);
     },
 
     shareDriverRoute(name) {
