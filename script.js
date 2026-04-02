@@ -1,7 +1,7 @@
 'use strict';
 
 // ============================================================================
-// SUAS CHAVES DO FIREBASE
+// CHAVES DO FIREBASE (Já com as suas chaves da foto!)
 // ============================================================================
 const firebaseConfig = {
     apiKey: "AIzaSyCUwkGHLnSQBIiDhZN6MfF-R-RhZQx-kg4",
@@ -14,6 +14,7 @@ const firebaseConfig = {
     measurementId: "G-3Q4B4HLE65"
 };
 
+// Inicializa o Firebase
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
@@ -45,6 +46,17 @@ const State = {
         db.ref('sgc_data').on('value', (snapshot) => {
             const val = snapshot.val();
             if (val) {
+                // VACINA DO FIREBASE: Conserta a lixeira
+                if (val.fleet) {
+                    for (const key in val.fleet) {
+                        if (val.fleet[key].trips && !Array.isArray(val.fleet[key].trips)) {
+                            val.fleet[key].trips = Object.values(val.fleet[key].trips);
+                        }
+                        if (!val.fleet[key].trips) {
+                            val.fleet[key].trips = [];
+                        }
+                    }
+                }
                 this.data = val;
                 if(!this.data.addressBook) this.data.addressBook = [];
                 if(!this.data.disposalPoints) this.data.disposalPoints = [];
@@ -55,6 +67,7 @@ const State = {
             
             this.integrityCheck();
 
+            // Renderiza TODA A TELA (Painel esquerdo e a Planilha Direita)
             App.renderGrid();
             App.renderList();
             App.renderAddressBook();
@@ -92,7 +105,14 @@ const State = {
 
     save() {
         if (this.isInitializing) return;
-        db.ref('sgc_data').set(this.data);
+        // Salva com array limpo pra evitar lixo na nuvem
+        const dataToSave = JSON.parse(JSON.stringify(this.data));
+        for (const key in dataToSave.fleet) {
+            if (dataToSave.fleet[key].trips) {
+                dataToSave.fleet[key].trips = dataToSave.fleet[key].trips.filter(t => t !== null);
+            }
+        }
+        db.ref('sgc_data').set(dataToSave);
     },
 
     resetFleet() {
@@ -736,6 +756,10 @@ const App = {
 
         UI.closeEditor();
         this.renderGrid();
+        
+        // Atualiza todos os painéis ao trocar o turno
+        this.renderList();
+        this.renderSpreadsheet();
     },
 
     updatePlate() {
@@ -979,7 +1003,7 @@ const App = {
     },
 
     // =========================================================================
-    // NOVO CÓDIGO DA PLANILHA GIGANTE NA DIREITA
+    // PLANILHA GIGANTE
     // =========================================================================
     renderSpreadsheet() {
         const container = document.getElementById('spreadsheet-view');
@@ -1010,7 +1034,6 @@ const App = {
                     const tripCard = document.createElement('div');
                     tripCard.className = `p-2 border border-slate-200 rounded-md text-[10px] leading-tight relative shadow-sm ${t.completed ? 'opacity-50 grayscale bg-slate-200' : 'bg-white hover:border-blue-300'} transition cursor-pointer`;
                     
-                    // CORES DOS SERVIÇOS
                     let typeHtml = '';
                     if (t.type === 'colocacao') {
                         typeHtml = `<span class="text-red-600 font-black text-[11px]"><i class="fas fa-arrow-down"></i> ${t.qty} COLOCAÇÃO</span>`;
@@ -1039,7 +1062,6 @@ const App = {
                         ${t.mtr ? `<div class="text-[8px] text-indigo-700 bg-indigo-50 mt-1 p-1 rounded border border-indigo-200 font-bold"><i class="fas fa-file-invoice mr-1"></i>${t.mtr}</div>` : ''}
                     `;
                     
-                    // Clicar na viagem na planilha marca como completada
                     tripCard.onclick = () => App.toggleStatus(name, i);
                     
                     tripsContainer.appendChild(tripCard);
