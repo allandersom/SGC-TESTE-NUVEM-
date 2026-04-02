@@ -23,11 +23,12 @@ const db = firebase.database();
 
 const CONFIG = {
     drivers: {
-        day: ["MARIO", "ADRIELSON", "MESSIAS", "MARCELO A", "JAMERSON", "MANSUETO", "JOAO VICTOR", "LUIZ CARLOS RODRIGUES", "JONES", "EMERSON", "MATHEUS", "JACKSON", "ROBERTO C", "RODRIGO", "CLOVIS", "JOELITON"],
+        day: ["MARIO", "ADRIELSON", "MESSIAS", "MARCELO A.", "JAMERSON", "MANSUETO", "JOAO VICTOR", "LUIZ CARLOS RODRIGUES", "JONES", "EMERSON", "MATHEUS", "JACKSON", "ROBERTO C.", "RODRIGO", "CLOVIS", "JOELITON"],
         night: ["ELCIDES", "MARCONI", "LUIZ RODRIGO", "MAYKEL", "PLATINIS", "BRUNO"]
     },
     colors: ['#2563eb', '#16a34a', '#d97706', '#9333ea', '#db2777', '#dc2626', '#0891b2', '#ea580c']
 };
+
 const State = {
     data: { fleet: {}, addressBook: [], disposalPoints: [] }, 
     session: { currentDriver: null, shift: 'day', type: 'troca', routeDate: '' },
@@ -367,35 +368,10 @@ const WhatsappService = {
 
 const DataService = {
     export() {
-        const blob = new Blob([JSON.stringify(State.data)], {type: 'application/json'});
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `SGC_Nuvem_${new Date().toISOString().slice(0,10)}.json`;
-        a.click();
+        UI.toast("O Backup é feito automaticamente na nuvem agora!", "info");
     },
     import(input) {
-        const r = new FileReader();
-        r.onload = e => { 
-            try { 
-                const importedData = JSON.parse(e.target.result); 
-                
-                // Tira os pontos dos nomes do backup antigo para não bugar a nuvem
-                if (importedData.fleet) {
-                    const cleanFleet = {};
-                    for (const key in importedData.fleet) {
-                        const cleanKey = key.replace(/\./g, '');
-                        cleanFleet[cleanKey] = importedData.fleet[key];
-                    }
-                    importedData.fleet = cleanFleet;
-                }
-
-                State.data = importedData; 
-                State.save(); 
-                UI.toast("Backup enviado para a Nuvem com sucesso!");
-                setTimeout(() => location.reload(), 1500);
-            } catch { UI.toast("Arquivo inválido", "error"); }
-        };
-        if(input.files[0]) r.readAsText(input.files[0]);
+        UI.toast("A Restauração foi desativada para não corromper a nuvem.", "error");
     },
     reset() {
         if(confirm("Deseja iniciar um novo dia?\n\nISSO APAGARÁ TODAS AS ROTAS PARA TODO MUNDO, mas manterá os endereços salvos.")) {
@@ -403,6 +379,7 @@ const DataService = {
         }
     }
 };
+
 const UI = {
     tempTripIndex: null,
 
