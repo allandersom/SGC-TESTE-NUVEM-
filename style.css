@@ -90,11 +90,6 @@ body.night-mode .divide-slate-100 > * + * {
     border-color: #334155 !important;
 }
 
-/* Fundo do Mapa Wrapper */
-body.night-mode #map-wrapper {
-    background-color: #0f172a;
-}
-
 /* Modal e Popups */
 body.night-mode .bg-slate-50 {
     background-color: #0f172a; 
@@ -107,18 +102,24 @@ body.night-mode #section-planning .bg-slate-100 {
     border: 1px solid #334155;
 }
 
-/* --- SIDEBAR EXPANDIDA (TELA CHEIA) --- */
-#sidebar.sidebar-expanded {
-    width: 100vw !important;
-    position: fixed !important;
-    inset: 0 !important;
-    z-index: 9999 !important;
-    transform: none !important;
+/* --- ISOLAMENTO DA PLANILHA (BLINDAGEM CONTRA MODO NOITE) --- */
+/* Isso garante que a planilha sempre fique branca e bonita */
+body.night-mode #spreadsheet-modal {
+    background-color: #f1f5f9 !important;
 }
+body.night-mode #spreadsheet-container {
+    background-color: #e2e8f0 !important;
+}
+body.night-mode #spreadsheet-container .drag-item {
+    color: #1e293b !important; /* Texto sempre escuro dentro da caixinha */
+}
+body.night-mode #spreadsheet-container .bg-white {
+    background-color: #ffffff !important; /* Caixinha sempre branca */
+    border-color: #e2e8f0 !important;
+}
+/* ------------------------------------------------------------- */
 
-/* ---------------------------------- */
-
-.custom-scroll::-webkit-scrollbar { width: 4px; }
+.custom-scroll::-webkit-scrollbar { width: 4px; height: 4px; }
 .custom-scroll::-webkit-scrollbar-track { background: transparent; }
 .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 .custom-scroll::-webkit-scrollbar-thumb:hover { background-color: #94a3b8; }
@@ -257,68 +258,6 @@ body.night-mode .suggestion-item strong { color: #fff; }
 body.night-mode .suggestion-item span.company-badge {
     background-color: #1e3a8a; border-color: #1e40af; color: #bfdbfe;
 }
-
-/* --- NOVO LOADER ESTÉTICO --- */
-.loading-glass-panel {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-    border-radius: 1.5rem;
-    padding: 2rem;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    overflow: hidden;
-}
-
-.truck-loader-container {
-    position: relative;
-    width: 80px;
-    height: 80px;
-    margin-bottom: 1.5rem;
-}
-
-.truck-icon-pulse {
-    font-size: 2.5rem;
-    color: #3b82f6;
-    animation: truckBounce 1s infinite alternate ease-in-out;
-    z-index: 10;
-    position: relative;
-}
-
-.road-line {
-    width: 60px;
-    height: 4px;
-    background: rgba(255,255,255,0.2);
-    border-radius: 2px;
-    margin-top: 5px;
-    position: relative;
-    overflow: hidden;
-}
-
-.road-line::after {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; height: 100%; width: 30%;
-    background: #3b82f6;
-    animation: roadMove 1s infinite linear;
-    border-radius: 2px;
-}
-
-@keyframes truckBounce {
-    0% { transform: translateY(0); text-shadow: 0 10px 20px rgba(59, 130, 246, 0.2); }
-    100% { transform: translateY(-5px); text-shadow: 0 20px 30px rgba(59, 130, 246, 0.4); }
-}
-
-@keyframes roadMove {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(300%); }
-}
-
-/* ----------------------------- */
 
 .custom-div-icon { background: transparent; border: none; }
 .cursor-crosshair { cursor: crosshair !important; }
