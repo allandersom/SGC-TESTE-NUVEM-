@@ -896,7 +896,7 @@ const App = {
         });
     },
 
-    renderSpreadsheet() {
+   renderSpreadsheet() {
         const container = document.getElementById('spreadsheet-container');
         if (!container) return; 
         container.innerHTML = '';
@@ -908,7 +908,7 @@ const App = {
             if(d.trips.length === 0) return; 
             
             const column = document.createElement('div');
-            column.className = "min-w-[220px] max-w-[260px] flex flex-col bg-white snap-start border border-slate-300";
+            column.className = "min-w-[240px] max-w-[280px] flex flex-col bg-white snap-start border-r border-slate-300";
 
             let totalServicos = 0;
             d.trips.forEach(t => {
@@ -917,29 +917,29 @@ const App = {
             });
 
             let headerHtml = `
-                <div class="bg-slate-300 text-center text-[10px] font-bold py-1 border-b border-slate-300">MOTORISTA</div>
-                <div class="bg-yellow-300 text-center text-xs font-bold py-1 border-b border-slate-300 text-blue-900">${d.plate || 'SEM PLACA'}</div>
-                <div class="text-center text-xs font-black py-1.5 border-b border-slate-300 uppercase tracking-wide underline" style="background-color: ${d.color}20; color: ${d.color};">${name}</div>
-                <div class="bg-fuchsia-500 text-white text-center text-[10px] font-bold py-1 border-b border-slate-300">HOJE: ${totalServicos} SERVIÇOS</div>
+                <div class="bg-slate-800 text-white text-center text-[10px] font-bold py-1">MOTORISTA</div>
+                <div class="bg-yellow-300 text-center text-xs font-bold py-1 border-b border-slate-300 text-slate-800">${d.plate || 'SEM PLACA'}</div>
+                <div class="text-center text-sm font-black py-2 uppercase tracking-wide bg-slate-50 border-b border-slate-200" style="color: ${d.color};">${name}</div>
+                <div class="bg-blue-600 text-white text-center text-[10px] font-bold py-1.5 shadow-sm">HOJE: ${totalServicos} SERVIÇOS</div>
             `;
             
             const bodyDiv = document.createElement('div');
-            bodyDiv.className = "flex-1 flex flex-col bg-white overflow-y-auto custom-scroll";
+            bodyDiv.className = "flex-1 flex flex-col bg-slate-100 overflow-y-auto custom-scroll p-2 gap-2";
             
             const buildCell = (t, i, colorClass, customLabel = null) => {
                 let status = t.status || (t.completed ? 'concluido' : 'pendente');
-                let bgClass = 'bg-white hover:bg-slate-50'; 
+                
+                // Define o fundo e a borda do Card (Caixinha)
+                let bgClass = 'bg-white border-slate-200'; 
                 let opacityClass = '';
                 
                 if (status === 'concluido') {
-                    bgClass = 'bg-[#dcfce7]'; 
-                    opacityClass = 'opacity-80';
+                    bgClass = 'bg-emerald-50 border-emerald-300'; 
                 } else if (status === 'cancelado') {
-                    bgClass = 'bg-[#ffedd5]'; 
-                    opacityClass = 'opacity-80 line-through grayscale-[50%]';
+                    bgClass = 'bg-slate-100 border-slate-300'; 
+                    opacityClass = 'opacity-60 grayscale';
                 } else if (status === 'nao_feito') {
-                    bgClass = 'bg-[#fee2e2]'; // vermelho claro
-                    opacityClass = 'opacity-90 border-red-300';
+                    bgClass = 'bg-red-50 border-red-300';
                 }
 
                 const label = customLabel || WhatsappService.getPluralLabel(t.type || 'troca', t.qty || 1);
@@ -951,17 +951,16 @@ const App = {
                     const logObs = parts[0].trim();
                     const motObs = parts[1] ? parts[1].trim() : '';
 
-                    if (logObs) obsHtml += `<div class="mt-1 flex justify-center"><span class="text-[9px] bg-amber-100 text-amber-900 font-medium rounded px-1.5 py-0.5 border border-amber-300"><i class="fas fa-exclamation-triangle"></i> LOG: ${logObs}</span></div>`;
-                    if (motObs) obsHtml += `<div class="mt-1 flex justify-center"><span class="text-[9px] bg-blue-100 text-blue-900 font-medium rounded px-1.5 py-0.5 border border-blue-300"><i class="fas fa-comment-dots"></i> MOT: ${motObs}</span></div>`;
+                    if (logObs) obsHtml += `<div class="mt-2 text-[10px] bg-amber-100 text-amber-900 font-bold rounded-lg p-1.5 border border-amber-300 break-words leading-tight"><i class="fas fa-exclamation-triangle"></i> LOG: ${logObs}</div>`;
+                    if (motObs) obsHtml += `<div class="mt-1 text-[10px] bg-blue-100 text-blue-900 font-bold rounded-lg p-1.5 border border-blue-300 break-words leading-tight"><i class="fas fa-comment-dots"></i> MOT: ${motObs}</div>`;
                 }
 
-                // TAG DE FOTO DO MOTORISTA
-                const fotoTag = t.foto ? `<button onclick="UI.showPhoto('${t.foto}')" class="mt-2 w-full flex items-center justify-center gap-1 bg-slate-800 text-white font-bold rounded-md py-1.5 text-[10px] shadow-sm hover:bg-black transition-colors"><i class="fas fa-camera"></i> VER FOTO</button>` : '';
-
-                const mtrTag = t.mtr ? `<div class="mt-1 flex justify-center"><span class="text-[10px] bg-indigo-100 text-indigo-900 font-medium rounded px-1.5 py-0.5 border border-indigo-200"><i class="fas fa-file-invoice"></i> MTR</span></div>` : '';
-                const descTag = t.descarteLocal ? `<div class="mt-1 flex justify-center"><span class="text-[10px] bg-red-100 text-red-900 font-medium rounded px-1.5 py-0.5 border border-red-200">DESC: ${t.descarteLocal}</span></div>` : '';
+                const fotoTag = t.foto ? `<button onclick="UI.showPhoto('${t.foto}')" class="mt-2 w-full flex items-center justify-center gap-1 bg-slate-800 text-white font-bold rounded-lg py-1.5 text-[10px] shadow-sm hover:bg-black transition-colors"><i class="fas fa-camera"></i> VER FOTO COMPROVANTE</button>` : '';
+                const mtrTag = t.mtr ? `<div class="mt-2 text-[10px] bg-indigo-100 text-indigo-900 font-bold rounded-lg p-1 border border-indigo-200 text-center truncate"><i class="fas fa-file-invoice"></i> ${t.mtr}</div>` : '';
+                const descTag = t.descarteLocal ? `<div class="mt-1 text-[10px] bg-red-100 text-red-900 font-bold rounded-lg p-1 border border-red-200 text-center truncate">DESC: ${t.descarteLocal}</div>` : '';
+                
                 const timeTag = ((status === 'concluido' || status === 'nao_feito') && t.horaConclusao) 
-                ? `<div class="mt-1.5 text-[10px] font-black ${status==='concluido'?'text-green-800 bg-green-200/50 border-green-300':'text-red-800 bg-red-200/50 border-red-300'} rounded px-2 w-fit mx-auto border"><i class="far fa-clock"></i> ${status==='concluido'?'FEITO':'NÃO FEITO'} ÀS ${t.horaConclusao}</div>` 
+                ? `<div class="mt-2 text-[9px] font-black ${status==='concluido'?'text-emerald-700':'text-red-700'} text-center"><i class="far fa-clock"></i> ${status==='concluido'?'FEITO':'NÃO FEITO'} ÀS ${t.horaConclusao}</div>` 
                 : '';
 
                 return `
@@ -969,34 +968,34 @@ const App = {
                      ondragstart="App.handleDragStart(event, '${name}', ${i})"
                      ondragover="App.handleDragOver(event)"
                      ondrop="App.handleDrop(event, '${name}', ${i})"
-                     class="drag-item p-2 border-b border-slate-300 text-center flex flex-col justify-center min-h-[70px] transition-all cursor-grab active:cursor-grabbing ${bgClass} ${opacityClass}">
+                     class="drag-item p-3 border rounded-xl shadow-sm relative flex flex-col cursor-grab active:cursor-grabbing transition-all ${bgClass} ${opacityClass}">
                     
-                    <div class="flex justify-between items-center mb-1 px-2">
-                        <button onclick="App.setTripStatus('${name}', ${i}, 'concluido')" class="w-6 h-6 rounded-full flex items-center justify-center text-green-600 hover:bg-green-200 shadow-sm border border-green-200 bg-white" title="Marcar Concluído"><i class="fas fa-check text-[10px]"></i></button>
-                        <button onclick="App.setTripStatus('${name}', ${i}, 'cancelado')" class="w-6 h-6 rounded-full flex items-center justify-center text-orange-500 hover:bg-orange-200 shadow-sm border border-orange-200 bg-white" title="Marcar Cancelado (Sairá do app do motorista)"><i class="fas fa-times text-[10px]"></i></button>
+                    <div class="absolute top-2 right-2 flex gap-1">
+                        <button onclick="App.setTripStatus('${name}', ${i}, 'concluido')" class="w-6 h-6 rounded bg-emerald-100 hover:bg-emerald-200 text-emerald-700 flex items-center justify-center shadow-sm border border-emerald-200 transition" title="Marcar Concluído"><i class="fas fa-check text-[10px]"></i></button>
+                        <button onclick="App.setTripStatus('${name}', ${i}, 'cancelado')" class="w-6 h-6 rounded bg-slate-200 hover:bg-slate-300 text-slate-700 flex items-center justify-center shadow-sm border border-slate-300 transition" title="Marcar Cancelado (Sairá do app do motorista)"><i class="fas fa-times text-[10px]"></i></button>
                     </div>
 
-                    <div class="${colorClass} font-bold text-[11px] uppercase leading-tight tracking-wide">
-                        ${t.empresa ? `<span class="opacity-75">${t.empresa}</span><br>` : ''}
-                        ${t.obra ? `<span class="text-[13px] font-black">${t.obra}</span>` : ''}
-                    </div>
-                    
-                    <div class="${colorClass} text-[10px] font-black mt-1.5 tracking-wider opacity-90 bg-slate-100/60 rounded-md py-0.5 w-fit mx-auto px-2 border border-slate-200">
+                    <div class="${colorClass} text-[10px] font-black bg-white rounded-md py-0.5 px-2 border border-slate-200 w-fit mb-2 shadow-sm">
                         ${qtdText}${label}
+                    </div>
+
+                    <div class="font-bold text-[11px] leading-tight tracking-wide text-slate-800 pr-12 break-words">
+                        ${t.empresa ? `<span class="text-slate-500 uppercase text-[9px]">${t.empresa}</span><br>` : ''}
+                        ${t.obra ? `<span class="text-[13px] font-black">${t.obra}</span>` : ''}
                     </div>
                     
                     ${obsHtml}
                     ${mtrTag}
                     ${descTag}
-                    ${timeTag}
                     ${fotoTag}
+                    ${timeTag}
                 </div>`;
             };
 
             let tripsHtml = '';
             
             d.trips.forEach((t, i) => {
-                if (t.type === 'troca') tripsHtml += buildCell(t, i, 'text-slate-900'); 
+                if (t.type === 'troca') tripsHtml += buildCell(t, i, 'text-slate-800'); 
                 else if (t.type === 'colocacao') tripsHtml += buildCell(t, i, 'text-red-600'); 
                 else if (t.type === 'retirada') tripsHtml += buildCell(t, i, 'text-purple-600'); 
                 else if (t.type === 'encher') {
@@ -1008,9 +1007,9 @@ const App = {
             bodyDiv.innerHTML = tripsHtml;
 
             const footerHtml = `
-                <div class="mt-auto p-2 border-t border-slate-300 bg-slate-100">
-                    <button onclick="App.shareDriverRoute('${name}')" class="w-full py-2.5 bg-slate-900 hover:bg-black text-white text-[10px] font-bold rounded-lg shadow flex items-center justify-center gap-2 transition transform hover:scale-[1.02]">
-                        <i class="fab fa-whatsapp text-sm text-green-400"></i> ENVIAR ROTA
+                <div class="mt-auto p-2 border-t border-slate-300 bg-white">
+                    <button onclick="App.shareDriverRoute('${name}')" class="w-full py-2.5 bg-green-600 hover:bg-green-700 text-white text-[11px] font-black rounded-lg shadow-sm flex items-center justify-center gap-2 transition transform hover:scale-[1.02]">
+                        <i class="fab fa-whatsapp text-lg"></i> ENVIAR ROTA
                     </button>
                 </div>
             `;
