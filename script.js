@@ -278,7 +278,6 @@ const WhatsappService = {
         return new Date().toLocaleDateString('pt-BR');
     },
 
-    // AQUI MONTA A MENSAGEM QUANDO CLICA NO BOTÃO DO MOTORISTA ESPECÍFICO
     buildMessage(driverName, trips, shift, plate) {
         const date = this.getFormattedDate();
         const shiftTxt = this.generateShiftIcon(shift);
@@ -313,16 +312,12 @@ const WhatsappService = {
             msg += `END: ${displayEnd}\n`;
 
             if (t.descarteLocal) msg += `*DESCARTE: ${t.descarteLocal.toUpperCase()}*\n`;
-            
-            // OLHA O MTR AQUI: Colocando a crase (`) antes e depois da variável pra formatar no WPP
             if (t.mtr) msg += `\`${t.mtr}\`\n`;
-            
             msg += `\n`; 
         }
         return msg;
     },
 
-    // AQUI MONTA A MENSAGEM DO RESUMÃO DE TODOS OS MOTORISTAS
     shareGeneralSummary() {
         const shift = State.session.shift;
         const date = this.getFormattedDate();
@@ -365,10 +360,7 @@ const WhatsappService = {
                     const addressText = typeof t.to === 'string' ? t.to : (t.to && t.to.text ? t.to.text : '');
                     msg += `END: ${this.formatAddress(addressText).toUpperCase()}\n`;
                     if(t.descarteLocal) msg += `*DESCARTE: ${t.descarteLocal.toUpperCase()}*\n`;
-                    
-                    // OLHA O MTR NO RESUMO GERAL AQUI TAMBÉM:
                     if (t.mtr) msg += `\`${t.mtr}\`\n`;
-                    
                     msg += `\n`;
                 }
                 msg += `------------------------\n`;
