@@ -896,7 +896,7 @@ const App = {
         });
     },
 
-   renderSpreadsheet() {
+  renderSpreadsheet() {
         const container = document.getElementById('spreadsheet-container');
         if (!container) return; 
         container.innerHTML = '';
@@ -928,19 +928,12 @@ const App = {
             
             const buildCell = (t, i, colorClass, customLabel = null) => {
                 let status = t.status || (t.completed ? 'concluido' : 'pendente');
-                
-                // Define o fundo e a borda do Card (Caixinha)
                 let bgClass = 'bg-white border-slate-200'; 
                 let opacityClass = '';
                 
-                if (status === 'concluido') {
-                    bgClass = 'bg-emerald-50 border-emerald-300'; 
-                } else if (status === 'cancelado') {
-                    bgClass = 'bg-slate-100 border-slate-300'; 
-                    opacityClass = 'opacity-60 grayscale';
-                } else if (status === 'nao_feito') {
-                    bgClass = 'bg-red-50 border-red-300';
-                }
+                if (status === 'concluido') bgClass = 'bg-emerald-50 border-emerald-300'; 
+                else if (status === 'cancelado') { bgClass = 'bg-slate-100 border-slate-300'; opacityClass = 'opacity-60 grayscale'; }
+                else if (status === 'nao_feito') bgClass = 'bg-red-50 border-red-300';
 
                 const label = customLabel || WhatsappService.getPluralLabel(t.type || 'troca', t.qty || 1);
                 
@@ -949,13 +942,16 @@ const App = {
                     const parts = t.obs.split(/\|? ?MOT: /);
                     const logObs = parts[0].trim();
                     const motObs = parts[1] ? parts[1].trim() : '';
-
-                    if (logObs) obsHtml += `<div class="mt-2 text-[10px] bg-amber-100 text-amber-900 font-bold rounded-lg p-1.5 border border-amber-300 break-words leading-tight"><i class="fas fa-exclamation-triangle"></i> LOG: ${logObs}</div>`;
-                    if (motObs) obsHtml += `<div class="mt-1 text-[10px] bg-blue-100 text-blue-900 font-bold rounded-lg p-1.5 border border-blue-300 break-words leading-tight"><i class="fas fa-comment-dots"></i> MOT: ${motObs}</div>`;
+                    if (logObs) obsHtml += `<div class="mt-2 text-[10px] bg-amber-100 text-amber-900 font-bold rounded-lg p-1.5 border border-amber-300 break-words leading-tight">LOG: ${logObs}</div>`;
+                    if (motObs) obsHtml += `<div class="mt-1 text-[10px] bg-blue-100 text-blue-900 font-bold rounded-lg p-1.5 border border-blue-300 break-words leading-tight">MOT: ${motObs}</div>`;
                 }
 
-                const fotoTag = t.foto ? `<button onclick="UI.showPhoto('${t.foto}')" class="mt-2 w-full flex items-center justify-center gap-1 bg-slate-800 text-white font-bold rounded-lg py-1.5 text-[10px] shadow-sm hover:bg-black transition-colors"><i class="fas fa-camera"></i> VER FOTO COMPROVANTE</button>` : '';
-                const mtrTag = t.mtr ? `<div class="mt-2 text-[10px] bg-indigo-100 text-indigo-900 font-bold rounded-lg p-1 border border-indigo-200 text-center truncate"><i class="fas fa-file-invoice"></i> ${t.mtr}</div>` : '';
+                // TAG DE MTR EDITÁVEL
+                const mtrTag = `<button onclick="App.editMtr('${name}', ${i})" class="mt-2 w-full text-[10px] font-bold rounded-lg p-1 border text-center truncate transition-all hover:scale-[1.02] ${t.mtr ? 'bg-indigo-100 text-indigo-900 border-indigo-200' : 'bg-white text-slate-300 border-slate-200 border-dashed'}" title="Clique para editar MTR">
+                    <i class="fas fa-file-invoice"></i> ${t.mtr || 'ADICIONAR MTR'}
+                </button>`;
+
+                const fotoTag = t.foto ? `<button onclick="UI.showPhoto('${t.foto}')" class="mt-2 w-full flex items-center justify-center gap-1 bg-slate-800 text-white font-bold rounded-lg py-1.5 text-[10px] shadow-sm hover:bg-black transition-colors"><i class="fas fa-camera"></i> VER FOTO</button>` : '';
                 const descTag = t.descarteLocal ? `<div class="mt-1 text-[10px] bg-red-100 text-red-900 font-bold rounded-lg p-1 border border-red-200 text-center truncate">DESC: ${t.descarteLocal}</div>` : '';
                 
                 const timeTag = ((status === 'concluido' || status === 'nao_feito') && t.horaConclusao) 
@@ -963,23 +959,18 @@ const App = {
                 : '';
 
                 return `
-                <div draggable="true" 
-                     ondragstart="App.handleDragStart(event, '${name}', ${i})"
-                     ondragover="App.handleDragOver(event)"
-                     ondrop="App.handleDrop(event, '${name}', ${i})"
+                <div draggable="true" ondragstart="App.handleDragStart(event, '${name}', ${i})" ondragover="App.handleDragOver(event)" ondrop="App.handleDrop(event, '${name}', ${i})"
                      class="drag-item p-3 border rounded-xl shadow-sm relative flex flex-col cursor-grab active:cursor-grabbing transition-all ${bgClass} ${opacityClass}">
                     
                     <div class="absolute top-2 right-2 flex gap-1">
-                        <button onclick="App.setTripStatus('${name}', ${i}, 'concluido')" class="w-6 h-6 rounded bg-emerald-100 hover:bg-emerald-200 text-emerald-700 flex items-center justify-center shadow-sm border border-emerald-200 transition" title="Marcar Concluído"><i class="fas fa-check text-[10px]"></i></button>
-                        <button onclick="App.setTripStatus('${name}', ${i}, 'cancelado')" class="w-6 h-6 rounded bg-slate-200 hover:bg-slate-300 text-slate-700 flex items-center justify-center shadow-sm border border-slate-300 transition" title="Marcar Cancelado"><i class="fas fa-times text-[10px]"></i></button>
+                        <button onclick="App.setTripStatus('${name}', ${i}, 'concluido')" class="w-6 h-6 rounded bg-emerald-100 hover:bg-emerald-200 text-emerald-700 flex items-center justify-center border border-emerald-200 shadow-sm"><i class="fas fa-check text-[10px]"></i></button>
+                        <button onclick="App.setTripStatus('${name}', ${i}, 'cancelado')" class="w-6 h-6 rounded bg-slate-200 hover:bg-slate-300 text-slate-700 flex items-center justify-center border border-slate-300 shadow-sm"><i class="fas fa-times text-[10px]"></i></button>
                     </div>
 
                     <div class="flex items-center gap-1 w-fit mb-2">
-                        <button onclick="App.changeQty('${name}', ${i})" class="text-slate-600 hover:text-blue-600 hover:bg-blue-50 text-[10px] font-black bg-white rounded-md py-0.5 px-1.5 border border-slate-200 shadow-sm transition cursor-pointer" title="Mudar Quantidade">
-                            ${t.qty || 1}
-                        </button>
-                        <button onclick="App.cycleType('${name}', ${i})" class="${colorClass} text-[10px] font-black bg-white hover:bg-slate-50 rounded-md py-0.5 px-2 border border-slate-200 shadow-sm transition cursor-pointer flex items-center gap-1" title="Clique para mudar o Tipo de Serviço">
-                            ${label} <i class="fas fa-sync-alt opacity-40 hover:opacity-100 text-[8px]"></i>
+                        <button onclick="App.changeQty('${name}', ${i})" class="text-slate-600 hover:text-blue-600 hover:bg-blue-50 text-[10px] font-black bg-white rounded-md py-0.5 px-1.5 border border-slate-200 shadow-sm">${t.qty || 1}</button>
+                        <button onclick="App.cycleType('${name}', ${i})" class="${colorClass} text-[10px] font-black bg-white hover:bg-slate-50 rounded-md py-0.5 px-2 border border-slate-200 shadow-sm flex items-center gap-1">
+                            ${label} <i class="fas fa-sync-alt opacity-40 text-[8px]"></i>
                         </button>
                     </div>
 
@@ -997,7 +988,6 @@ const App = {
             };
 
             let tripsHtml = '';
-            
             d.trips.forEach((t, i) => {
                 if (t.type === 'troca') tripsHtml += buildCell(t, i, 'text-slate-800'); 
                 else if (t.type === 'colocacao') tripsHtml += buildCell(t, i, 'text-red-600'); 
@@ -1009,19 +999,10 @@ const App = {
             });
 
             bodyDiv.innerHTML = tripsHtml;
-
-            const footerHtml = `
-                <div class="mt-auto p-2 border-t border-slate-300 bg-white">
-                    <button onclick="App.shareDriverRoute('${name}')" class="w-full py-2.5 bg-green-600 hover:bg-green-700 text-white text-[11px] font-black rounded-lg shadow-sm flex items-center justify-center gap-2 transition transform hover:scale-[1.02]">
-                        <i class="fab fa-whatsapp text-lg"></i> ENVIAR ROTA
-                    </button>
-                </div>
-            `;
-
+            const footerHtml = `<div class="mt-auto p-2 border-t border-slate-300 bg-white"><button onclick="App.shareDriverRoute('${name}')" class="w-full py-2.5 bg-green-600 hover:bg-green-700 text-white text-[11px] font-black rounded-lg flex items-center justify-center gap-2 shadow-sm"><i class="fab fa-whatsapp text-lg"></i> ENVIAR ROTA</button></div>`;
             column.innerHTML = headerHtml;
             column.appendChild(bodyDiv);
             column.insertAdjacentHTML('beforeend', footerHtml);
-            
             container.appendChild(column);
         });
     },
@@ -1129,7 +1110,17 @@ const App = {
         const newQty = prompt("Nova quantidade:", current);
         if(newQty !== null) State.updateTripQty(name, index, newQty);
     },
-
+        editMtr(name, index) {
+        const d = State.getCurrentFleet()[name];
+        if(!d || !d.trips[index]) return;
+        const current = d.trips[index].mtr || '';
+        const val = prompt("Digite o número do MTR:", current);
+        if(val !== null) {
+            d.trips[index].mtr = val.trim() || null;
+            State.saveFleet();
+            UI.toast("MTR atualizado!");
+        }
+    },
     setDescarte(n, i) { this.openDisposalModal(i); },
 
     shareDriverRoute(name) {
