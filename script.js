@@ -847,38 +847,49 @@ const App = {
             const pending = d.trips ? d.trips.filter(t => !t.completed && t.status !== 'cancelado').length : 0;
             const isLivre = pending === 0;
 
-            // Bolinha de status discreta: Verde se livre, Laranja se tem rota
-            const dotColor = isLivre ? 'bg-emerald-500' : 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]';
+            // Transforma "MARIO" em "Mario" para ficar mais elegante
+            const displayName = name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+
+            // Pingo de status com brilho (Glow)
+            const dotColor = isLivre ? 'bg-emerald-500' : 'bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.6)]';
 
             const card = document.createElement('div');
             
-            // Card Minimalista
-            card.className = `driver-card relative bg-white border ${State.session.currentDriver === name ? 'border-blue-500 ring-2 ring-blue-100' : 'border-slate-200/60'} rounded-2xl p-3 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group`;
+            // Design: Sombra suave, bordas bem arredondadas e transição fluida
+            card.className = `driver-card relative bg-white/80 backdrop-blur-sm border ${State.session.currentDriver === name ? 'border-blue-500 ring-4 ring-blue-50' : 'border-slate-100'} rounded-3xl p-4 shadow-[0_4px_20px_-5px_rgba(0,0,0,0.05)] hover:shadow-[0_10px_25px_-5px_rgba(0,0,0,0.1)] hover:-translate-y-1 transition-all duration-300 cursor-pointer group`;
             
             card.onclick = () => UI.openEditor(name);
 
             card.innerHTML = `
-                <div class="flex items-center gap-3">
+                <div class="flex items-center gap-4">
                     <div class="relative shrink-0">
-                        <div class="w-10 h-10 rounded-full flex items-center justify-center text-[11px] font-black text-white shadow-sm transition-transform group-hover:scale-105" 
-                             style="background: linear-gradient(135deg, ${d.color}dd, ${d.color})">
-                            ${name.substring(0,2)}
+                        <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-sm font-black text-white shadow-lg rotate-3 group-hover:rotate-0 transition-transform duration-300" 
+                             style="background: linear-gradient(135deg, ${d.color}, ${d.color}dd)">
+                            ${name.substring(0,2).toUpperCase()}
                         </div>
-                        <div class="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${dotColor}"></div>
+                        <div class="absolute -top-1 -right-1 w-4 h-4 rounded-full border-4 border-white ${dotColor}"></div>
                     </div>
                     
                     <div class="flex-1 min-w-0 flex flex-col">
-                        <div class="font-bold text-[13px] text-slate-800 truncate group-hover:text-blue-600 transition-colors uppercase">
-                            ${name}
+                        <div class="font-black text-[14px] text-slate-800 truncate group-hover:text-blue-600 transition-colors">
+                            ${displayName}
                         </div>
                         <div class="flex items-center gap-2 mt-0.5">
-                            ${d.plate ? `<span class="text-[8px] font-mono font-bold text-slate-400 border border-slate-200 px-1 rounded uppercase tracking-tighter">${d.plate}</span>` : ''}
-                            <span class="text-[10px] ${isLivre ? 'text-slate-300 font-medium' : 'text-amber-600 font-black animate-pulse'}">${pending > 0 ? pending + ' pendentes' : ''}</span>
+                            ${d.plate ? `<span class="text-[10px] font-bold text-slate-400 tracking-tighter uppercase font-mono">${d.plate}</span>` : ''}
+                            <span class="text-[10px] ${isLivre ? 'text-slate-300' : 'text-amber-600 font-black animate-pulse'}">
+                                ${pending > 0 ? '• ' + pending + ' em curso' : ''}
+                            </span>
                         </div>
+                    </div>
+
+                    <div class="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
+                        <i class="fas fa-plus text-[10px] text-slate-400"></i>
                     </div>
                 </div>`;
                 
             el.appendChild(card);
+        });
+    },
         });
     },
 
