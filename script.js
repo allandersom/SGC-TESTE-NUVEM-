@@ -3,7 +3,7 @@
 // CHAVES DO FIREBASE E SEGURANÇA (A TRAVA DA PORTA)
 // ============================================================================
 const firebaseConfig = {
-    apiKey: "AIzaSyCUwkGHLnSQBIiDhZN6MfF-R-RhZQx-kg4",
+    apiKey: "AIzaSyCUwkGHLnSQBIiDhZN6MFf-R-RhZQx-kg4",
     authDomain: "sgc-logistica-eaa73.firebaseapp.com",
     databaseURL: "https://sgc-logistica-eaa73-default-rtdb.firebaseio.com",
     projectId: "sgc-logistica-eaa73",
