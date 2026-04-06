@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | SGC Logística</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+    </style>
+</head>
+<body class="bg-slate-900 h-screen flex items-center justify-center p-4" 
+      style="background-image: url('images.png'); background-size: 400px; background-repeat: no-repeat; background-position: -100px -100px;">
+
+    <div class="glass w-full max-w-sm rounded-[2rem] shadow-2xl p-10 text-center animate-fade-in border border-white/20">
+        <img src="images.png" class="h-20 mx-auto mb-6 object-contain">
+        <h1 class="text-2xl font-black text-slate-800 tracking-tighter">SGC LOGÍSTICA</h1>
+        <p class="text-[10px] font-black text-blue-600 uppercase tracking-[0.4em] mb-10">Painel de Controle</p>
+
+        <div class="space-y-4">
+            <div class="relative">
+                <i class="fas fa-user absolute left-4 top-4 text-slate-300 text-sm"></i>
+                <input type="email" id="email" placeholder="Seu e-mail" 
+                       class="w-full pl-11 pr-4 py-4 bg-slate-100 border-none rounded-2xl outline-none focus:ring-2 ring-blue-500 font-medium text-sm transition-all">
+            </div>
+            
+            <div class="relative">
+                <i class="fas fa-lock absolute left-4 top-4 text-slate-300 text-sm"></i>
+                <input type="password" id="pass" placeholder="Sua senha" 
+                       class="w-full pl-11 pr-4 py-4 bg-slate-100 border-none rounded-2xl outline-none focus:ring-2 ring-blue-500 font-medium text-sm transition-all">
+            </div>
+
+            <button onclick="fazerLogin()" id="btn-login" 
+                    class="w-full bg-slate-900 hover:bg-blue-600 text-white font-black py-4 rounded-2xl shadow-xl transition-all active:scale-95 flex items-center justify-center gap-3">
+                <span>ACESSAR SISTEMA</span>
+                <i class="fas fa-arrow-right text-xs"></i>
+            </button>
+            
+            <p id="msg-erro" class="hidden text-red-500 text-[10px] font-black mt-4 uppercase animate-pulse"></p>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+
+    <script>
+        // === COLE SUA CONFIGURAÇÃO DO FIREBASE AQUI ===
+        const firebaseConfig = {
+            apiKey: "SUA_API_KEY",
+            authDomain: "SEU_AUTH_DOMAIN",
+            databaseURL: "SUA_DATABASE_URL",
+            projectId: "SEU_PROJECT_ID",
+            storageBucket: "SEU_STORAGE_BUCKET",
+            messagingSenderId: "SEU_SENDER_ID",
+            appId: "SEU_APP_ID"
+        };
+        // ==============================================
+
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+
+        function fazerLogin() {
+            const email = document.getElementById('email').value;
+            const pass = document.getElementById('pass').value;
+            const btn = document.getElementById('btn-login');
+            const erro = document.getElementById('msg-erro');
+
+            if(!email || !pass) return;
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-circle-notch animate-spin"></i>';
+
+            firebase.auth().signInWithEmailAndPassword(email, pass)
+                .then(() => {
+                    window.location.href = "index.html"; // Manda pro sistema
+                })
+                .catch(err => {
+                    console.error(err);
+                    erro.innerText = "ACESSO NEGADO: USUÁRIO OU SENHA INVÁLIDOS";
+                    erro.classList.remove('hidden');
+                    btn.disabled = false;
+                    btn.innerHTML = '<span>TENTAR NOVAMENTE</span> <i class="fas fa-arrow-right text-xs"></i>';
+                });
+        }
+    </script>
+</body>
+</html>
