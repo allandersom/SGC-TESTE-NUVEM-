@@ -312,7 +312,10 @@ const WhatsappService = {
             msg += `END: ${displayEnd}\n`;
 
             if (t.descarteLocal) msg += `*DESCARTE: ${t.descarteLocal.toUpperCase()}*\n`;
-            if (t.mtr) msg += `\`${t.mtr}\`\n`;
+            
+            // FORMATADO COM ASPAS DUPLAS PARA NÃO BUGAR:
+            if (t.mtr) msg += "\`" + t.mtr + "\`\n";
+            
             msg += `\n`; 
         }
         return msg;
@@ -360,7 +363,10 @@ const WhatsappService = {
                     const addressText = typeof t.to === 'string' ? t.to : (t.to && t.to.text ? t.to.text : '');
                     msg += `END: ${this.formatAddress(addressText).toUpperCase()}\n`;
                     if(t.descarteLocal) msg += `*DESCARTE: ${t.descarteLocal.toUpperCase()}*\n`;
-                    if (t.mtr) msg += `\`${t.mtr}\`\n`;
+                    
+                    // FORMATADO COM ASPAS DUPLAS PARA NÃO BUGAR:
+                    if (t.mtr) msg += "\`" + t.mtr + "\`\n";
+                    
                     msg += `\n`;
                 }
                 msg += `------------------------\n`;
