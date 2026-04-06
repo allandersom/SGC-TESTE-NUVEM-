@@ -76,7 +76,7 @@ body.night-mode #spreadsheet-container .bg-white { background-color: #ffffff !im
 .driver-card {
     background: white;
     border: 1px solid var(--border);
-    border-radius: 1.5rem; /* Ajuste para bordas modernas */
+    border-radius: 1.5rem;
     padding: 1rem;
     transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     cursor: pointer;
@@ -116,7 +116,6 @@ body.night-mode #spreadsheet-container .bg-white { background-color: #ffffff !im
 
 #section-planning {
     position: relative;
-    /* Forçamos a imagem e removemos qualquer cor de fundo do Tailwind */
     background-color: transparent !important;
     background-image: url('images.png') !important; 
     background-repeat: no-repeat !important;
@@ -126,28 +125,62 @@ body.night-mode #spreadsheet-container .bg-white { background-color: #ffffff !im
     min-height: 600px; 
 }
 
-/* A película que suaviza a logo para não atrapalhar a leitura */
 #section-planning::before {
     content: "";
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
-    background-color: #f8fafc; /* Cor do fundo original */
+    background-color: #f8fafc; 
     opacity: 0.92; 
     z-index: 0;
 }
 
-/* Garante que o conteúdo fique visível por cima da logo e da película */
 #section-planning > * {
     position: relative;
     z-index: 1;
 }
 
-/* Ajuste da película para o Modo Noite */
 body.night-mode #section-planning::before {
-    background-color: #0f172a; /* Cor do fundo noturno */
+    background-color: #0f172a; 
     opacity: 0.96;
 }
 
 /* Animação suave ao abrir */
 .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ========================================================================= */
+/* 🔥 STATUS: REPROGRAMADO (O LARANJA VIVO) 🔥 */
+/* ========================================================================= */
+
+.viagem-reprogramada {
+    border-left: 6px solid #FF4500 !important; /* Laranja Vivo Escuro */
+    background-color: #FFF5EE !important; /* Fundo alaranjado bem clarinho */
+}
+
+/* Proteção para não cegar ninguem no modo escuro */
+body.night-mode .viagem-reprogramada {
+    background-color: #381a0b !important;
+    border-left-color: #FF6347 !important;
+}
+
+.label-reprogramado {
+    display: block;
+    color: #FF4500;
+    font-weight: 900;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    margin-top: 6px;
+    letter-spacing: 0.05em;
+    animation: pulse-orange 2s infinite;
+}
+
+body.night-mode .label-reprogramado {
+    color: #FF6347;
+}
+
+/* Dá um efeito de pulsar sutil no texto para chamar atenção */
+@keyframes pulse-orange {
+    0% { opacity: 0.8; }
+    50% { opacity: 1; text-shadow: 0 0 8px rgba(255,69,0,0.3); }
+    100% { opacity: 0.8; }
+}
