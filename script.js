@@ -1003,8 +1003,8 @@ const App = {
                 else if (t.type === 'colocacao') tripsHtml += buildCell(t, i, 'text-red-600'); 
                 else if (t.type === 'retirada') tripsHtml += buildCell(t, i, 'text-purple-600'); 
                 else if (t.type === 'encher') {
-                    tripsHtml += buildCell(t, i, 'text-red-600', 'COLOCAÇÃO (ENCHER)');
-                    tripsHtml += buildCell(t, i, 'text-purple-600', 'RETIRADA (ENCHER)');
+                    tripsHtml += buildCell(t, i, 'text-red-600', 'COLOCAÇÕES (ENCHER NA HORA)');
+                    tripsHtml += buildCell(t, i, 'text-purple-600', 'RETIRADAS (ENCHER NA HORA)');
                 }
             });
 
