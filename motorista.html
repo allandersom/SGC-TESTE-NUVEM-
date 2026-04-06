@@ -172,33 +172,75 @@
                 }
             },
 
+            // ... código anterior do App ...
+
             showApp() {
                 document.getElementById('login-screen').classList.add('hidden');
                 document.getElementById('app-screen').classList.remove('hidden');
                 document.getElementById('app-screen').classList.add('flex');
                 document.getElementById('header-driver-name').innerText = this.myName;
+
+                // Avisa se a internet cair ou voltar
+                window.addEventListener('offline', () => this.showOfflineWarning(true));
+                window.addEventListener('online', () => this.showOfflineWarning(false));
+                
+                if (!navigator.onLine) this.showOfflineWarning(true);
+            },
+
+            showOfflineWarning(isOffline) {
+                const header = document.querySelector('header');
+                if (isOffline) {
+                    header.classList.replace('bg-blue-600', 'bg-slate-800');
+                    document.getElementById('header-driver-name').innerHTML = `${this.myName} <span class="text-[9px] bg-red-500 text-white px-2 py-0.5 rounded ml-2 animate-pulse">OFFLINE</span>`;
+                } else {
+                    header.classList.replace('bg-slate-800', 'bg-blue-600');
+                    document.getElementById('header-driver-name').innerText = this.myName;
+                }
             },
 
             listenToMyRoute() {
                 const path = `sgc_data/routes/${this.currentDate}/fleet/${this.myName}/trips`;
+                
+                // Escuta o Firebase. Se tiver net, ele atualiza e salva no celular.
                 db.ref(path).on('value', snapshot => {
                     const data = snapshot.val();
                     if (data) {
                         this.trips = Array.isArray(data) ? data : Object.values(data);
+                        
+                        // 🔥 A MÁGICA DO OFFLINE: Salva as rotas no celular do motorista
+                        localStorage.setItem(`sgc_rotas_${this.currentDate}`, JSON.stringify(this.trips));
+                        
                         this.renderTrips();
                     } else {
                         this.trips = [];
-                        document.getElementById('trips-container').innerHTML = `
-                            <div class="text-center text-slate-400 mt-20">
-                                <i class="fas fa-mug-hot text-5xl mb-4 opacity-50"></i>
-                                <h3 class="text-lg font-black">Nenhuma rota pra você!</h3>
-                                <p class="text-xs mt-2">Escolha outra data acima se necessário.</p>
-                            </div>
-                        `;
-                        this.updateProgress();
+                        this.renderEmpty();
                     }
                 });
+
+                // Se abrir o app já sem internet, tenta puxar o que salvou antes
+                if (!navigator.onLine) {
+                    const rotasSalvas = localStorage.getItem(`sgc_rotas_${this.currentDate}`);
+                    if (rotasSalvas) {
+                        this.trips = JSON.parse(rotasSalvas);
+                        this.renderTrips();
+                    } else {
+                        this.renderEmpty();
+                    }
+                }
             },
+
+            renderEmpty() {
+                document.getElementById('trips-container').innerHTML = `
+                    <div class="text-center text-slate-400 mt-20">
+                        <i class="fas fa-mug-hot text-5xl mb-4 opacity-50"></i>
+                        <h3 class="text-lg font-black">Nenhuma rota pra você!</h3>
+                        <p class="text-xs mt-2">Escolha outra data acima se necessário.</p>
+                    </div>
+                `;
+                this.updateProgress();
+            },
+
+            // ... continua com a função getLabel(type, qty) do seu código ...
 
             getLabel(type, qty) {
                 const q = parseInt(qty) || 1;
