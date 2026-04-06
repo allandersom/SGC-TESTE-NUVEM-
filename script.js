@@ -837,47 +837,25 @@ const App = {
 
     renderGrid() {
         const el = document.getElementById('drivers-grid');
-        if (!el) return;
         el.innerHTML = '';
-
         State.getDriversByShift().forEach(name => {
             const d = State.getDriver(name);
-            if (!d) return;
-
+            if (!d) return; 
             const pending = d.trips ? d.trips.filter(t => !t.completed && t.status !== 'cancelado').length : 0;
-            const isLivre = pending === 0;
-
-            // Bolinha de status discreta: Verde se livre, Laranja se tem rota
-            const dotColor = isLivre ? 'bg-emerald-500' : 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]';
-
             const card = document.createElement('div');
-            
-            // Card Minimalista
-            card.className = `driver-card relative bg-white border ${State.session.currentDriver === name ? 'border-blue-500 ring-2 ring-blue-100' : 'border-slate-200/60'} rounded-2xl p-3 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group`;
-            
+            card.className = `driver-card ${State.session.currentDriver===name ? 'selected' : ''}`;
             card.onclick = () => UI.openEditor(name);
-
+            
+            const plateHtml = d.plate ? `<div class="text-[8px] font-mono bg-slate-100 text-slate-500 rounded px-1 w-fit mt-1 border border-slate-200">${d.plate}</div>` : '';
             card.innerHTML = `
                 <div class="flex items-center gap-3">
-                    <div class="relative shrink-0">
-                        <div class="w-10 h-10 rounded-full flex items-center justify-center text-[11px] font-black text-white shadow-sm transition-transform group-hover:scale-105" 
-                             style="background: linear-gradient(135deg, ${d.color}dd, ${d.color})">
-                            ${name.substring(0,2)}
-                        </div>
-                        <div class="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${dotColor}"></div>
-                    </div>
-                    
-                    <div class="flex-1 min-w-0 flex flex-col">
-                        <div class="font-bold text-[13px] text-slate-800 truncate group-hover:text-blue-600 transition-colors uppercase">
-                            ${name}
-                        </div>
-                        <div class="flex items-center gap-2 mt-0.5">
-                            ${d.plate ? `<span class="text-[8px] font-mono font-bold text-slate-400 border border-slate-200 px-1 rounded uppercase tracking-tighter">${d.plate}</span>` : ''}
-                            <span class="text-[10px] ${isLivre ? 'text-slate-300 font-medium' : 'text-amber-600 font-black animate-pulse'}">${pending > 0 ? pending + ' pendentes' : ''}</span>
-                        </div>
+                    <div class="w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-sm transition-transform hover:scale-110" style="background:${d.color}">${name.substring(0,2)}</div>
+                    <div class="flex-1 min-w-0">
+                        <div class="font-bold text-xs text-slate-700 truncate">${name}</div>
+                        ${plateHtml}
+                        <div class="text-[9px] ${pending?'text-blue-600 font-bold':'text-slate-400'} mt-0.5">${pending} pendentes</div>
                     </div>
                 </div>`;
-                
             el.appendChild(card);
         });
     },
