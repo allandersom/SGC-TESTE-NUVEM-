@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sgc-logistica-v3'; // Subi para v3 para forçar a atualização nos celulares
+const CACHE_NAME = 'sgc-logistica-v4'; // Subi para v3 para forçar a atualização nos celulares
 const ASSETS = [
   './',
   './index.html',
