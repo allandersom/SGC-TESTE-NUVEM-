@@ -318,8 +318,8 @@
                     const label = this.getLabel(t.type, qty);
                     const end = (t.to && t.to.text) ? t.to.text.replace(/, Brasil$/i, '') : 'Endereço não informado';
                     
-                    const mapLink = "http://googleusercontent.com/maps.google.com/maps?q=" + encodeURIComponent(end);
-
+                    const mapLink = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(end);
+                    
                     let obsHtml = '';
                     if (t.obs) {
                         const parts = t.obs.split(/\|? ?MOT: /);
