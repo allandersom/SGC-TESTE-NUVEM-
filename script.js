@@ -1,6 +1,34 @@
 
 'use strict';
+// VERIFICAÇÃO DE LOGIN E PERMISSÕES
+firebase.auth().onAuthStateChanged((user) => {
+    if (user) {
+        // Usuário logado! Agora buscamos o PERFIL dele que salvamos no Database
+        db.ref('usuarios/' + user.uid).once('value').then((snapshot) => {
+            const dados = snapshot.val();
+            if (dados) {
+                console.log("Logado como: " + dados.perfil);
+                // Chama a função que esconde coisas do Comercial
+                aplicarPermissoes(dados.perfil);
+            }
+        });
+    } else {
+        // Ninguém logado? Expulsa para o login!
+        window.location.href = "login.html";
+    }
+});
 
+function aplicarPermissoes(perfil) {
+    if (perfil === 'comercial') {
+        // Exemplo: Esconde o botão de configurações e de resetar banco
+        const configBtn = document.querySelector('button[onclick*="settings-modal"]');
+        if (configBtn) configBtn.remove();
+        
+        // Impede que o comercial veja o botão de reset
+        const resetBtn = document.querySelector('button[onclick*="DataService.reset"]');
+        if (resetBtn) resetBtn.remove();
+    }
+}
 // ============================================================================
 // CHAVES DO FIREBASE 
 // ============================================================================
