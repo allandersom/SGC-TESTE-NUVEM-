@@ -943,7 +943,6 @@ const App = {
                 }
 
                 const label = customLabel || WhatsappService.getPluralLabel(t.type || 'troca', t.qty || 1);
-                const qtdText = t.qty > 1 ? `${t.qty} ` : '';
                 
                 let obsHtml = '';
                 if (t.obs) {
@@ -972,11 +971,16 @@ const App = {
                     
                     <div class="absolute top-2 right-2 flex gap-1">
                         <button onclick="App.setTripStatus('${name}', ${i}, 'concluido')" class="w-6 h-6 rounded bg-emerald-100 hover:bg-emerald-200 text-emerald-700 flex items-center justify-center shadow-sm border border-emerald-200 transition" title="Marcar Concluído"><i class="fas fa-check text-[10px]"></i></button>
-                        <button onclick="App.setTripStatus('${name}', ${i}, 'cancelado')" class="w-6 h-6 rounded bg-slate-200 hover:bg-slate-300 text-slate-700 flex items-center justify-center shadow-sm border border-slate-300 transition" title="Marcar Cancelado (Sairá do app do motorista)"><i class="fas fa-times text-[10px]"></i></button>
+                        <button onclick="App.setTripStatus('${name}', ${i}, 'cancelado')" class="w-6 h-6 rounded bg-slate-200 hover:bg-slate-300 text-slate-700 flex items-center justify-center shadow-sm border border-slate-300 transition" title="Marcar Cancelado"><i class="fas fa-times text-[10px]"></i></button>
                     </div>
 
-                    <div class="${colorClass} text-[10px] font-black bg-white rounded-md py-0.5 px-2 border border-slate-200 w-fit mb-2 shadow-sm">
-                        ${qtdText}${label}
+                    <div class="flex items-center gap-1 w-fit mb-2">
+                        <button onclick="App.changeQty('${name}', ${i})" class="text-slate-600 hover:text-blue-600 hover:bg-blue-50 text-[10px] font-black bg-white rounded-md py-0.5 px-1.5 border border-slate-200 shadow-sm transition cursor-pointer" title="Mudar Quantidade">
+                            ${t.qty || 1}
+                        </button>
+                        <button onclick="App.cycleType('${name}', ${i})" class="${colorClass} text-[10px] font-black bg-white hover:bg-slate-50 rounded-md py-0.5 px-2 border border-slate-200 shadow-sm transition cursor-pointer flex items-center gap-1" title="Clique para mudar o Tipo de Serviço">
+                            ${label} <i class="fas fa-sync-alt opacity-40 hover:opacity-100 text-[8px]"></i>
+                        </button>
                     </div>
 
                     <div class="font-bold text-[11px] leading-tight tracking-wide text-slate-800 pr-12 break-words">
@@ -1021,7 +1025,6 @@ const App = {
             container.appendChild(column);
         });
     },
-
     handleDragStart(e, driverName, index) {
         this.dragSource = { driver: driverName, index: index };
         e.dataTransfer.effectAllowed = 'move';
