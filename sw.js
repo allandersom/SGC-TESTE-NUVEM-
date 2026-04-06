@@ -1,14 +1,14 @@
-const CACHE_NAME = 'sgc-logistica-v2'; // Atualizei a versão
+const CACHE_NAME = 'sgc-logistica-v3'; // Subi para v3 para forçar a atualização nos celulares
 const ASSETS = [
   './',
   './index.html',
+  './motorista.html', // ⚠️ COLOQUE O NOME DO ARQUIVO DO MOTORISTA AQUI!
   './style.css',
   './script.js',
   './images.png',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
   'https://cdn.tailwindcss.com'
 ];
-
 // Instalação: Cacheia os arquivos
 self.addEventListener('install', (e) => {
   e.waitUntil(
