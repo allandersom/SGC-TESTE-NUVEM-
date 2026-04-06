@@ -837,25 +837,58 @@ const App = {
 
     renderGrid() {
         const el = document.getElementById('drivers-grid');
+        if (!el) return;
         el.innerHTML = '';
+
         State.getDriversByShift().forEach(name => {
             const d = State.getDriver(name);
-            if (!d) return; 
+            if (!d) return;
+
+            // Lógica de cálculo de pendências
             const pending = d.trips ? d.trips.filter(t => !t.completed && t.status !== 'cancelado').length : 0;
+            const isLivre = pending === 0;
+
+            // Definição das Tags de Status (Pílulas coloridas)
+            const statusHtml = isLivre 
+                ? `<span class="bg-emerald-50 text-emerald-600 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 w-fit border border-emerald-100"><i class="fas fa-check-circle text-[8px]"></i> Livre</span>`
+                : `<span class="bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 w-fit border border-amber-200 shadow-sm animate-pulse">⏳ ${pending} pendentes</span>`;
+
+            // Cor da bolinha de status (Online/Trabalhando)
+            const dotColor = isLivre ? 'bg-emerald-400' : 'bg-amber-500';
+
             const card = document.createElement('div');
-            card.className = `driver-card ${State.session.currentDriver===name ? 'selected' : ''}`;
-            card.onclick = () => UI.openEditor(name);
             
-            const plateHtml = d.plate ? `<div class="text-[8px] font-mono bg-slate-100 text-slate-500 rounded px-1 w-fit mt-1 border border-slate-200">${d.plate}</div>` : '';
+            // Classes de Estilização Modernas (Tailwind)
+            card.className = `driver-card relative bg-white border ${State.session.currentDriver === name ? 'border-blue-500 ring-2 ring-blue-100' : 'border-slate-200/80'} rounded-2xl p-3 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer group`;
+            
+            card.onclick = () => UI.openEditor(name);
+
+            // Montagem do HTML Interno do Card
             card.innerHTML = `
                 <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-sm transition-transform hover:scale-110" style="background:${d.color}">${name.substring(0,2)}</div>
+                    <div class="relative shrink-0">
+                        <div class="w-11 h-11 rounded-full flex items-center justify-center text-[13px] font-black text-white shadow-md transition-transform group-hover:scale-110" 
+                             style="background: linear-gradient(135deg, ${d.color}dd, ${d.color})">
+                            ${name.substring(0,2)}
+                        </div>
+                        <div class="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-white ${dotColor} shadow-sm"></div>
+                    </div>
+                    
                     <div class="flex-1 min-w-0">
-                        <div class="font-bold text-xs text-slate-700 truncate">${name}</div>
-                        ${plateHtml}
-                        <div class="text-[9px] ${pending?'text-blue-600 font-bold':'text-slate-400'} mt-0.5">${pending} pendentes</div>
+                        <div class="font-extrabold text-[13px] text-slate-800 truncate tracking-tight group-hover:text-blue-600 transition-colors uppercase">
+                            ${name}
+                        </div>
+                        <div class="flex flex-col gap-1 mt-0.5">
+                            ${d.plate ? `<span class="text-[9px] font-mono font-bold bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border border-slate-200 w-fit uppercase">${d.plate}</span>` : ''}
+                            ${statusHtml}
+                        </div>
+                    </div>
+                    
+                    <div class="opacity-0 group-hover:opacity-100 transition-opacity text-slate-300">
+                        <i class="fas fa-chevron-right text-xs"></i>
                     </div>
                 </div>`;
+                
             el.appendChild(card);
         });
     },
