@@ -684,24 +684,40 @@ const App = {
     },
 
     handleAutocomplete(input) {
-        const val = input.value.toLowerCase();
-        const box = document.getElementById('suggestions-box');
-        if (val.length < 2) return box.classList.add('hidden');
+    const val = input.value.toLowerCase();
+    const box = document.getElementById('suggestions-box');
+    if (val.length < 2) return box.classList.add('hidden');
 
-        const matches = State.searchAddressBook(val);
-        if (matches.length > 0) {
-            box.innerHTML = matches.map(item => `
+    const matches = State.searchAddressBook(val);
+    if (matches.length > 0) {
+        box.innerHTML = matches.map(item => {
+            // LÓGICA DE LIMPEZA: Remove coordenadas e o "Brasil" do final para o visual ficar limpo
+            let cleanAddress = item.address
+                .replace(/^-?\d+(\.\d+)?,\s*-?\d+(\.\d+)?\s*/, '') // Remove lat/long no início
+                .replace(/\s*\([^)]*\)$/, '') // Remove o que estiver entre parênteses no final (as coordenadas denovo)
+                .replace(/, Brasil$/i, '') // Remove o Brasil
+                .trim();
+
+            return `
                 <div class="suggestion-item" onclick="App.selectSuggestion('${item.company || ''}', '${item.name}', '${item.address}')">
-                    <div class="flex justify-between items-center">
-                        <strong>${item.name}</strong><span class="text-[9px] bg-slate-100 px-1 rounded text-slate-500 uppercase">${item.company || 'Geral'}</span>
-                    </div><div class="text-xs text-slate-400 truncate">${item.address}</div>
+                    <div class="flex justify-between items-start mb-1">
+                        <div class="flex flex-col">
+                            <strong class="text-sm font-bold text-slate-800 uppercase tracking-tight">${item.name}</strong>
+                            <span class="text-[10px] text-slate-400 font-medium uppercase mt-0.5">${item.company || 'Geral'}</span>
+                        </div>
+                        <i class="fas fa-plus text-slate-300 text-[10px] mt-1"></i>
+                    </div>
+                    <div class="text-[11px] text-slate-500 truncate leading-none">
+                        <i class="fas fa-map-marker-alt text-red-400 mr-1 text-[9px]"></i> ${cleanAddress}
+                    </div>
                 </div>
-            `).join('');
-            box.classList.remove('hidden');
-        } else {
-            box.classList.add('hidden');
-        }
-    },
+            `;
+        }).join('');
+        box.classList.remove('hidden');
+    } else {
+        box.classList.add('hidden');
+    }
+},
 
     selectSuggestion(company, name, address) {
         document.getElementById('input-empresa').value = company;
