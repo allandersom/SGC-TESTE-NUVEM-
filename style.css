@@ -18,7 +18,11 @@ body.night-mode {
     color: #e2e8f0;
 }
 
-body.night-mode #sidebar,
+body.night-mode #sidebar {
+    background-color: #0f172a !important; /* Azul marinho profundo */
+    border-color: #1e293b;
+}
+
 body.night-mode .bg-white {
     background-color: #1e293b;
     border-color: #334155;
@@ -33,20 +37,42 @@ body.night-mode select {
     color: #fff;
 }
 
-body.night-mode .accordion-header {
-    background-color: #1e293b;
-    color: #e2e8f0;
-}
-
 body.night-mode .driver-card {
     background-color: #1e293b;
     border-color: #334155;
 }
 
-/* --- BLINDAGEM DA PLANILHA --- */
+/* --- FIX: VISIBILIDADE DA SIDEBAR NO MODO NOITE --- */
+body.night-mode .accordion-header span {
+    color: #f8fafc !important; /* Branco puro para o texto */
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+body.night-mode .accordion-icon {
+    background-color: rgba(59, 130, 246, 0.2) !important;
+    color: #60a5fa !important; /* Ícone em azul brilhante */
+}
+
+body.night-mode .accordion-header i.fa-chevron-down {
+    color: #64748b !important;
+}
+
+/* --- BLINDAGEM DA PLANILHA (FIX DE CORES INVISÍVEIS) --- */
 body.night-mode #spreadsheet-modal { background-color: #f1f5f9 !important; }
 body.night-mode #spreadsheet-container { background-color: #e2e8f0 !important; }
-body.night-mode #spreadsheet-container .bg-white { background-color: #ffffff !important; }
+
+/* Isso garante que dentro da planilha branca, as cores originais funcionem */
+body.night-mode #spreadsheet-container .bg-white { 
+    background-color: #ffffff !important; 
+    color: #1e293b !important; /* Texto base escuro */
+}
+
+/* Força as cores dos serviços a aparecerem na planilha branca durante a noite */
+body.night-mode #spreadsheet-container .text-red-600 { color: #dc2626 !important; }
+body.night-mode #spreadsheet-container .text-purple-600 { color: #9333ea !important; }
+body.night-mode #spreadsheet-container .text-emerald-600 { color: #059669 !important; }
+body.night-mode #spreadsheet-container .text-slate-800 { color: #1e293b !important; }
+body.night-mode #spreadsheet-container .text-slate-500 { color: #64748b !important; }
 
 /* --- SIDEBAR EXPANDIDA --- */
 #sidebar.sidebar-expanded {
@@ -64,19 +90,32 @@ body.night-mode #spreadsheet-container .bg-white { background-color: #ffffff !im
 /* --- COMPONENTES --- */
 .accordion-header {
     width: 100%;
-    padding: 1rem 1.25rem;
+    padding: 1.25rem !important;
     display: flex;
     align-items: center;
     justify-content: space-between;
     background: white;
     transition: all 0.2s ease;
     cursor: pointer;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.accordion-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    transition: all 0.3s ease;
 }
 
 .driver-card {
     background: white;
     border: 1px solid var(--border);
-    border-radius: 1.5rem; /* Ajuste para bordas modernas */
+    border-radius: 1.5rem;
     padding: 1rem;
     transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     cursor: pointer;
@@ -103,20 +142,9 @@ body.night-mode #spreadsheet-container .bg-white { background-color: #ffffff !im
 }
 .shift-btn.active { background: white; color: var(--accent); box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
 
-/* --- LOADER --- */
-.loading-glass-panel {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(12px);
-    border-radius: 1.5rem;
-}
-
-/* ========================================================================= */
-/* 🔥 NOVA ESTILIZAÇÃO DA LOGO DE FUNDO (MARCA D'ÁGUA) 🔥 */
-/* ========================================================================= */
-
+/* --- MARCA D'ÁGUA --- */
 #section-planning {
     position: relative;
-    /* Forçamos a imagem e removemos qualquer cor de fundo do Tailwind */
     background-color: transparent !important;
     background-image: url('images.png') !important; 
     background-repeat: no-repeat !important;
@@ -126,39 +154,30 @@ body.night-mode #spreadsheet-container .bg-white { background-color: #ffffff !im
     min-height: 600px; 
 }
 
-/* A película que suaviza a logo para não atrapalhar a leitura */
 #section-planning::before {
     content: "";
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
-    background-color: #f8fafc; /* Cor do fundo original */
+    background-color: #f8fafc;
     opacity: 0.92; 
     z-index: 0;
 }
 
-/* Garante que o conteúdo fique visível por cima da logo e da película */
-#section-planning > * {
-    position: relative;
-    z-index: 1;
-}
+#section-planning > * { position: relative; z-index: 1; }
 
-/* Ajuste da película para o Modo Noite */
 body.night-mode #section-planning::before {
-    background-color: #0f172a; /* Cor do fundo noturno */
+    background-color: #0f172a;
     opacity: 0.96;
 }
 
-/* Animação suave ao abrir */
-.animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-/* --- ESTILIZAÇÃO DO AUTOCOMPLETE (SUGESTÕES) --- */
+/* --- AUTOCOMPLETE --- */
 #suggestions-box {
     background-color: white;
     border: 1px solid #e2e8f0;
     border-radius: 12px;
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
     margin-top: 4px;
-    overflow: hidden; /* Garante que o hover não saia da borda arredondada */
+    overflow: hidden;
     z-index: 9999;
 }
 
@@ -171,70 +190,15 @@ body.night-mode #section-planning::before {
     flex-direction: column;
 }
 
-.suggestion-item:hover {
-    background-color: #eff6ff; /* Azul clarinho ao passar o mouse */
-}
+.suggestion-item:hover { background-color: #eff6ff; }
+.suggestion-item:last-child { border-bottom: none; }
 
-.suggestion-item:last-child {
-    border-bottom: none;
-}
-
-/* Ajuste para o modo noturno dentro das sugestões */
 body.night-mode .suggestion-item {
     background-color: #1e293b;
     border-color: #334155;
     color: #e2e8f0;
 }
 
-body.night-mode .suggestion-item:hover {
-    background-color: #334155;
-}
-/* --- PADRONIZAÇÃO DO MENU LATERAL (SIDEBAR) --- */
-
-/* Ajuste do cabeçalho do acordeão */
-.accordion-header {
-    background-color: transparent !important;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-    padding: 1.25rem !important;
-    transition: background 0.3s ease;
-}
-
-.accordion-header:hover {
-    background-color: rgba(0, 0, 0, 0.02) !important;
-}
-
-/* Padronização dos ícones (Círculos) */
-.accordion-icon {
-    width: 38px !important;
-    height: 38px !important;
-    border-radius: 10px !important; /* Bordas levemente arredondadas */
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    font-size: 1.1rem !important;
-    flex-shrink: 0;
-    transition: all 0.3s ease;
-}
-
-/* Estilo para o Modo Noturno na Sidebar */
-body.night-mode .accordion-header {
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    color: #f1f5f9 !important;
-}
-
-body.night-mode .accordion-header:hover {
-    background-color: rgba(255, 255, 255, 0.03) !important;
-}
-
-/* Ajuste das cores dos ícones no Modo Noturno para não brilhar demais */
-body.night-mode .accordion-icon {
-    background-color: rgba(255, 255, 255, 0.05) !important;
-    color: #60a5fa !important; /* Um azul mais suave */
-}
-
-/* Força o texto a aparecer corretamente */
-.accordion-header span {
-    font-size: 0.9rem !important;
-    letter-spacing: 0.3px;
-    font-weight: 600 !important;
-}
+/* Animação */
+.animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
