@@ -1,7 +1,6 @@
-
 'use strict';
 // ============================================================================
-// CHAVES DO FIREBASE 
+// CHAVES DO FIREBASE E SEGURANÇA (A TRAVA DA PORTA)
 // ============================================================================
 const firebaseConfig = {
     apiKey: "AIzaSyCUwkGHLnSQBIiDhZN6MfF-R-RhZQx-kg4",
@@ -18,6 +17,45 @@ if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
 const db = firebase.database();
+
+// --- BLINDAGEM DO ACESSO (VERIFICA O LOGIN) ---
+firebase.auth().onAuthStateChanged((user) => {
+    if (user) {
+        db.ref('usuarios/' + user.uid).once('value').then((snapshot) => {
+            const dados = snapshot.val();
+            if (dados && dados.perfil) {
+                const tagUser = document.getElementById('user-badge');
+                if(tagUser) tagUser.innerText = dados.nome + " | " + dados.perfil.toUpperCase();
+                
+                aplicarPermissoes(dados.perfil);
+                UI.init(); // Só deixa iniciar o app se tiver logado
+            } else {
+                alert("Usuário sem perfil configurado no banco!");
+                firebase.auth().signOut().then(() => window.location.href = "login.html");
+            }
+        });
+    } else {
+        window.location.href = "login.html"; // Joga pro login se tentar entrar direto
+    }
+});
+
+// APLICA AS RESTRIÇÕES PARA O COMERCIAL
+function aplicarPermissoes(perfil) {
+    if (perfil === 'comercial') {
+        // Esconde Configurações
+        const btnSettings = document.getElementById('btn-settings');
+        if(btnSettings) btnSettings.style.display = 'none';
+
+        // Esconde Botão de Reset
+        const btnReset = document.getElementById('btn-reset-data');
+        if(btnReset) btnReset.style.display = 'none';
+
+        // Variável global para sabermos na hora de desenhar os cards o que esconder
+        window.userPerfil = 'comercial'; 
+    } else {
+        window.userPerfil = 'admin';
+    }
+}
 // ============================================================================
 
 const CONFIG = {
@@ -166,7 +204,7 @@ const State = {
             trip.status = trip.status === status ? 'pendente' : status;
             trip.completed = (trip.status === 'concluido');
             
-            if (trip.status === 'concluido' || trip.status === 'nao_feito') {
+            if (trip.status === 'concluido' || trip.status === 'nao_feito' || trip.status === 'reprogramado') {
                 const agora = new Date();
                 trip.horaConclusao = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
             } else {
@@ -331,7 +369,7 @@ const WhatsappService = {
         drivers.forEach(name => {
             const driver = State.getDriver(name);
             if(!driver || !driver.trips) return;
-            const activeTrips = driver.trips.filter(t => t.status !== 'concluido' && t.status !== 'cancelado' && t.status !== 'nao_feito');
+            const activeTrips = driver.trips.filter(t => t.status !== 'concluido' && t.status !== 'cancelado' && t.status !== 'nao_feito' && t.status !== 'reprogramado');
             
             if (activeTrips.length > 0) {
                 hasContent = true;
@@ -407,6 +445,7 @@ const UI = {
     tempTripIndex: null,
 
     init() {
+        // Agora o init do state é chamado aqui só depois que a auth passa
         State.init();
         const dateInput = document.getElementById('route-date');
         if(dateInput) dateInput.value = State.session.routeDate;
@@ -451,7 +490,6 @@ const UI = {
         setTimeout(() => el.remove(), 3500);
     },
 
-    // FUNÇÃO INJETADA PARA MOSTRAR A FOTO EM TELA CHEIA
     showPhoto(base64) {
         let modal = document.getElementById('photo-modal-viewer');
         if(!modal) {
@@ -841,7 +879,7 @@ const App = {
         State.getDriversByShift().forEach(name => {
             const d = State.getDriver(name);
             if (!d) return; 
-            const pending = d.trips ? d.trips.filter(t => !t.completed && t.status !== 'cancelado').length : 0;
+            const pending = d.trips ? d.trips.filter(t => !t.completed && t.status !== 'cancelado' && t.status !== 'reprogramado').length : 0;
             const card = document.createElement('div');
             card.className = `driver-card ${State.session.currentDriver===name ? 'selected' : ''}`;
             card.onclick = () => UI.openEditor(name);
@@ -869,7 +907,15 @@ const App = {
         driver.trips.slice().reverse().forEach((t, revIndex) => {
             const realIndex = driver.trips.length - 1 - revIndex;
             const row = document.createElement('div');
-            row.className = "flex justify-between items-center bg-slate-50 p-2 rounded border border-slate-100 mb-1 animate-fade-in";
+            
+            // Se for comercial, não mostra o botão de lixeira no mini-histórico
+            const btnDeletarHtml = window.userPerfil === 'admin' 
+                ? `<button onclick="App.quickDelete('${name}', ${realIndex})" class="w-5 h-5 rounded hover:bg-red-50 text-slate-300 hover:text-red-500 flex items-center justify-center"><i class="fas fa-times text-xs"></i></button>`
+                : ``;
+
+            // Classe laranja se for reprogramada
+            const isRepro = t.status === 'reprogramado';
+            row.className = `flex justify-between items-center bg-slate-50 p-2 rounded border border-slate-100 mb-1 animate-fade-in ${isRepro ? 'border-l-4 border-l-orange-500 bg-orange-50/30' : ''}`;
             
             let obsText = '';
             if(t.obs) {
@@ -880,17 +926,20 @@ const App = {
             const companyTag = t.empresa ? `<span class="text-[7px] bg-slate-200 px-1 rounded mr-1">${t.empresa}</span>` : '';
             let displayType = t.type ? t.type.toUpperCase() : 'TROCA';
             if(t.type === 'encher') displayType = 'ENCHER'; 
+            
+            const tagReproMini = isRepro ? `<span class="text-[8px] text-orange-600 font-bold ml-1">REPROG.</span>` : '';
 
             row.innerHTML = `
-                <div class="truncate pr-2">
-                    <div class="flex gap-1">
+                <div class="truncate pr-2 flex-1">
+                    <div class="flex gap-1 items-center">
                         <button onclick="App.changeQty('${name}',${realIndex})" class="text-[9px] font-bold text-slate-700 hover:text-blue-600 border-b border-dotted border-slate-300 w-4 text-center" title="Mudar Qtd">${t.qty}</button>
                         <button onclick="App.cycleType('${name}',${realIndex})" class="text-[9px] font-bold text-slate-700 hover:text-blue-600 border-b border-dotted border-slate-300" title="Mudar Tipo">${displayType}</button>
+                        ${tagReproMini}
                     </div>
-                    <div class="text-[8px] text-slate-400 truncate">${companyTag}${t.obra || 'Sem nome'}</div>
+                    <div class="text-[8px] text-slate-400 truncate mt-0.5">${companyTag}${t.obra || 'Sem nome'}</div>
                     ${obsText}
                 </div>
-                <button onclick="App.quickDelete('${name}', ${realIndex})" class="w-5 h-5 rounded hover:bg-red-50 text-slate-300 hover:text-red-500 flex items-center justify-center"><i class="fas fa-times text-xs"></i></button>
+                ${btnDeletarHtml}
             `;
             el.appendChild(row);
         });
@@ -940,6 +989,9 @@ const App = {
                     opacityClass = 'opacity-60 grayscale';
                 } else if (status === 'nao_feito') {
                     bgClass = 'bg-red-50 border-red-300';
+                } else if (status === 'reprogramado') {
+                    // SE FOR REPROGRAMADO, APLICA A CLASSE LARANJA DO CSS
+                    bgClass = 'viagem-reprogramada';
                 }
 
                 const label = customLabel || WhatsappService.getPluralLabel(t.type || 'troca', t.qty || 1);
@@ -958,9 +1010,20 @@ const App = {
                 const mtrTag = t.mtr ? `<div class="mt-2 text-[10px] bg-indigo-100 text-indigo-900 font-bold rounded-lg p-1 border border-indigo-200 text-center truncate"><i class="fas fa-file-invoice"></i> ${t.mtr}</div>` : '';
                 const descTag = t.descarteLocal ? `<div class="mt-1 text-[10px] bg-red-100 text-red-900 font-bold rounded-lg p-1 border border-red-200 text-center truncate">DESC: ${t.descarteLocal}</div>` : '';
                 
-                const timeTag = ((status === 'concluido' || status === 'nao_feito') && t.horaConclusao) 
-                ? `<div class="mt-2 text-[9px] font-black ${status==='concluido'?'text-emerald-700':'text-red-700'} text-center"><i class="far fa-clock"></i> ${status==='concluido'?'FEITO':'NÃO FEITO'} ÀS ${t.horaConclusao}</div>` 
+                const timeTag = ((status === 'concluido' || status === 'nao_feito' || status === 'reprogramado') && t.horaConclusao) 
+                ? `<div class="mt-2 text-[9px] font-black ${status==='concluido'?'text-emerald-700':(status==='reprogramado'?'text-orange-700':'text-red-700')} text-center"><i class="far fa-clock"></i> ${status==='concluido'?'FEITO':(status==='reprogramado'?'REPROGRAMADO':'NÃO FEITO')} ÀS ${t.horaConclusao}</div>` 
                 : '';
+
+                // A TAG LARANJA PULSANTE QUE FICA EMBAIXO
+                const tagReprogramado = status === 'reprogramado' ? `<div class="label-reprogramado">● REPROGRAMADO ${t.data_reprogramada ? '('+t.data_reprogramada+')' : ''}</div>` : '';
+
+                // BOTÕES DO CANTO DIREITO (LIXEIRA E CALENDÁRIO SÓ APARECEM PRO ADMIN)
+                const btnLixeira = window.userPerfil === 'admin' 
+                    ? `<button onclick="App.deleteTrip('${name}', ${i})" class="w-6 h-6 rounded bg-slate-200 hover:bg-slate-300 text-slate-700 flex items-center justify-center shadow-sm border border-slate-300 transition" title="Apagar Rota"><i class="fas fa-trash-alt text-[10px]"></i></button>`
+                    : ``;
+                const btnCalendario = window.userPerfil === 'admin'
+                    ? `<button onclick="App.reprogramarTrip('${name}', ${i})" class="w-6 h-6 rounded bg-orange-100 hover:bg-orange-200 text-orange-600 flex items-center justify-center shadow-sm border border-orange-200 transition" title="Reprogramar Data"><i class="fas fa-calendar-alt text-[10px]"></i></button>`
+                    : ``;
 
                 return `
                 <div draggable="true" 
@@ -969,9 +1032,10 @@ const App = {
                      ondrop="App.handleDrop(event, '${name}', ${i})"
                      class="drag-item p-3 border rounded-xl shadow-sm relative flex flex-col cursor-grab active:cursor-grabbing transition-all ${bgClass} ${opacityClass}">
                     
-                    <div class="absolute top-2 right-2 flex gap-1">
+                    <div class="absolute top-2 right-2 flex gap-1 z-10">
+                        ${btnCalendario}
                         <button onclick="App.setTripStatus('${name}', ${i}, 'concluido')" class="w-6 h-6 rounded bg-emerald-100 hover:bg-emerald-200 text-emerald-700 flex items-center justify-center shadow-sm border border-emerald-200 transition" title="Marcar Concluído"><i class="fas fa-check text-[10px]"></i></button>
-                        <button onclick="App.setTripStatus('${name}', ${i}, 'cancelado')" class="w-6 h-6 rounded bg-slate-200 hover:bg-slate-300 text-slate-700 flex items-center justify-center shadow-sm border border-slate-300 transition" title="Marcar Cancelado"><i class="fas fa-times text-[10px]"></i></button>
+                        ${btnLixeira}
                     </div>
 
                     <div class="flex items-center gap-1 w-fit mb-2">
@@ -983,7 +1047,7 @@ const App = {
                         </button>
                     </div>
 
-                    <div class="font-bold text-[11px] leading-tight tracking-wide text-slate-800 pr-12 break-words">
+                    <div class="font-bold text-[11px] leading-tight tracking-wide text-slate-800 pr-20 break-words">
                         ${t.empresa ? `<span class="text-slate-500 uppercase text-[9px]">${t.empresa}</span><br>` : ''}
                         ${t.obra ? `<span class="text-[13px] font-black">${t.obra}</span>` : ''}
                     </div>
@@ -991,6 +1055,7 @@ const App = {
                     ${obsHtml}
                     ${mtrTag}
                     ${descTag}
+                    ${tagReprogramado}
                     ${fotoTag}
                     ${timeTag}
                 </div>`;
@@ -1025,7 +1090,12 @@ const App = {
             container.appendChild(column);
         });
     },
+
     handleDragStart(e, driverName, index) {
+        if(window.userPerfil === 'comercial') {
+            e.preventDefault();
+            return UI.toast("Você não tem permissão para mover cards.", "error");
+        }
         this.dragSource = { driver: driverName, index: index };
         e.dataTransfer.effectAllowed = 'move';
         e.dataTransfer.setData('text/plain', JSON.stringify(this.dragSource));
@@ -1073,6 +1143,26 @@ const App = {
         State.updateTripType(name, index, types[nextIndex]);
     },
     
+    // --- FUNÇÃO DE REPROGRAMAÇÃO INJETADA AQUI ---
+    reprogramarTrip(driverName, index) {
+        const driver = State.getCurrentFleet()[driverName];
+        if (!driver || !driver.trips[index]) return;
+
+        const novaData = prompt("Reprogramar para qual data?\n(Ex: 08/04, Amanhã, etc.)");
+        
+        if (novaData !== null && novaData.trim() !== "") {
+            driver.trips[index].status = 'reprogramado';
+            driver.trips[index].data_reprogramada = novaData.trim();
+            
+            // Registra a hora que foi reprogramado
+            const agora = new Date();
+            driver.trips[index].horaConclusao = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            
+            State.saveFleet();
+            UI.toast("Viagem Reprogramada com Sucesso!");
+        }
+    },
+
     editTripText(name, index) {
         const d = State.getCurrentFleet()[name];
         if(!d || !d.trips[index]) return;
@@ -1134,11 +1224,13 @@ const App = {
 
     shareDriverRoute(name) {
         const d = State.getCurrentFleet()[name];
-        const active = d.trips.filter(t => t.status !== 'concluido' && t.status !== 'cancelado' && t.status !== 'nao_feito');
+        const active = d.trips.filter(t => t.status !== 'concluido' && t.status !== 'cancelado' && t.status !== 'nao_feito' && t.status !== 'reprogramado');
         if (!active.length) return UI.toast("Sem rotas pendentes", "info");
         let msg = WhatsappService.buildMessage(name, active, State.session.shift, d.plate);
         window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
     }
 };
 
-window.onload = () => UI.init();
+// Não chamamos o UI.init() no onload. Ele só vai ser chamado se a senha do Firebase bater.
+// Mas deixamos o window.onload por garantia.
+// O init real acontece no onAuthStateChanged lá no topo.
