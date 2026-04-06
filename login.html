@@ -77,7 +77,7 @@
                 })
                 .catch(err => {
                     console.error(err);
-                    erro.innerText = "ACESSO NEGADO: USUÁRIO OU SENHA INVÁLIDOS";
+                    erro.innerText = "ERRO: " + err.message;
                     erro.classList.remove('hidden');
                     btn.disabled = false;
                     btn.innerHTML = '<span>TENTAR NOVAMENTE</span> <i class="fas fa-arrow-right text-xs"></i>';
