@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-PT">
 <head>
@@ -18,140 +17,51 @@
 <body class="bg-slate-50 text-slate-800 antialiased overflow-hidden">
     
     <div id="toast-container" class="fixed top-6 right-6 z-[9999] flex flex-col gap-3 pointer-events-none"></div>
+    
     <div id="loading-overlay" class="fixed inset-0 z-[9998] bg-slate-900/95 backdrop-blur-sm hidden flex-col items-center justify-center transition-all duration-300">
         <div class="relative flex justify-center items-center">
             <div class="absolute animate-ping w-24 h-24 rounded-full bg-blue-500 opacity-20"></div>
             <div class="w-20 h-20 border-4 border-slate-700 border-t-blue-500 border-b-blue-500 rounded-full animate-spin shadow-lg"></div>
             <i class="fas fa-truck-fast absolute text-2xl text-blue-500 drop-shadow-[0_0_8px_rgba(59,130,246,0.8)]"></i>
         </div>
-        <span class="mt-6 text-sm font-black tracking-[0.3em] uppercase text-blue-400 animate-pulse drop-shadow-md"></span>
     </div>
 
     <div id="paste-modal" class="hidden fixed inset-0 z-[10005] modal-backdrop flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden animate-fade-in">
             <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50"><h3 class="font-bold">📋 Prancheta Inteligente</h3><button onclick="UI.toggleModal('paste-modal')"><i class="fas fa-times"></i></button></div>
             <div class="p-6 space-y-4">
-                <div class="bg-blue-50 text-blue-700 p-3 rounded text-xs border border-blue-200">
-                    <i class="fas fa-magic mr-1"></i> <b>Busca Automática:</b> Cole os nomes das empresas um abaixo do outro. O sistema buscará no banco e adicionará <b>todas</b> as obras da empresa.<br><br>
-                    <i>As que não forem ser feitas hoje, basta apagar na lixeira depois.</i>
-                </div>
-                <textarea id="paste-area" rows="8" class="input-modern font-mono text-xs" placeholder="Exemplo de lista:
-Construtora A
-Construtora B
-Posto Ipiranga..."></textarea>
+                <textarea id="paste-area" rows="8" class="input-modern font-mono text-xs" placeholder="Cole os nomes aqui..."></textarea>
                 <button onclick="App.processSmartPaste()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow-lg">Processar Lista</button>
             </div>
         </div>
     </div>
 
-    <div id="disposal-modal" class="hidden fixed inset-0 z-[10005] modal-backdrop flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full animate-fade-in">
-            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-green-50"><h3 class="font-bold text-green-800">♻️ Gerenciar Aterros</h3><button onclick="UI.toggleModal('disposal-modal')"><i class="fas fa-times"></i></button></div>
-            <div class="p-6 space-y-4">
-                <div class="space-y-2">
-                    <input id="new-aterro-name" type="text" class="input-modern" placeholder="Nome do Aterro">
-                    <input id="new-aterro-addr" type="text" class="input-modern" placeholder="Endereço (Texto livre)">
-                    <button onclick="App.addDisposalPoint()" class="w-full bg-green-600 text-white font-bold py-2 rounded-lg text-xs">Salvar Novo Local</button>
-                </div>
-                <div class="h-px bg-slate-100"></div>
-                <div id="disposal-list" class="space-y-2 max-h-40 overflow-y-auto custom-scroll"></div>
-            </div>
-        </div>
-    </div>
-
-    <div id="select-disposal-modal" class="hidden fixed inset-0 z-[10006] modal-backdrop flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full animate-fade-in">
-            <div class="p-4 border-b border-slate-100 flex justify-between bg-slate-50"><h3 class="font-bold text-sm">Onde descartar nesta viagem?</h3><button onclick="UI.toggleModal('select-disposal-modal')"><i class="fas fa-times"></i></button></div>
-            <div id="select-disposal-list" class="p-2 space-y-1 max-h-60 overflow-y-auto"></div>
-            <div class="p-2 border-t border-slate-100"><button onclick="App.clearTripDisposal()" class="w-full text-red-500 text-xs font-bold py-2">Remover Descarte</button></div>
-        </div>
-    </div>
-
-    <div id="select-mtr-modal" class="hidden fixed inset-0 z-[10006] modal-backdrop flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full animate-fade-in">
-            <div class="p-4 border-b border-slate-100 flex justify-between bg-indigo-50"><h3 class="font-bold text-sm text-indigo-800"><i class="fas fa-file-invoice mr-2"></i>Situação do MTR</h3><button onclick="UI.toggleModal('select-mtr-modal')"><i class="fas fa-times"></i></button></div>
-            <div class="p-2 space-y-1">
-                <button onclick="App.confirmMtrSelection('MTR DEVE SER PEGO PELO MOTORISTA NA OBRA')" class="w-full text-left p-3 hover:bg-indigo-50 rounded border-b border-slate-50 text-xs font-bold text-slate-700 flex items-center">PEGAR NA OBRA</button>
-                <button onclick="App.confirmMtrSelection('MTR É ENVIADO PELO RESPONSÁVEL NA LOGÍSTICA')" class="w-full text-left p-3 hover:bg-indigo-50 rounded border-b border-slate-50 text-xs font-bold text-slate-700 flex items-center">LOGÍSTICA ENVIA</button>
-                <button onclick="App.confirmMtrSelection('MTR SERÁ ENVIADO PELO COMERCIAL DIRETO PARA A BALANÇA')" class="w-full text-left p-3 hover:bg-indigo-50 rounded border-b border-slate-50 text-xs font-bold text-slate-700 flex items-center">COMERCIAL ENVIA (BALANÇA)</button>
-            </div>
-            <div class="p-2 border-t border-slate-100"><button onclick="App.clearTripMtr()" class="w-full text-red-500 text-xs font-bold py-2">Remover MTR</button></div>
-        </div>
-    </div>
-
-    <div id="settings-modal" class="hidden fixed inset-0 z-[10001] modal-backdrop flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full animate-fade-in overflow-hidden">
-            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                <h3 class="font-black text-slate-800"><i class="fas fa-cog text-slate-400 mr-2"></i> Configurações</h3>
-                <button onclick="UI.toggleModal('settings-modal')" class="text-slate-400 hover:text-slate-600 transition-colors"><i class="fas fa-times text-lg"></i></button>
-            </div>
-            
-            <div class="p-6 space-y-3 bg-white">
-                <button onclick="UI.toggleModal('disposal-modal'); UI.toggleModal('settings-modal')" class="w-full flex items-center gap-4 p-3 bg-slate-50 hover:bg-green-50 rounded-xl border border-slate-200 transition-all group">
-                    <div class="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center text-green-600 group-hover:scale-110 transition-transform"><i class="fas fa-dumpster text-lg"></i></div>
-                    <div class="font-bold text-sm text-slate-700">Gerenciar Aterros</div>
-                </button>
-                
-                <button onclick="DataService.export()" class="w-full flex items-center gap-4 p-3 bg-slate-50 hover:bg-blue-50 rounded-xl border border-slate-200 transition-all group">
-                    <div class="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform"><i class="fas fa-cloud-download-alt text-lg"></i></div>
-                    <div class="text-left">
-                        <div class="font-bold text-sm text-slate-700">Fazer Backup (Exportar)</div>
-                        <div class="text-[10px] font-semibold text-slate-500 uppercase mt-0.5">Salva as rotas e endereços</div>
-                    </div>
-                </button>
-                
-                <label class="w-full flex items-center gap-4 p-3 bg-slate-50 hover:bg-purple-50 rounded-xl border border-slate-200 transition-all group cursor-pointer">
-                    <div class="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center text-purple-600 group-hover:scale-110 transition-transform"><i class="fas fa-cloud-upload-alt text-lg"></i></div>
-                    <div class="text-left flex-1">
-                        <div class="font-bold text-sm text-slate-700">Restaurar Backup</div>
-                        <div class="text-[10px] font-semibold text-slate-500 uppercase mt-0.5">Puxar arquivo salvo</div>
-                    </div>
-                    <input type="file" class="hidden" accept=".json" onchange="DataService.import(this)">
-                </label>
-
-                <div class="h-px bg-slate-200 my-2"></div>
-
-                <button onclick="DataService.reset()" class="w-full flex items-center gap-4 p-3 bg-red-50 hover:bg-red-100 rounded-xl border border-red-200 transition-all group">
-                    <div class="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center text-red-600 group-hover:scale-110 transition-transform"><i class="fas fa-trash-alt text-lg"></i></div>
-                    <div class="font-black text-sm text-red-600">Apagar Dados de Hoje</div>
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <div id="spreadsheet-modal" class="hidden fixed inset-0 z-[10005] bg-slate-100 flex flex-col animate-fade-in">
-        <div class="bg-white px-4 py-3 flex justify-between items-center shadow-md z-10 shrink-0 border-b-4 border-green-500">
-            <h2 class="font-black text-xl text-slate-800 flex items-center gap-2"><i class="fas fa-table text-green-600"></i> Planilha de Monitoramento (Tempo Real)</h2>
-            <div class="flex gap-3">
-                <button onclick="WhatsappService.shareGeneralSummary()" class="bg-emerald-500 text-white font-bold py-2 px-4 rounded hover:bg-emerald-600 text-sm flex items-center gap-2"><i class="fab fa-whatsapp"></i> RESUMO GERAL</button>
-                <button onclick="UI.toggleModal('spreadsheet-modal')" class="bg-red-500 text-white w-9 h-9 rounded-lg hover:bg-red-600 flex items-center justify-center"><i class="fas fa-times"></i></button>
-            </div>
-        </div>
-        <div id="spreadsheet-container" class="flex-1 overflow-x-auto overflow-y-auto flex bg-slate-200 p-2 gap-[1px]">
-            </div>
-    </div>
-
     <div id="app-wrapper" class="flex h-screen w-screen overflow-hidden relative transition-all duration-500 bg-slate-200">
         
-        <aside id="sidebar" class="w-full h-full bg-white flex flex-col z-[600] shadow-2xl border-r border-slate-200">
-            <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between shrink-0 z-20 bg-white">
+        <aside id="sidebar" class="w-full h-full bg-white flex flex-col z-[600] shadow-2xl border-r border-slate-200 transition-colors duration-500">
+            <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between shrink-0 z-20">
                 <div class="flex items-center gap-3">
                     <img id="app-logo" src="images.png" alt="Logo" class="h-10 w-auto object-contain">
-                    <div><h1 class="font-bold text-slate-900 leading-tight">SGC Logística <i class="fas fa-cloud text-blue-500 ml-1 text-[10px]" title="Conectado"></i></h1><span class="text-[9px] bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded font-bold">Tempo Real</span></div>
+                    <div>
+                        <h1 class="font-bold leading-tight">SGC Logística <i class="fas fa-cloud text-blue-500 ml-1 text-[10px]"></i></h1>
+                        <span class="text-[9px] bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Tempo Real</span>
+                    </div>
                 </div>
-                <div class="flex gap-2">
-                    <button onclick="UI.toggleModal('settings-modal')" class="w-8 h-8 rounded-lg text-slate-400 hover:bg-slate-50"><i class="fas fa-cog"></i></button>
-                </div>
+                <button onclick="UI.toggleModal('settings-modal')" class="w-8 h-8 rounded-lg text-slate-400 hover:bg-slate-100"><i class="fas fa-cog"></i></button>
             </div>
 
-            <div class="flex-grow overflow-y-auto custom-scroll relative bg-white">
+            <div class="flex-grow overflow-y-auto custom-scroll relative">
+                
                 <div class="border-b border-slate-100">
                     <button onclick="UI.toggleSection('planning')" class="accordion-header group">
-                        <div class="flex items-center gap-3"><div class="accordion-icon bg-blue-50 text-blue-600"><i class="fas fa-map-location-dot"></i></div><span class="font-bold text-sm text-slate-800">Operacional</span></div><i id="arrow-planning" class="fas fa-chevron-down text-slate-300 text-xs"></i>
+                        <div class="flex items-center gap-3">
+                            <div class="accordion-icon"><i class="fas fa-map-location-dot"></i></div>
+                            <span class="font-bold text-sm">Operacional</span>
+                        </div>
+                        <i id="arrow-planning" class="fas fa-chevron-down text-slate-300 text-xs"></i>
                     </button>
-                    <div id="section-planning" class="accordion-body hidden bg-slate-50/30">
+                    <div id="section-planning" class="accordion-body hidden">
                         <div class="p-4 space-y-4 max-w-4xl mx-auto">
-                            
                             <div class="flex flex-col sm:flex-row gap-2">
                                 <div class="bg-slate-100 p-1 rounded-lg flex shadow-inner flex-1">
                                     <button onclick="App.setShift('day')" id="shift-day" class="shift-btn active">🌞 Dia</button>
@@ -159,7 +69,7 @@ Posto Ipiranga..."></textarea>
                                 </div>
                                 <div class="bg-slate-100 p-1 rounded-lg flex shadow-inner items-center px-3 flex-1 sm:flex-none">
                                     <i class="far fa-calendar-alt text-slate-400 mr-2"></i>
-                                    <input type="date" id="route-date" class="bg-transparent border-none text-xs font-bold text-slate-700 outline-none w-full cursor-pointer" onchange="App.setRouteDate(this.value)" title="Data da Rota">
+                                    <input type="date" id="route-date" class="bg-transparent border-none text-xs font-bold text-slate-700 outline-none w-full cursor-pointer" onchange="App.setRouteDate(this.value)">
                                 </div>
                             </div>
                             
@@ -167,95 +77,87 @@ Posto Ipiranga..."></textarea>
                             
                             <div id="editor-panel" class="hidden bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden animate-slide-up">
                                 <div class="bg-slate-800 px-4 py-3 text-white flex justify-between items-center">
-                                    <div class="flex items-center gap-2"><i class="fas fa-user-circle"></i><span id="editor-driver-name" class="font-bold text-xs uppercase">Motorista</span></div>
-                                    <button onclick="UI.closeEditor()" class="text-slate-400 hover:text-white"><i class="fas fa-times"></i></button>
+                                    <div class="flex items-center gap-2 font-bold text-xs uppercase"><i class="fas fa-user-circle"></i> <span id="editor-driver-name">Motorista</span></div>
+                                    <button onclick="UI.closeEditor()"><i class="fas fa-times"></i></button>
                                 </div>
                                 <div class="p-4 space-y-3">
-                                    <div class="flex gap-2">
-                                        <input id="input-plate" type="text" class="w-full text-center font-mono font-bold uppercase text-slate-700 border border-slate-200 rounded-lg text-sm p-2" placeholder="PLACA DO CAMINHÃO" maxlength="8" onchange="App.updatePlate()">
-                                    </div>
+                                    <input id="input-plate" type="text" class="w-full text-center font-mono font-bold uppercase border border-slate-200 rounded-lg p-2" placeholder="PLACA DO CAMINHÃO" maxlength="8" onchange="App.updatePlate()">
                                     <button onclick="UI.toggleModal('paste-modal')" class="w-full py-2 bg-indigo-50 text-indigo-600 border border-indigo-200 rounded-lg text-xs font-bold flex items-center justify-center gap-2"><i class="fas fa-paste"></i> Prancheta (Importar)</button>
                                     
-                                    <div id="form-single" class="space-y-3">
-                                        <div class="space-y-2 relative">
-                                            <input id="input-empresa" type="text" class="input-modern" placeholder="Empresa" oninput="App.handleAutocomplete(this)">
-                                            <input id="input-obra" type="text" class="input-modern" placeholder="Obra" oninput="App.handleAutocomplete(this)">
-                                            <div id="suggestions-box" class="hidden absolute left-0 right-0 z-50 bg-white border border-slate-200 rounded-lg shadow-xl max-h-48 overflow-y-auto custom-scroll mt-1"></div>
-                                        </div>
-                                        <div class="flex gap-3 items-center">
-                                            <input id="input-qty" type="number" value="1" min="1" class="w-16 h-10 text-center font-bold text-lg bg-slate-50 border border-slate-200 rounded-lg">
-                                            <div class="flex-grow grid grid-cols-4 gap-2">
-                                                <button onclick="UI.selectType('troca')" id="btn-type-troca" class="type-sel active">T</button>
-                                                <button onclick="UI.selectType('colocacao')" id="btn-type-colocacao" class="type-sel">C</button>
-                                                <button onclick="UI.selectType('retirada')" id="btn-type-retirada" class="type-sel">R</button>
-                                                <button onclick="UI.selectType('encher')" id="btn-type-encher" class="type-sel">E</button>
-                                            </div>
-                                        </div>
-                                        <div class="space-y-2">
-                                            <div class="relative"><input id="input-dest" type="text" class="input-modern pl-9" placeholder="Endereço..." onkeypress="if(event.key === 'Enter') App.addRoute()"><i class="fas fa-map-marker-alt absolute left-3 top-3 text-slate-400 text-xs"></i></div>
-                                            <input id="input-obs" type="text" class="input-modern bg-amber-50/30 text-xs" placeholder="Obs">
-                                        </div>
-                                        
-                                        <div class="flex gap-2">
-                                            <button onclick="App.addToQueue()" class="flex-1 bg-blue-100 hover:bg-blue-200 text-blue-700 border border-blue-200 font-bold py-3 rounded-lg shadow-sm flex items-center justify-center gap-2 text-sm" title="Adicionar à fila para salvar depois"><i class="fas fa-plus"></i> Fila</button>
-                                            <button onclick="App.addRoute()" class="flex-1 bg-slate-900 text-white font-bold py-3 rounded-lg shadow-md flex items-center justify-center gap-2 text-sm"><i class="fas fa-check"></i> Adicionar</button>
-                                        </div>
-                                        
-                                        <div id="queue-container" class="hidden mt-3 bg-blue-50 border border-blue-200 rounded-lg p-3">
-                                            <div class="flex justify-between items-center mb-2">
-                                                <h4 class="text-[10px] font-bold text-blue-700 uppercase">Fila de Adição</h4>
-                                                <span id="queue-count" class="text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded-full font-bold">0</span>
-                                            </div>
-                                            <div id="queue-list" class="space-y-1 max-h-32 overflow-y-auto custom-scroll mb-2"></div>
-                                            <button onclick="App.processQueue()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded text-xs shadow-lg">PROCESSAR FILA</button>
+                                    <div class="space-y-2 relative">
+                                        <input id="input-empresa" type="text" class="input-modern" placeholder="Empresa" oninput="App.handleAutocomplete(this)">
+                                        <input id="input-obra" type="text" class="input-modern" placeholder="Obra" oninput="App.handleAutocomplete(this)">
+                                        <div id="suggestions-box" class="hidden absolute left-0 right-0 z-[1001] bg-white border border-slate-200 rounded-lg shadow-xl max-h-48 overflow-y-auto"></div>
+                                    </div>
+
+                                    <div class="flex gap-2 items-center">
+                                        <input id="input-qty" type="number" value="1" min="1" class="w-16 h-10 text-center font-bold bg-slate-50 border rounded-lg">
+                                        <div class="flex-grow grid grid-cols-4 gap-1">
+                                            <button onclick="UI.selectType('troca')" id="btn-type-troca" class="type-sel active">T</button>
+                                            <button onclick="UI.selectType('colocacao')" id="btn-type-colocacao" class="type-sel">C</button>
+                                            <button onclick="UI.selectType('retirada')" id="btn-type-retirada" class="type-sel">R</button>
+                                            <button onclick="UI.selectType('encher')" id="btn-type-encher" class="type-sel">E</button>
                                         </div>
                                     </div>
 
-                                    <div class="pt-2 border-t border-slate-100">
-                                        <div class="flex justify-between items-center mb-2"><p class="text-[9px] font-bold text-slate-400 uppercase">Viagens Adicionadas</p></div>
-                                        <div id="mini-history" class="space-y-1 max-h-24 overflow-y-auto custom-scroll"></div>
+                                    <input id="input-dest" type="text" class="input-modern" placeholder="Endereço...">
+                                    <input id="input-obs" type="text" class="input-modern" placeholder="Observação">
+                                    
+                                    <div class="flex gap-2">
+                                        <button onclick="App.addToQueue()" class="flex-1 bg-blue-100 text-blue-700 font-bold py-3 rounded-lg text-sm">Fila</button>
+                                        <button onclick="App.addRoute()" class="flex-1 bg-slate-900 text-white font-bold py-3 rounded-lg text-sm">Adicionar</button>
                                     </div>
+                                    <div id="mini-history" class="pt-2 border-t border-slate-100 space-y-1"></div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="border-b border-slate-100">
-                    <button onclick="UI.toggleSection('list')" class="accordion-header group relative">
-                        <div class="flex items-center gap-3"><div class="accordion-icon bg-green-50 text-green-600"><i class="fas fa-table"></i></div><span class="font-bold text-sm text-slate-800">Planilha de Monitoramento</span></div>
-                        <div class="flex items-center gap-4">
-                            <i id="arrow-list" class="fas fa-chevron-down text-slate-300 text-xs"></i>
+                    <button onclick="UI.toggleSection('list')" class="accordion-header group">
+                        <div class="flex items-center gap-3">
+                            <div class="accordion-icon"><i class="fas fa-table"></i></div>
+                            <span class="font-bold text-sm">Planilha de Monitoramento</span>
                         </div>
+                        <i id="arrow-list" class="fas fa-chevron-down text-slate-300 text-xs"></i>
                     </button>
-                    <div id="section-list" class="accordion-body hidden bg-slate-50/30">
-                        <div class="p-6 max-w-4xl mx-auto">
-                            <button onclick="UI.toggleModal('spreadsheet-modal')" class="w-full py-5 bg-green-600 hover:bg-green-700 text-white font-black rounded-xl shadow-lg transition flex flex-col items-center justify-center gap-2 transform hover:scale-[1.02]">
-                                <i class="fas fa-table text-3xl"></i> 
-                                <span>ABRIR PLANILHA GERAL DE SERVIÇOS</span>                  
-                            </button>
+                    <div id="section-list" class="accordion-body hidden">
+                        <div class="p-6">
+                            <button onclick="UI.toggleModal('spreadsheet-modal')" class="w-full py-5 bg-green-600 text-white font-black rounded-xl shadow-lg">ABRIR PLANILHA GERAL</button>
                         </div>
                     </div>
                 </div>
 
                 <div class="border-b border-slate-100">
                     <button onclick="UI.toggleSection('db')" class="accordion-header group">
-                        <div class="flex items-center gap-3"><div class="accordion-icon bg-cyan-50 text-cyan-600"><i class="fas fa-database"></i></div><span class="font-bold text-sm text-slate-800">Banco de Endereços</span></div><i id="arrow-db" class="fas fa-chevron-down text-slate-300 text-xs"></i>
+                        <div class="flex items-center gap-3">
+                            <div class="accordion-icon"><i class="fas fa-database"></i></div>
+                            <span class="font-bold text-sm">Banco de Endereços</span>
+                        </div>
+                        <i id="arrow-db" class="fas fa-chevron-down text-slate-300 text-xs"></i>
                     </button>
-                    <div id="section-db" class="accordion-body hidden bg-slate-50/30">
-                        <div class="p-4 space-y-4 max-w-4xl mx-auto">
-                            <div class="space-y-2">
-                                <input id="db-company" type="text" class="input-modern" placeholder="Empresa">
-                                <input id="db-name" type="text" class="input-modern" placeholder="Obra">
-                                <input id="db-addr" type="text" class="input-modern" placeholder="Endereço">
-                                <button onclick="App.addToAddressBook()" class="w-full bg-cyan-600 text-white font-bold py-2 rounded-lg text-xs">Salvar Manualmente</button>
-                            </div>
-                            <div class="pt-2 border-t border-slate-200"><div id="db-list" class="space-y-2 max-h-48 overflow-y-auto custom-scroll"></div></div>
+                    <div id="section-db" class="accordion-body hidden">
+                        <div class="p-4 space-y-2">
+                            <input id="db-company" type="text" class="input-modern" placeholder="Empresa">
+                            <input id="db-name" type="text" class="input-modern" placeholder="Obra">
+                            <input id="db-addr" type="text" class="input-modern" placeholder="Endereço">
+                            <button onclick="App.addToAddressBook()" class="w-full bg-cyan-600 text-white font-bold py-2 rounded-lg text-xs">Salvar</button>
+                            <div id="db-list" class="pt-2 space-y-1 max-h-40 overflow-y-auto"></div>
                         </div>
                     </div>
                 </div>
+
             </div>
         </aside>
+    </div>
+
+    <div id="spreadsheet-modal" class="hidden fixed inset-0 z-[10005] bg-slate-100 flex flex-col">
+        <div class="bg-white px-4 py-3 flex justify-between items-center border-b-4 border-green-500">
+            <h2 class="font-black text-xl flex items-center gap-2"><i class="fas fa-table text-green-600"></i> Planilha Tempo Real</h2>
+            <button onclick="UI.toggleModal('spreadsheet-modal')" class="bg-red-500 text-white w-9 h-9 rounded-lg"><i class="fas fa-times"></i></button>
+        </div>
+        <div id="spreadsheet-container" class="flex-1 overflow-auto flex bg-slate-200 p-2 gap-[1px]"></div>
     </div>
 
     <script src="script.js"></script>
