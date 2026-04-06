@@ -7,109 +7,147 @@
 
 body {
     font-family: 'Inter', sans-serif;
-    transition: background-color 0.4s ease;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.5s ease, color 0.5s ease;
 }
 
-/* --- MODO NOTURNO (SUPER CONTRASTE) --- */
+/* --- MODO NOTURNO (NIGHT MODE) --- */
 body.night-mode {
     background-color: #0f172a;
-    color: #f8fafc;
+    color: #e2e8f0;
 }
 
-body.night-mode #sidebar {
-    background-color: #0f172a !important;
-    border-color: #1e293b;
+body.night-mode #sidebar,
+body.night-mode .bg-white {
+    background-color: #1e293b;
+    border-color: #334155;
+    color: #e2e8f0;
 }
 
-/* Força os textos da Sidebar a ficarem visíveis */
-body.night-mode .accordion-header span {
-    color: #f8fafc !important;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+body.night-mode input, 
+body.night-mode textarea, 
+body.night-mode select {
+    background-color: #0f172a;
+    border-color: #334155;
+    color: #fff;
 }
 
-body.night-mode .accordion-icon {
-    background-color: rgba(59, 130, 246, 0.2) !important;
-    color: #60a5fa !important;
+body.night-mode .accordion-header {
+    background-color: #1e293b;
+    color: #e2e8f0;
 }
 
-/* Estilo dos Cards dos Motoristas à Noite */
 body.night-mode .driver-card {
     background-color: #1e293b;
     border-color: #334155;
 }
 
-body.night-mode .driver-card .text-slate-700 { color: #f1f5f9 !important; }
-body.night-mode .driver-card .text-slate-400 { color: #94a3b8 !important; }
+/* --- BLINDAGEM DA PLANILHA --- */
+body.night-mode #spreadsheet-modal { background-color: #f1f5f9 !important; }
+body.night-mode #spreadsheet-container { background-color: #e2e8f0 !important; }
+body.night-mode #spreadsheet-container .bg-white { background-color: #ffffff !important; }
 
-/* PAINEL DE EDIÇÃO (FIX) */
-#editor-panel {
-    position: relative;
-    z-index: 100;
-    margin-top: 15px;
+/* --- SIDEBAR EXPANDIDA --- */
+#sidebar.sidebar-expanded {
+    width: 100vw !important;
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 9999 !important;
+    transform: none !important;
 }
 
-body.night-mode #editor-panel {
-    background-color: #1e293b !important;
-    border-color: #334155 !important;
-}
-
-body.night-mode #editor-panel input {
-    background-color: #0f172a;
-    color: #fff;
-    border-color: #334155;
-}
+/* --- SCROLLBAR --- */
+.custom-scroll::-webkit-scrollbar { width: 4px; }
+.custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 
 /* --- COMPONENTES --- */
 .accordion-header {
     width: 100%;
-    padding: 1.25rem !important;
+    padding: 1rem 1.25rem;
     display: flex;
     align-items: center;
-    background: transparent !important;
-    border-bottom: 1px solid rgba(0,0,0,0.05);
+    justify-content: space-between;
+    background: white;
+    transition: all 0.2s ease;
+    cursor: pointer;
 }
 
-.accordion-icon {
-    width: 38px; height: 38px; border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1.1rem; flex-shrink: 0;
-    background-color: rgba(37, 99, 235, 0.1);
-    color: var(--accent);
+.driver-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 1.5rem; /* Ajuste para bordas modernas */
+    padding: 1rem;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    cursor: pointer;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.driver-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
 }
 
 .input-modern {
-    width: 100%; padding: 0.6rem 0.75rem;
-    border: 1px solid var(--border); border-radius: 0.75rem;
-    outline: none; background: white;
+    width: 100%;
+    padding: 0.6rem 0.75rem;
+    background-color: white;
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    outline: none;
 }
 
-/* --- BLINDAGEM DA PLANILHA --- */
-body.night-mode #spreadsheet-modal { background-color: #f1f5f9 !important; }
-body.night-mode #spreadsheet-container { background-color: #e2e8f0 !important; }
+.shift-btn {
+    flex: 1; padding: 0.4rem; font-size: 0.7rem; font-weight: 700; border-radius: 0.5rem;
+    color: #64748b; transition: all 0.2s;
+}
+.shift-btn.active { background: white; color: var(--accent); box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
 
-body.night-mode #spreadsheet-container .bg-white { 
-    background-color: #ffffff !important; 
-    color: #1e293b !important; 
+/* --- LOADER --- */
+.loading-glass-panel {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(12px);
+    border-radius: 1.5rem;
 }
 
-/* Cores dos serviços na planilha branca */
-body.night-mode #spreadsheet-container .text-red-600 { color: #dc2626 !important; }
-body.night-mode #spreadsheet-container .text-purple-600 { color: #9333ea !important; }
-body.night-mode #spreadsheet-container .text-emerald-600 { color: #059669 !important; }
+/* ========================================================================= */
+/* 🔥 NOVA ESTILIZAÇÃO DA LOGO DE FUNDO (MARCA D'ÁGUA) 🔥 */
+/* ========================================================================= */
 
-/* MARCA D'ÁGUA */
 #section-planning {
     position: relative;
-    background: url('images.png') no-repeat center 200px / 300px;
+    /* Forçamos a imagem e removemos qualquer cor de fundo do Tailwind */
+    background-color: transparent !important;
+    background-image: url('images.png') !important; 
+    background-repeat: no-repeat !important;
+    background-position: center 200px !important; 
+    background-size: 300px !important;
+    background-attachment: local !important;
+    min-height: 600px; 
 }
 
+/* A película que suaviza a logo para não atrapalhar a leitura */
 #section-planning::before {
-    content: ""; position: absolute; inset: 0;
-    background-color: #f8fafc; opacity: 0.94; z-index: 0;
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #f8fafc; /* Cor do fundo original */
+    opacity: 0.92; 
+    z-index: 0;
 }
 
-#section-planning > * { position: relative; z-index: 1; }
-body.night-mode #section-planning::before { background-color: #0f172a; opacity: 0.96; }
+/* Garante que o conteúdo fique visível por cima da logo e da película */
+#section-planning > * {
+    position: relative;
+    z-index: 1;
+}
 
-.custom-scroll::-webkit-scrollbar { width: 4px; }
-.custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+/* Ajuste da película para o Modo Noite */
+body.night-mode #section-planning::before {
+    background-color: #0f172a; /* Cor do fundo noturno */
+    opacity: 0.96;
+}
+
+/* Animação suave ao abrir */
+.animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
