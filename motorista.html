@@ -98,21 +98,31 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        const App = {
+       const App = {
             myName: localStorage.getItem('sgc_driver_name'),
             currentDate: '',
             trips: [],
             currentPhotoIndex: null,
 
-            init() {
+            // 🔥 NOVA FUNÇÃO: Pega a data exata de hoje no formato do calendário
+            getTodayDate() {
                 const d = new Date();
                 const year = d.getFullYear();
                 const month = String(d.getMonth() + 1).padStart(2, '0');
                 const day = String(d.getDate()).padStart(2, '0');
-                this.currentDate = `${year}-${month}-${day}`;
+                return `${year}-${month}-${day}`;
+            },
+
+            init() {
+                // Usa a nova função para definir o dia de hoje
+                this.currentDate = this.getTodayDate();
                 
                 const dateInput = document.getElementById('driver-date');
-                if(dateInput) dateInput.value = this.currentDate;
+                if(dateInput) {
+                    dateInput.value = this.currentDate;
+                    // 🔥 BLOQUEIO VISUAL: Impede o calendário de voltar no tempo
+                    dateInput.min = this.currentDate; 
+                }
                 
                 if (this.myName) {
                     this.showApp();
@@ -121,6 +131,25 @@
                     this.loadDriversList();
                 }
             },
+
+            changeDate(val) {
+                if(!val) return;
+                
+                const today = this.getTodayDate();
+                
+                // 🔥 TRAVA DE SEGURANÇA: Se ele tentar dar um "jeitinho" de voltar a data
+                if (val < today) {
+                    alert("Acesso bloqueado: Você não pode visualizar ou alterar rotas de dias que já passaram.");
+                    // Devolve o calendário para a data que ele estava antes de tentar burlar
+                    document.getElementById('driver-date').value = this.currentDate; 
+                    return;
+                }
+
+                this.currentDate = val;
+                this.listenToMyRoute();
+            },
+
+            // ... (O RESTO DO SEU CÓDIGO CONTINUA IGUAL A PARTIR DAQUI: loadDriversList, login, etc) ...
 
             changeDate(val) {
                 if(!val) return;
