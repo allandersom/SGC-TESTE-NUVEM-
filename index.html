@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-PT">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -12,18 +12,20 @@
     <link rel="stylesheet" href="style.css">
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased overflow-hidden">
     
     <div id="toast-container" class="fixed top-6 right-6 z-[9999] flex flex-col gap-3 pointer-events-none"></div>
+    
     <div id="loading-overlay" class="fixed inset-0 z-[9998] bg-slate-900/95 backdrop-blur-sm hidden flex-col items-center justify-center transition-all duration-300">
         <div class="relative flex justify-center items-center">
             <div class="absolute animate-ping w-24 h-24 rounded-full bg-blue-500 opacity-20"></div>
             <div class="w-20 h-20 border-4 border-slate-700 border-t-blue-500 border-b-blue-500 rounded-full animate-spin shadow-lg"></div>
             <i class="fas fa-truck-fast absolute text-2xl text-blue-500 drop-shadow-[0_0_8px_rgba(59,130,246,0.8)]"></i>
         </div>
-        <span class="mt-6 text-sm font-black tracking-[0.3em] uppercase text-blue-400 animate-pulse drop-shadow-md"></span>
+        <span class="mt-6 text-sm font-black tracking-[0.3em] uppercase text-blue-400 animate-pulse drop-shadow-md">Carregando...</span>
     </div>
 
     <div id="paste-modal" class="hidden fixed inset-0 z-[10005] modal-backdrop flex items-center justify-center p-4">
@@ -110,7 +112,7 @@ Posto Ipiranga..."></textarea>
 
                 <div class="h-px bg-slate-200 my-2"></div>
 
-                <button onclick="DataService.reset()" class="w-full flex items-center gap-4 p-3 bg-red-50 hover:bg-red-100 rounded-xl border border-red-200 transition-all group">
+                <button onclick="DataService.reset()" id="btn-reset-data" class="w-full flex items-center gap-4 p-3 bg-red-50 hover:bg-red-100 rounded-xl border border-red-200 transition-all group">
                     <div class="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center text-red-600 group-hover:scale-110 transition-transform"><i class="fas fa-trash-alt text-lg"></i></div>
                     <div class="font-black text-sm text-red-600">Apagar Dados de Hoje</div>
                 </button>
@@ -127,7 +129,7 @@ Posto Ipiranga..."></textarea>
             </div>
         </div>
         <div id="spreadsheet-container" class="flex-1 overflow-x-auto overflow-y-auto flex bg-slate-200 p-2 gap-[1px]">
-            </div>
+        </div>
     </div>
 
     <div id="app-wrapper" class="flex h-screen w-screen overflow-hidden relative transition-all duration-500 bg-slate-200">
@@ -136,10 +138,14 @@ Posto Ipiranga..."></textarea>
             <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between shrink-0 z-20 bg-white">
                 <div class="flex items-center gap-3">
                     <img id="app-logo" src="images.png" alt="Logo" class="h-10 w-auto object-contain">
-                    <div><h1 class="font-bold text-slate-900 leading-tight">SGC Logística <i class="fas fa-cloud text-blue-500 ml-1 text-[10px]" title="Conectado"></i></h1><span class="text-[9px] bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded font-bold">Tempo Real</span></div>
+                    <div>
+                        <h1 class="font-bold text-slate-900 leading-tight">SGC Logística <i class="fas fa-cloud text-blue-500 ml-1 text-[10px]" title="Conectado"></i></h1>
+                        <span id="user-badge" class="text-[9px] bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded font-bold uppercase">Carregando...</span>
+                    </div>
                 </div>
                 <div class="flex gap-2">
-                    <button onclick="UI.toggleModal('settings-modal')" class="w-8 h-8 rounded-lg text-slate-400 hover:bg-slate-50"><i class="fas fa-cog"></i></button>
+                    <button id="btn-settings" onclick="UI.toggleModal('settings-modal')" class="w-8 h-8 rounded-lg text-slate-400 hover:bg-slate-50 transition" title="Configurações"><i class="fas fa-cog"></i></button>
+                    <button onclick="fazerLogout()" class="w-8 h-8 rounded-lg text-red-400 hover:bg-red-50 transition" title="Sair do Sistema"><i class="fas fa-sign-out-alt"></i></button>
                 </div>
             </div>
 
@@ -148,7 +154,7 @@ Posto Ipiranga..."></textarea>
                     <button onclick="UI.toggleSection('planning')" class="accordion-header group">
                         <div class="flex items-center gap-3"><div class="accordion-icon bg-blue-50 text-blue-600"><i class="fas fa-map-location-dot"></i></div><span class="font-bold text-sm text-slate-800">Operacional</span></div><i id="arrow-planning" class="fas fa-chevron-down text-slate-300 text-xs"></i>
                     </button>
-                    <div id="section-planning" class="accordion-body hidden bg-slate-50/30">
+                    <div id="section-planning" class="accordion-body hidden">
                         <div class="p-4 space-y-4 max-w-4xl mx-auto">
                             
                             <div class="flex flex-col sm:flex-row gap-2">
@@ -257,6 +263,17 @@ Posto Ipiranga..."></textarea>
         </aside>
     </div>
 
+    <script>
+        function fazerLogout() {
+            if(confirm("Deseja realmente sair do sistema?")) {
+                firebase.auth().signOut().then(() => {
+                    window.location.href = "login.html";
+                }).catch((error) => {
+                    console.error("Erro ao sair:", error);
+                });
+            }
+        }
+    </script>
     <script src="script.js"></script>
 </body>
 </html>
