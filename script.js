@@ -278,7 +278,6 @@ const WhatsappService = {
         return new Date().toLocaleDateString('pt-BR');
     },
 
-    // AQUI MONTA A MENSAGEM QUANDO CLICA NO BOTÃO DO MOTORISTA ESPECÍFICO
     buildMessage(driverName, trips, shift, plate) {
         const date = this.getFormattedDate();
         const shiftTxt = this.generateShiftIcon(shift);
@@ -313,75 +312,11 @@ const WhatsappService = {
             msg += `END: ${displayEnd}\n`;
 
             if (t.descarteLocal) msg += `*DESCARTE: ${t.descarteLocal.toUpperCase()}*\n`;
-            
-            // OLHA O MTR AQUI: Colocando a crase (`) antes e depois da variável pra formatar no WPP
             if (t.mtr) msg += `\`${t.mtr}\`\n`;
-            
             msg += `\n`; 
         }
         return msg;
     },
-
-    // AQUI MONTA A MENSAGEM DO RESUMÃO DE TODOS OS MOTORISTAS
-    shareGeneralSummary() {
-        const shift = State.session.shift;
-        const date = this.getFormattedDate();
-        const shiftTxt = shift === 'day' ? 'DIA' : 'NOITE';
-        let msg = `ROTA ${date} (${shiftTxt})\n`;
-        msg += `========================\n\n`;
-        
-        let hasContent = false;
-        const drivers = State.getDriversByShift();
-
-        drivers.forEach(name => {
-            const driver = State.getDriver(name);
-            if(!driver || !driver.trips) return;
-            const activeTrips = driver.trips.filter(t => t.status !== 'concluido' && t.status !== 'cancelado' && t.status !== 'nao_feito');
-            
-            if (activeTrips.length > 0) {
-                hasContent = true;
-                const plate = driver.plate ? `*[${driver.plate}]*` : '';
-                msg += `>> *${name}* ${plate}\n`;
-                
-                for (let i = 0; i < activeTrips.length; i++) {
-                    const t = activeTrips[i];
-                    
-                    if(t.obs) {
-                        const logObs = t.obs.replace(/\|? ?MOT:.*$/g, '').trim();
-                        if(logObs) msg += `*\`OBS: ${logObs.toUpperCase()}\`*\n`;
-                    }
-                    if (t.empresa) msg += `${t.empresa.toUpperCase()}\n`;
-
-                    let header = "";
-                    if (t.type === 'encher') {
-                        const q = t.qty;
-                        header = `*${q} COLOCAÇÃO + ${q} RETIRADA*`;
-                    } else {
-                        header = `*${t.qty} ${this.getPluralLabel(t.type, t.qty)}*`;
-                    }
-                    msg += `${header}\n`;
-                    if (t.obra) msg += `OBRA: ${t.obra.toUpperCase()}\n`;
-                    
-                    const addressText = typeof t.to === 'string' ? t.to : (t.to && t.to.text ? t.to.text : '');
-                    msg += `END: ${this.formatAddress(addressText).toUpperCase()}\n`;
-                    if(t.descarteLocal) msg += `*DESCARTE: ${t.descarteLocal.toUpperCase()}*\n`;
-                    
-                    // OLHA O MTR NO RESUMO GERAL AQUI TAMBÉM:
-                    if (t.mtr) msg += `\`${t.mtr}\`\n`;
-                    
-                    msg += `\n`;
-                }
-                msg += `------------------------\n`;
-            }
-        });
-
-        if (hasContent) {
-            window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
-        } else {
-            UI.toast("Nenhuma rota pendente para enviar.", "info");
-        }
-    }
-};
 
     shareGeneralSummary() {
         const shift = State.session.shift;
@@ -1179,27 +1114,11 @@ const App = {
         const d = State.getCurrentFleet()[name];
         if(!d || !d.trips[index]) return;
         const current = d.trips[index].mtr || '';
-        
-        const val = prompt(
-            "SITUAÇÃO DO MTR:\n\n" +
-            "1 - COMERCIAL (Enviado direto para a balança)\n" +
-            "2 - LOGÍSTICA (Enviado pelo responsável)\n" +
-            "3 - OBRA (Pegar MTR na obra)\n\n" +
-            "Ou digite o NÚMERO do MTR se já existir:", 
-            current
-        );
-        
+        const val = prompt("Digite o número do MTR:", current);
         if(val !== null) {
-            let textoMtr = val.trim().toUpperCase();
-            
-            // Atalhos rápidos
-            if (textoMtr === '1') textoMtr = 'MTR SERÁ ENVIADO PELO COMERCIAL DIRETO PARA A BALANÇA';
-            else if (textoMtr === '2') textoMtr = 'MTR É ENVIADO PELO RESPONSÁVEL NA LOGÍSTICA';
-            else if (textoMtr === '3') textoMtr = 'PEGAR MTR NA OBRA';
-            
-            d.trips[index].mtr = textoMtr || null;
+            d.trips[index].mtr = val.trim() || null;
             State.saveFleet();
-            UI.toast("Situação do MTR atualizada!");
+            UI.toast("MTR atualizado!");
         }
     },
     setDescarte(n, i) { this.openDisposalModal(i); },
