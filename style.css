@@ -189,3 +189,52 @@ body.night-mode .suggestion-item {
 body.night-mode .suggestion-item:hover {
     background-color: #334155;
 }
+/* --- PADRONIZAÇÃO DO MENU LATERAL (SIDEBAR) --- */
+
+/* Ajuste do cabeçalho do acordeão */
+.accordion-header {
+    background-color: transparent !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    padding: 1.25rem !important;
+    transition: background 0.3s ease;
+}
+
+.accordion-header:hover {
+    background-color: rgba(0, 0, 0, 0.02) !important;
+}
+
+/* Padronização dos ícones (Círculos) */
+.accordion-icon {
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 10px !important; /* Bordas levemente arredondadas */
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 1.1rem !important;
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+}
+
+/* Estilo para o Modo Noturno na Sidebar */
+body.night-mode .accordion-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    color: #f1f5f9 !important;
+}
+
+body.night-mode .accordion-header:hover {
+    background-color: rgba(255, 255, 255, 0.03) !important;
+}
+
+/* Ajuste das cores dos ícones no Modo Noturno para não brilhar demais */
+body.night-mode .accordion-icon {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    color: #60a5fa !important; /* Um azul mais suave */
+}
+
+/* Força o texto a aparecer corretamente */
+.accordion-header span {
+    font-size: 0.9rem !important;
+    letter-spacing: 0.3px;
+    font-weight: 600 !important;
+}
