@@ -844,48 +844,37 @@ const App = {
             const d = State.getDriver(name);
             if (!d) return;
 
-            // Lógica de cálculo de pendências
             const pending = d.trips ? d.trips.filter(t => !t.completed && t.status !== 'cancelado').length : 0;
             const isLivre = pending === 0;
 
-            // Definição das Tags de Status (Pílulas coloridas)
-            const statusHtml = isLivre 
-                ? `<span class="bg-emerald-50 text-emerald-600 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 w-fit border border-emerald-100"><i class="fas fa-check-circle text-[8px]"></i> Livre</span>`
-                : `<span class="bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 w-fit border border-amber-200 shadow-sm animate-pulse">⏳ ${pending} pendentes</span>`;
-
-            // Cor da bolinha de status (Online/Trabalhando)
-            const dotColor = isLivre ? 'bg-emerald-400' : 'bg-amber-500';
+            // Bolinha de status discreta: Verde se livre, Laranja se tem rota
+            const dotColor = isLivre ? 'bg-emerald-500' : 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]';
 
             const card = document.createElement('div');
             
-            // Classes de Estilização Modernas (Tailwind)
-            card.className = `driver-card relative bg-white border ${State.session.currentDriver === name ? 'border-blue-500 ring-2 ring-blue-100' : 'border-slate-200/80'} rounded-2xl p-3 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer group`;
+            // Card Minimalista
+            card.className = `driver-card relative bg-white border ${State.session.currentDriver === name ? 'border-blue-500 ring-2 ring-blue-100' : 'border-slate-200/60'} rounded-2xl p-3 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group`;
             
             card.onclick = () => UI.openEditor(name);
 
-            // Montagem do HTML Interno do Card
             card.innerHTML = `
                 <div class="flex items-center gap-3">
                     <div class="relative shrink-0">
-                        <div class="w-11 h-11 rounded-full flex items-center justify-center text-[13px] font-black text-white shadow-md transition-transform group-hover:scale-110" 
+                        <div class="w-10 h-10 rounded-full flex items-center justify-center text-[11px] font-black text-white shadow-sm transition-transform group-hover:scale-105" 
                              style="background: linear-gradient(135deg, ${d.color}dd, ${d.color})">
                             ${name.substring(0,2)}
                         </div>
-                        <div class="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-white ${dotColor} shadow-sm"></div>
+                        <div class="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${dotColor}"></div>
                     </div>
                     
-                    <div class="flex-1 min-w-0">
-                        <div class="font-extrabold text-[13px] text-slate-800 truncate tracking-tight group-hover:text-blue-600 transition-colors uppercase">
+                    <div class="flex-1 min-w-0 flex flex-col">
+                        <div class="font-bold text-[13px] text-slate-800 truncate group-hover:text-blue-600 transition-colors uppercase">
                             ${name}
                         </div>
-                        <div class="flex flex-col gap-1 mt-0.5">
-                            ${d.plate ? `<span class="text-[9px] font-mono font-bold bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border border-slate-200 w-fit uppercase">${d.plate}</span>` : ''}
-                            ${statusHtml}
+                        <div class="flex items-center gap-2 mt-0.5">
+                            ${d.plate ? `<span class="text-[8px] font-mono font-bold text-slate-400 border border-slate-200 px-1 rounded uppercase tracking-tighter">${d.plate}</span>` : ''}
+                            <span class="text-[10px] ${isLivre ? 'text-slate-300 font-medium' : 'text-amber-600 font-black animate-pulse'}">${pending > 0 ? pending + ' pendentes' : ''}</span>
                         </div>
-                    </div>
-                    
-                    <div class="opacity-0 group-hover:opacity-100 transition-opacity text-slate-300">
-                        <i class="fas fa-chevron-right text-xs"></i>
                     </div>
                 </div>`;
                 
