@@ -140,7 +140,7 @@ Posto Ipiranga..."></textarea>
                         <button onclick="App.autoDistributeAgenda()" class="w-full bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold py-3 rounded-lg shadow-md transition transform hover:scale-[1.02] flex items-center justify-center gap-2">
                             <i class="fas fa-magic"></i> DISTRIBUIR AUTOMATICAMENTE
                         </button>
-                        <p class="text-[9px] text-purple-600 mt-2 text-center leading-tight"></p>
+                        <p class="text-[9px] text-purple-600 mt-2 text-center leading-tight">Divide os serviços agendados inteligentemente, priorizando a mesma obra para o mesmo motorista.</p>
                     </div>
                     
                     <div id="spreadsheet-agenda-list" class="flex-1 overflow-y-auto p-3 space-y-2 custom-scroll bg-purple-50/50">
@@ -148,8 +148,7 @@ Posto Ipiranga..."></textarea>
                 </div>
             </div>
 
-            <div id="spreadsheet-container" class="flex-1 overflow-x-auto overflow-y-auto flex p-2 gap-[1px]">
-            </div>
+            <div id="spreadsheet-container" class="flex-1 overflow-x-auto overflow-y-auto flex p-2 gap-[1px]"></div>
         </div>
     </div>
 
@@ -179,6 +178,7 @@ Posto Ipiranga..."></textarea>
                                 <img id="logo-dia" src="images.png" alt="SGC Logística Dia" class="h-32 md:h-48 object-contain select-none block">
                                 <img id="logo-noite" src="images2.png" alt="SGC Logística Noite" class="h-32 md:h-48 object-contain select-none hidden">
                             </div>
+
                             <div class="flex flex-col sm:flex-row gap-2">
                                 <div class="bg-slate-100 p-1 rounded-lg flex shadow-inner flex-1">
                                     <button onclick="App.setShift('day')" id="shift-day" class="shift-btn active">🌞 Dia</button>
@@ -205,8 +205,8 @@ Posto Ipiranga..."></textarea>
                                     
                                     <div id="form-single" class="space-y-3">
                                         <div class="space-y-2 relative">
-                                            <input id="input-empresa" type="text" class="input-modern" placeholder="Empresa" oninput="App.handleAutocomplete(this)">
-                                            <input id="input-obra" type="text" class="input-modern" placeholder="Obra" oninput="App.handleAutocomplete(this)">
+                                            <input id="input-empresa" type="text" class="input-modern" placeholder="Empresa" oninput="App.handleAutocomplete(this, 'planning')">
+                                            <input id="input-obra" type="text" class="input-modern" placeholder="Obra" oninput="App.handleAutocomplete(this, 'planning')">
                                             <div id="suggestions-box" class="hidden absolute left-0 right-0 z-50 bg-white border border-slate-200 rounded-lg shadow-xl max-h-48 overflow-y-auto custom-scroll mt-1"></div>
                                         </div>
                                         <div class="flex gap-3 items-center">
@@ -307,8 +307,12 @@ Posto Ipiranga..."></textarea>
                                     </div>
                                 </div>
 
-                                <input id="agenda-empresa" type="text" class="input-modern" placeholder="Empresa (Opcional)">
-                                <input id="agenda-obra" type="text" class="input-modern" placeholder="Obra (Opcional)">
+                                <div class="space-y-2 relative">
+                                    <input id="agenda-empresa" type="text" class="input-modern" placeholder="Empresa (Opcional)" oninput="App.handleAutocomplete(this, 'agenda')">
+                                    <input id="agenda-obra" type="text" class="input-modern" placeholder="Obra (Opcional)" oninput="App.handleAutocomplete(this, 'agenda')">
+                                    <div id="suggestions-box-agenda" class="hidden absolute left-0 right-0 z-50 bg-white border border-purple-200 rounded-lg shadow-xl max-h-48 overflow-y-auto custom-scroll mt-1"></div>
+                                </div>
+
                                 <input id="agenda-addr" type="text" class="input-modern" placeholder="Endereço">
                                 <input id="agenda-obs" type="text" class="input-modern bg-amber-50/30" placeholder="Observação">
                                 <button onclick="App.addAgenda()" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-lg text-xs shadow-md transition mt-2"><i class="fas fa-calendar-plus mr-1"></i> Salvar Agendamento</button>
@@ -326,8 +330,7 @@ Posto Ipiranga..."></textarea>
                         </div>
                     </div>
                 </div>
-
-            </div>
+                </div>
         </aside>
     </div>
 
