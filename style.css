@@ -268,3 +268,24 @@ body.night-mode .shift-btn.active {
 body.night-mode #route-date {
     color: #f1f5f9 !important; /* Letra clara na data em modo noite */
 }
+/* ========================================================================= */
+/* 🔥 VISIBILIDADE DOS NOMES DOS MOTORISTAS NO MODO NOTURNO 🔥 */
+/* ========================================================================= */
+
+/* 1. Força a cor do nome do motorista (que geralmente tem fonte em negrito) para branco puro */
+body.night-mode .driver-card h3,
+body.night-mode .driver-card h4,
+body.night-mode .driver-card .font-bold,
+body.night-mode .driver-card .uppercase {
+    color: #ffffff !important; 
+    letter-spacing: 0.5px; /* Dá uma leve separada nas letras pra ler melhor de longe */
+}
+
+/* 2. Deixa o texto de baixo ("0 pendentes") com um cinza claro elegante */
+body.night-mode .driver-card p,
+body.night-mode .driver-card .text-xs,
+body.night-mode .driver-card .text-sm,
+body.night-mode .driver-card .text-slate-500,
+body.night-mode .driver-card .text-slate-400 {
+    color: #94a3b8 !important; /* Um cinza claro (slate-400) para dar contraste com o nome */
+}
