@@ -323,6 +323,8 @@ const WhatsappService = {
             msg += `END: ${displayEnd}\n`;
 
             if (t.descarteLocal) msg += `*DESCARTE: ${t.descarteLocal.toUpperCase()}*\n`;
+            
+            // O MTR já sai formatado como código inline aqui!
             if (t.mtr) msg += `\`${t.mtr}\`\n`;
             msg += `\n`; 
         }
@@ -415,6 +417,7 @@ const DataService = {
 
 const UI = {
     tempTripIndex: null,
+    tempDriverName: null, // Novo para o Modal funcionar na Planilha
 
     init() {
         State.init();
@@ -671,22 +674,30 @@ const App = {
         UI.toggleModal('select-disposal-modal');
     },
 
-    openMtrModal(tripIndex) { UI.tempTripIndex = tripIndex; UI.toggleModal('select-mtr-modal'); },
+    openMtrModal(tripIndex, driverName = null) { 
+        UI.tempTripIndex = tripIndex; 
+        UI.tempDriverName = driverName; // Armazena o motorista vindo da Planilha
+        UI.toggleModal('select-mtr-modal'); 
+    },
 
     confirmMtrSelection(mtrValue) {
-        const driver = State.getCurrentFleet()[State.session.currentDriver];
+        const driverName = UI.tempDriverName || State.session.currentDriver;
+        const driver = State.getCurrentFleet()[driverName];
         if (driver && driver.trips[UI.tempTripIndex]) {
             driver.trips[UI.tempTripIndex].mtr = mtrValue;
             State.saveFleet();
+            App.renderSpreadsheet(); // Atualiza a planilha na hora
         }
         UI.toggleModal('select-mtr-modal');
     },
 
     clearTripMtr() {
-        const driver = State.getCurrentFleet()[State.session.currentDriver];
+        const driverName = UI.tempDriverName || State.session.currentDriver;
+        const driver = State.getCurrentFleet()[driverName];
         if (driver && driver.trips[UI.tempTripIndex]) {
             driver.trips[UI.tempTripIndex].mtr = null;
             State.saveFleet();
+            App.renderSpreadsheet(); // Atualiza a planilha na hora
         }
         UI.toggleModal('select-mtr-modal');
     },
@@ -984,7 +995,6 @@ const App = {
             `;
             
             const bodyDiv = document.createElement('div');
-            // O body precisa ocupar o espaço inteiro e ser a DropZone principal da coluna
             bodyDiv.className = "flex-1 flex flex-col bg-slate-100 overflow-y-auto custom-scroll p-2 gap-2 min-h-[150px]";
             bodyDiv.setAttribute('ondragover', 'App.handleDragOver(event)');
             bodyDiv.setAttribute('ondrop', `App.handleDrop(event, '${name}', -1)`);
@@ -1014,6 +1024,24 @@ const App = {
                 const mtrTag = t.mtr ? `<div class="mt-2 text-[10px] bg-indigo-100 text-indigo-900 font-bold rounded-lg p-1 border border-indigo-200 text-center truncate"><i class="fas fa-file-invoice"></i> ${t.mtr}</div>` : '';
                 const descTag = t.descarteLocal ? `<div class="mt-1 text-[10px] bg-red-100 text-red-900 font-bold rounded-lg p-1 border border-red-200 text-center truncate">DESC: ${t.descarteLocal}</div>` : '';
                 const timeTag = ((status === 'concluido' || status === 'nao_feito') && t.horaConclusao) ? `<div class="mt-2 text-[9px] font-black ${status==='concluido'?'text-emerald-700':'text-red-700'} text-center"><i class="far fa-clock"></i> ${status==='concluido'?'FEITO':'NÃO FEITO'} ÀS ${t.horaConclusao}</div>` : '';
+
+                // 🔥 NOVOS BOTÕES MÁGICOS DA PLANILHA 🔥
+                const barraAcoesHtml = `
+                    <div class="mt-2 pt-2 border-t border-slate-200 flex gap-1 justify-between">
+                        <button onclick="App.returnToAgenda('${name}', ${i})" class="text-[9px] bg-purple-50 hover:bg-purple-100 text-purple-700 px-2 py-1 rounded flex items-center gap-1 transition shadow-sm border border-purple-200 font-bold" title="Devolver p/ Agenda">
+                            <i class="fas fa-undo"></i> <span class="hidden sm:inline">Agenda</span>
+                        </button>
+
+                        <div class="flex gap-1">
+                            <button onclick="App.editObs('${name}', ${i})" class="text-[9px] bg-amber-50 hover:bg-amber-100 text-amber-700 px-2 py-1 rounded flex items-center gap-1 transition shadow-sm border border-amber-200 font-bold" title="Editar Observação">
+                                <i class="fas fa-comment-dots"></i> OBS
+                            </button>
+                            <button onclick="App.openMtrModal(${i}, '${name}')" class="text-[9px] bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-2 py-1 rounded flex items-center gap-1 transition shadow-sm border border-indigo-200 font-bold" title="Definir MTR">
+                                <i class="fas fa-file-invoice"></i> MTR
+                            </button>
+                        </div>
+                    </div>
+                `;
 
                 return `
                 <div draggable="true" 
@@ -1045,6 +1073,7 @@ const App = {
                     ${descTag}
                     ${fotoTag}
                     ${timeTag}
+                    ${barraAcoesHtml}
                 </div>`;
             };
 
@@ -1169,6 +1198,39 @@ const App = {
     },
 
     // ==========================================
+    // 🔥 LÓGICA DE DEVOLUÇÃO PRA AGENDA 🔥
+    // ==========================================
+    returnToAgenda(driverName, tripIndex) {
+        if(!confirm("Devolver este serviço para os Agendamentos?")) return;
+        
+        const driver = State.getCurrentFleet()[driverName];
+        const trip = driver.trips.splice(tripIndex, 1)[0]; // Remove do motorista
+
+        // Recria o item na agenda
+        const agendaItem = {
+            id: Date.now(),
+            date: State.session.routeDate, // Volta pro dia que está na tela
+            empresa: trip.empresa || '',
+            obra: trip.obra || '',
+            address: typeof trip.to === 'string' ? trip.to : (trip.to && trip.to.text ? trip.to.text : ''),
+            obs: trip.obs || '',
+            qty: trip.qty || 1,
+            type: trip.type || 'troca'
+        };
+
+        State.data.agendamentos.push(agendaItem);
+        State.saveFleet();
+        State.saveAgendamentos();
+
+        // Atualiza todas as telas
+        App.renderSpreadsheet();
+        App.renderAgendaPanel();
+        App.renderAgendaTab();
+        App.renderGrid();
+        UI.toast("Serviço devolvido para a agenda!");
+    },
+
+    // ==========================================
     // 🔥 LÓGICA INTELIGENTE DE DISTRIBUIÇÃO 🔥
     // ==========================================
     autoDistributeAgenda() {
@@ -1219,7 +1281,6 @@ const App = {
         UI.toast("Serviços distribuídos inteligentemente!");
     },
     
-    // ... restante dos métodos menores (Edições, Exclusão, etc)
     quickDelete(name, index) { if(confirm("Excluir viagem rápida?")) State.removeTrip(name, index); },
     deleteTrip(name, index) { if(confirm("Apagar esta entrega?")) State.removeTrip(name, index); },
     toggleStatus(n, i) { State.toggleTripStatus(n, i); },
@@ -1270,6 +1331,7 @@ const App = {
         }
     },
     
+    // Atualizado para forçar o render da planilha na mesma hora
     editObs(name, index) {
         const d = State.getCurrentFleet()[name];
         const currentObs = d.trips[index].obs || '';
@@ -1281,6 +1343,8 @@ const App = {
         if (newObs !== null) {
             d.trips[index].obs = newObs ? `${newObs}${motObs}` : motObs.replace(' | ', '');
             State.saveFleet();
+            App.renderSpreadsheet(); // Atualiza a planilha
+            App.renderGrid();
         }
     },
 
@@ -1377,7 +1441,6 @@ const App = {
         });
     },
 
-    // Renderiza a Aba Lateral dentro da Planilha de Monitoramento
     renderAgendaPanel() {
         const list = document.getElementById('spreadsheet-agenda-list');
         if(!list) return;
