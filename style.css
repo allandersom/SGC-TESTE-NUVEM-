@@ -180,3 +180,24 @@ body.night-mode .accordion-icon {
 body.night-mode .accordion-header:hover .accordion-icon {
     color: #38bdf8 !important; /* Muda para um azul claro ao focar */
 }
+/* ========================================================================= */
+/* 🔥 CORREÇÃO DE TEXTOS E ALINHAMENTO NO MODO NOTURNO 🔥 */
+/* ========================================================================= */
+
+/* 1. Traz os nomes do menu (Operacional, Planilha, etc) de volta à vida */
+body.night-mode .accordion-header span.text-slate-800 {
+    color: #f1f5f9 !important; /* Cor clara para dar contraste */
+}
+
+/* 2. Arruma o título "SGC Logística" no topo */
+body.night-mode h1.text-slate-900 {
+    color: #ffffff !important; /* Deixa o título em branco puro */
+    letter-spacing: 0.5px; /* Dá um respiro entre as letras para ficar mais elegante */
+}
+
+/* 3. Bônus: Deixa a tag "Tempo Real" mais premium no modo noturno */
+body.night-mode .bg-emerald-100 {
+    background-color: rgba(16, 185, 129, 0.15) !important; /* Fundo verde translúcido */
+    color: #34d399 !important; /* Texto verde neon suave */
+    border: 1px solid rgba(52, 211, 153, 0.3); /* Bordinha sutil */
+}
