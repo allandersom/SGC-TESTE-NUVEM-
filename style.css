@@ -475,3 +475,51 @@ body.night-mode #spreadsheet-container .bg-amber-50 {
 body.night-mode #spreadsheet-container .bg-indigo-50 { 
     background-color: #1e293b !important; border-color: #334155 !important; color: #818cf8 !important; 
 }
+
+/* ========================================================================= */
+/* 🔥 CORREÇÕES FINAIS: AUTOCOMPLETE E ETIQUETAS NO MODO NOTURNO 🔥 */
+/* ========================================================================= */
+
+/* 1. CORRIGINDO AS ETIQUETAS "TROCA/QTDE" NA ABA DA PLANILHA (Ocultas no branco) */
+body.night-mode #spreadsheet-agenda-list .bg-slate-50,
+body.night-mode #spreadsheet-agenda-list .bg-slate-100,
+body.night-mode #agenda-tab-list .bg-slate-50,
+body.night-mode #agenda-tab-list .bg-slate-200 {
+    background-color: #0f172a !important; /* Deixa o fundo da etiqueta bem escuro */
+    border-color: #334155 !important;
+}
+body.night-mode #spreadsheet-agenda-list .text-slate-800,
+body.night-mode #agenda-tab-list .text-slate-800,
+body.night-mode #agenda-tab-list .text-slate-700 {
+    color: #f8fafc !important; /* Deixa o nome TROCA e as quantidades em Branco Vivo */
+}
+body.night-mode #spreadsheet-agenda-list .text-slate-600 {
+    color: #cbd5e1 !important; /* Número da quantidade visível */
+}
+
+
+/* 2. CORRIGINDO A CAIXA DE PESQUISA (AUTOCOMPLETE) NO MODO NOTURNO */
+body.night-mode #suggestions-box,
+body.night-mode #suggestions-box-agenda {
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+    box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.6) !important;
+}
+body.night-mode .suggestion-item {
+    background-color: #1e293b !important;
+    border-bottom: 1px solid #334155 !important;
+}
+body.night-mode .suggestion-item:hover {
+    background-color: #0f172a !important; /* Fundo mais escuro ao passar o mouse */
+    border-left: 4px solid #60a5fa !important; /* Barrinha azul neon */
+}
+/* Acendendo as letras escuras do Autocomplete */
+body.night-mode .suggestion-item strong.text-slate-800 {
+    color: #f1f5f9 !important; /* Título (Obra) em branco */
+}
+body.night-mode .suggestion-item span.text-slate-400 {
+    color: #94a3b8 !important; /* Subtítulo (Empresa) num cinza charmoso */
+}
+body.night-mode .suggestion-item div.text-slate-500 {
+    color: #cbd5e1 !important; /* Endereço bem visível */
+}
