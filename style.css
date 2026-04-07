@@ -280,3 +280,31 @@ body.night-mode #logo-dia {
 body.night-mode #logo-noite {
     display: block !important;
 }
+
+/* ========================================================================= */
+/* 🔥 BLINDAGEM DOS TEXTOS DA PLANILHA NO MODO NOTURNO 🔥 */
+/* ========================================================================= */
+
+/* Garante que os números das quantidades fiquem visíveis (Cinza escuro) */
+body.night-mode #spreadsheet-container button.text-slate-600 {
+    color: #475569 !important; 
+}
+
+/* Garante que os botões de tipo de serviço mantenham suas cores vivas! */
+body.night-mode #spreadsheet-container button.text-red-600 {
+    color: #dc2626 !important; /* Vermelho das Colocações */
+}
+body.night-mode #spreadsheet-container button.text-purple-600 {
+    color: #9333ea !important; /* Roxo das Retiradas */
+}
+body.night-mode #spreadsheet-container button.text-slate-800 {
+    color: #1e293b !important; /* Preto das Trocas */
+}
+
+/* Garante que o nome da empresa e observações não sumam */
+body.night-mode #spreadsheet-container .text-slate-500 {
+    color: #64748b !important;
+}
+body.night-mode #spreadsheet-container .text-slate-400 {
+    color: #94a3b8 !important;
+}
