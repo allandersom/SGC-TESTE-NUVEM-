@@ -1,4 +1,3 @@
-
 'use strict';
 
 // ============================================================================
@@ -30,7 +29,7 @@ const CONFIG = {
 };
 
 const State = {
-    data: { routes: {}, addressBook: [], disposalPoints: [] }, 
+    data: { routes: {}, addressBook: [], disposalPoints: [], agendamentos: [] }, 
     session: { currentDriver: null, shift: 'day', type: 'troca', routeDate: '' },
     tempQueue: [],
     isInitializing: true,
@@ -59,6 +58,7 @@ const State = {
 
                 this.data.addressBook = val.addressBook ? (Array.isArray(val.addressBook) ? val.addressBook : Object.values(val.addressBook)) : [];
                 this.data.disposalPoints = val.disposalPoints ? (Array.isArray(val.disposalPoints) ? val.disposalPoints : Object.values(val.disposalPoints)) : [];
+                this.data.agendamentos = val.agendamentos ? (Array.isArray(val.agendamentos) ? val.agendamentos : Object.values(val.agendamentos)) : [];
                 this.data.routes = val.routes || {};
 
                 this.integrityCheck();
@@ -67,6 +67,7 @@ const State = {
                 App.renderSpreadsheet(); 
                 App.renderAddressBook();
                 App.renderDisposalList();
+                App.renderAgenda(); // Renderiza a aba de agendamentos
                 
                 if (this.session.currentDriver) {
                     App.renderMiniHistory(this.session.currentDriver);
@@ -123,6 +124,10 @@ const State = {
     saveDisposal() {
         if (this.isInitializing) return;
         db.ref('sgc_data/disposalPoints').set(this.data.disposalPoints);
+    },
+    saveAgendamentos() {
+        if (this.isInitializing) return;
+        db.ref('sgc_data/agendamentos').set(this.data.agendamentos);
     },
 
     resetFleet() {
@@ -227,6 +232,16 @@ const State = {
     removeFromAddressBook(id) {
         this.data.addressBook = this.data.addressBook.filter(item => item.id !== id);
         this.saveAddressBook();
+    },
+
+    addAgendamento(item) {
+        this.data.agendamentos.push(item);
+        this.saveAgendamentos();
+    },
+
+    removeAgendamento(id) {
+        this.data.agendamentos = this.data.agendamentos.filter(a => a.id !== id);
+        this.saveAgendamentos();
     },
 
     searchAddressBook(query) {
@@ -416,7 +431,8 @@ const UI = {
     },
 
     toggleSection(id) {
-        ['planning', 'list', 'db'].forEach(s => {
+        // 🔥 Lista atualizada com a nova aba 'agenda' 🔥
+        ['planning', 'list', 'db', 'agenda'].forEach(s => {
             const el = document.getElementById(`section-${s}`);
             const arrow = document.getElementById(`arrow-${s}`);
             if (s === id) {
@@ -452,7 +468,6 @@ const UI = {
         setTimeout(() => el.remove(), 3500);
     },
 
-    // FUNÇÃO INJETADA PARA MOSTRAR A FOTO EM TELA CHEIA
     showPhoto(base64) {
         let modal = document.getElementById('photo-modal-viewer');
         if(!modal) {
@@ -684,40 +699,39 @@ const App = {
     },
 
     handleAutocomplete(input) {
-    const val = input.value.toLowerCase();
-    const box = document.getElementById('suggestions-box');
-    if (val.length < 2) return box.classList.add('hidden');
+        const val = input.value.toLowerCase();
+        const box = document.getElementById('suggestions-box');
+        if (val.length < 2) return box.classList.add('hidden');
 
-    const matches = State.searchAddressBook(val);
-    if (matches.length > 0) {
-        box.innerHTML = matches.map(item => {
-            // LÓGICA DE LIMPEZA: Remove coordenadas e o "Brasil" do final para o visual ficar limpo
-            let cleanAddress = item.address
-                .replace(/^-?\d+(\.\d+)?,\s*-?\d+(\.\d+)?\s*/, '') // Remove lat/long no início
-                .replace(/\s*\([^)]*\)$/, '') // Remove o que estiver entre parênteses no final (as coordenadas denovo)
-                .replace(/, Brasil$/i, '') // Remove o Brasil
-                .trim();
+        const matches = State.searchAddressBook(val);
+        if (matches.length > 0) {
+            box.innerHTML = matches.map(item => {
+                let cleanAddress = item.address
+                    .replace(/^-?\d+(\.\d+)?,\s*-?\d+(\.\d+)?\s*/, '') 
+                    .replace(/\s*\([^)]*\)$/, '') 
+                    .replace(/, Brasil$/i, '') 
+                    .trim();
 
-            return `
-                <div class="suggestion-item" onclick="App.selectSuggestion('${item.company || ''}', '${item.name}', '${item.address}')">
-                    <div class="flex justify-between items-start mb-1">
-                        <div class="flex flex-col">
-                            <strong class="text-sm font-bold text-slate-800 uppercase tracking-tight">${item.name}</strong>
-                            <span class="text-[10px] text-slate-400 font-medium uppercase mt-0.5">${item.company || 'Geral'}</span>
+                return `
+                    <div class="suggestion-item" onclick="App.selectSuggestion('${item.company || ''}', '${item.name}', '${item.address}')">
+                        <div class="flex justify-between items-start mb-1">
+                            <div class="flex flex-col">
+                                <strong class="text-sm font-bold text-slate-800 uppercase tracking-tight">${item.name}</strong>
+                                <span class="text-[10px] text-slate-400 font-medium uppercase mt-0.5">${item.company || 'Geral'}</span>
+                            </div>
+                            <i class="fas fa-plus text-slate-300 text-[10px] mt-1"></i>
                         </div>
-                        <i class="fas fa-plus text-slate-300 text-[10px] mt-1"></i>
+                        <div class="text-[11px] text-slate-500 truncate leading-none">
+                            <i class="fas fa-map-marker-alt text-red-400 mr-1 text-[9px]"></i> ${cleanAddress}
+                        </div>
                     </div>
-                    <div class="text-[11px] text-slate-500 truncate leading-none">
-                        <i class="fas fa-map-marker-alt text-red-400 mr-1 text-[9px]"></i> ${cleanAddress}
-                    </div>
-                </div>
-            `;
-        }).join('');
-        box.classList.remove('hidden');
-    } else {
-        box.classList.add('hidden');
-    }
-},
+                `;
+            }).join('');
+            box.classList.remove('hidden');
+        } else {
+            box.classList.add('hidden');
+        }
+    },
 
     selectSuggestion(company, name, address) {
         document.getElementById('input-empresa').value = company;
@@ -946,7 +960,6 @@ const App = {
             const buildCell = (t, i, colorClass, customLabel = null) => {
                 let status = t.status || (t.completed ? 'concluido' : 'pendente');
                 
-                // Define o fundo e a borda do Card (Caixinha)
                 let bgClass = 'bg-white border-slate-200'; 
                 let opacityClass = '';
                 
@@ -1155,6 +1168,80 @@ const App = {
         if (!active.length) return UI.toast("Sem rotas pendentes", "info");
         let msg = WhatsappService.buildMessage(name, active, State.session.shift, d.plate);
         window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+    },
+
+    // ==========================================
+    // 🔥 LÓGICA DA ABA DE AGENDAMENTOS 🔥
+    // ==========================================
+    addAgenda() {
+        const date = document.getElementById('agenda-date').value;
+        const empresa = document.getElementById('agenda-empresa').value;
+        const obra = document.getElementById('agenda-obra').value;
+        const addr = document.getElementById('agenda-addr').value;
+        const obs = document.getElementById('agenda-obs').value;
+
+        if (!date) return UI.toast("Selecione a data do calendário acima!", "error");
+        if (!addr && !obra) return UI.toast("Preencha a obra ou endereço", "error");
+
+        State.addAgendamento({
+            id: Date.now(),
+            date, empresa, obra, address: addr, obs
+        });
+
+        // Limpa os campos após agendar
+        document.getElementById('agenda-empresa').value = '';
+        document.getElementById('agenda-obra').value = '';
+        document.getElementById('agenda-addr').value = '';
+        document.getElementById('agenda-obs').value = '';
+
+        UI.toast("Serviço Agendado com sucesso!");
+        this.renderAgenda();
+    },
+
+    renderAgenda() {
+        const list = document.getElementById('agenda-list');
+        if(!list) return;
+        const selectedDate = document.getElementById('agenda-date').value;
+
+        list.innerHTML = '';
+        if (!selectedDate) {
+            list.innerHTML = '<div class="text-center text-xs text-slate-400 py-4">Selecione uma data acima para ver os agendamentos</div>';
+            return;
+        }
+
+        const agendados = State.data.agendamentos.filter(a => a.date === selectedDate);
+
+        if (agendados.length === 0) {
+            list.innerHTML = '<div class="text-center text-xs text-slate-400 py-4">Nenhum serviço agendado para este dia</div>';
+            return;
+        }
+
+        // Desenha os cards agendados
+        agendados.forEach(item => {
+            const div = document.createElement('div');
+            div.className = "flex justify-between items-start bg-slate-50 p-3 rounded-lg border border-slate-200 shadow-sm animate-fade-in";
+            
+            const empresaTag = item.empresa ? `<span class="text-[9px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded uppercase mr-1 border border-purple-200">${item.empresa}</span>` : '';
+            const obsTag = item.obs ? `<div class="mt-1 text-[9px] bg-amber-100 text-amber-800 p-1 rounded font-bold">OBS: ${item.obs}</div>` : '';
+
+            div.innerHTML = `
+                <div class="pr-2 flex-1 min-w-0">
+                    <div class="text-[11px] font-bold text-slate-800 truncate leading-tight">${empresaTag}${item.obra || 'Sem Nome'}</div>
+                    <div class="text-[9px] text-slate-500 mt-1 truncate"><i class="fas fa-map-marker-alt text-red-400 mr-1"></i>${item.address || 'Sem endereço'}</div>
+                    ${obsTag}
+                </div>
+                <button onclick="App.deleteAgenda(${item.id})" class="text-slate-300 hover:text-red-500 transition-colors shrink-0 ml-2 p-1" title="Excluir Agendamento"><i class="fas fa-trash-alt"></i></button>
+            `;
+            list.appendChild(div);
+        });
+    },
+
+    deleteAgenda(id) {
+        if(confirm("Deseja realmente excluir este agendamento?")) {
+            State.removeAgendamento(id);
+            this.renderAgenda();
+            UI.toast("Agendamento removido");
+        }
     }
 };
 
