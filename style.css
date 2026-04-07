@@ -217,3 +217,54 @@ body.night-mode #route-date {
     color: #f1f5f9 !important; /* Letra clara */
     color-scheme: dark; /* Mágica: avisa o navegador para deixar o ícone do calendário claro! */
 }
+/* ========================================================================= */
+/* 🔥 NOVO ESTILO: DIA/NOITE & INTERAÇÕES (Mãozinha) 🔥 */
+/* ========================================================================= */
+
+/* 1. Mágica para arrumar os containers claros (Day/Night & Data) no Modo Noite */
+body.night-mode #sidebar .bg-slate-100 {
+    background-color: #1e293b !important; /* Fundo escuro uniforme */
+    border-color: #334155 !important; /* Borda sutil */
+    box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.2) !important; /* Mantém o efeito 'afundado' */
+}
+
+/* 2. Deixar os botões de Dia/Noite e o container de Data mais bonitos (Pill Shape) */
+#sidebar .shift-btn,
+body.night-mode #sidebar .bg-slate-100:has(#route-date), /* Container da Data indiretamente */
+#sidebar .bg-slate-100:has(.shift-btn) { /* Container Dia/Noite indiretamente */
+    border-radius: 9999px !important; /* Formato pílula elegante e moderno */
+    cursor: pointer !important; /* ✅ COLOCA A MÃOZINHA (Tanto Dia quanto Noite) */
+}
+
+/* Estilo Refinado dos Botões Dia/Noite (Beleza) */
+.shift-btn {
+    padding: 8px 16px !important;
+    font-size: 0.8rem !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.2px;
+    gap: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+/* Cor do texto do Botão Inativo no Modo Noite para dar contraste */
+body.night-mode .shift-btn {
+    color: #94a3b8 !important; /* Cinza slate suave */
+}
+
+/* Cor do Botão Ativo no Modo Noite */
+body.night-mode .shift-btn.active {
+    background-color: #0f172a !important; /* Fundo escuro profundo pro botão ativo */
+    color: #60a5fa !important; /* Azul brilhante accent */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* 3. ✅ COLOCAR A MÃOZINHA NA DATA (Tanto Dia quanto Noite) */
+#route-date {
+    cursor: pointer !important;
+}
+body.night-mode #route-date {
+    color: #f1f5f9 !important; /* Letra clara na data em modo noite */
+}
