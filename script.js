@@ -30,7 +30,7 @@ const CONFIG = {
 
 const State = {
     data: { routes: {}, addressBook: [], disposalPoints: [], agendamentos: [] }, 
-    session: { currentDriver: null, shift: 'day', type: 'troca', routeDate: '' },
+    session: { currentDriver: null, shift: 'day', type: 'troca', agendaType: 'troca', routeDate: '' },
     tempQueue: [],
     isInitializing: true,
 
@@ -67,14 +67,14 @@ const State = {
                 App.renderSpreadsheet(); 
                 App.renderAddressBook();
                 App.renderDisposalList();
-                App.renderAgenda(); // Renderiza a aba de agendamentos
+                App.renderAgenda(); 
                 
                 if (this.session.currentDriver) {
                     App.renderMiniHistory(this.session.currentDriver);
                 }
             } catch (err) {
                 console.error("ERRO GRAVE:", err);
-                UI.toast("Erro ao carregar (Veja se o HTML foi atualizado)", "error");
+                UI.toast("Erro ao carregar", "error");
             } finally {
                 if (this.isInitializing) {
                     this.isInitializing = false;
@@ -428,10 +428,10 @@ const UI = {
         if(dateInput) dateInput.value = State.session.routeDate;
         this.toggleSection('planning');
         App.initDBForm();
+        this.selectAgendaType('troca'); // Inicializa o tipo do Agendamento
     },
 
     toggleSection(id) {
-        // 🔥 Lista atualizada com a nova aba 'agenda' 🔥
         ['planning', 'list', 'db', 'agenda'].forEach(s => {
             const el = document.getElementById(`section-${s}`);
             const arrow = document.getElementById(`arrow-${s}`);
@@ -525,6 +525,22 @@ const UI = {
                 if(type === 'colocacao') btn.className = 'type-sel active bg-red-600 text-white border-red-600 shadow-md scale-105';
                 if(type === 'retirada') btn.className = 'type-sel active bg-purple-600 text-white border-purple-600 shadow-md scale-105';
                 if(type === 'encher') btn.className = 'type-sel active bg-amber-500 text-white border-amber-500 shadow-md scale-105';
+            }
+        });
+    },
+
+    selectAgendaType(t) {
+        State.session.agendaType = t;
+        const types = ['troca', 'colocacao', 'retirada', 'encher'];
+        types.forEach(type => {
+            const btn = document.getElementById(`btn-agenda-${type}`);
+            if(!btn) return;
+            btn.className = 'agenda-type-sel transition-all duration-200 font-bold text-lg border text-slate-500 border-slate-200 hover:bg-slate-50 rounded-md';
+            if (t === type) {
+                if(type === 'troca') btn.className = 'agenda-type-sel active bg-slate-800 text-white border-slate-800 shadow-md scale-105 rounded-md';
+                if(type === 'colocacao') btn.className = 'agenda-type-sel active bg-red-600 text-white border-red-600 shadow-md scale-105 rounded-md';
+                if(type === 'retirada') btn.className = 'agenda-type-sel active bg-purple-600 text-white border-purple-600 shadow-md scale-105 rounded-md';
+                if(type === 'encher') btn.className = 'agenda-type-sel active bg-amber-500 text-white border-amber-500 shadow-md scale-105 rounded-md';
             }
         });
     }
@@ -927,12 +943,63 @@ const App = {
         });
     },
 
-   renderSpreadsheet() {
+    renderSpreadsheet() {
         const container = document.getElementById('spreadsheet-container');
         if (!container) return; 
         container.innerHTML = '';
-        const drivers = State.getDriversByShift();
+
+        // =====================================================================
+        // 🔥 COLUNA DE AGENDAMENTOS FUTUROS (Aparece na Planilha) 🔥
+        // =====================================================================
+        const agendadosHj = State.data.agendamentos.filter(a => a.date === State.session.routeDate);
         
+        const colAgenda = document.createElement('div');
+        colAgenda.className = "min-w-[240px] max-w-[280px] flex flex-col bg-purple-50 snap-start border-r-4 border-purple-300 shadow-sm";
+        
+        let agendaHeader = `
+            <div class="bg-purple-800 text-white text-center text-[10px] font-bold py-1 uppercase">Lembretes do Dia</div>
+            <div class="bg-purple-200 text-center text-xs font-bold py-1 border-b border-purple-300 text-purple-900">${WhatsappService.getFormattedDate()}</div>
+            <div class="text-center text-sm font-black py-2 uppercase tracking-wide text-purple-700 bg-purple-100 border-b border-purple-200"><i class="far fa-calendar-check"></i> AGENDADOS</div>
+            <div class="bg-purple-600 text-white text-center text-[10px] font-bold py-1.5 shadow-sm">${agendadosHj.length} PARA HOJE</div>
+        `;
+
+        const agendaBody = document.createElement('div');
+        agendaBody.className = "flex-1 flex flex-col overflow-y-auto custom-scroll p-2 gap-2";
+
+        if(agendadosHj.length === 0) {
+            agendaBody.innerHTML = '<div class="text-center text-xs text-purple-400 py-4 font-bold">Nenhum serviço agendado para esta data.</div>';
+        } else {
+            agendadosHj.forEach(a => {
+                let colorClass = 'text-slate-800';
+                if(a.type === 'colocacao') colorClass = 'text-red-600';
+                if(a.type === 'retirada') colorClass = 'text-purple-600';
+                if(a.type === 'encher') colorClass = 'text-amber-600';
+
+                const label = WhatsappService.getPluralLabel(a.type || 'troca', a.qty || 1);
+                
+                agendaBody.innerHTML += `
+                <div class="p-3 border border-purple-200 rounded-xl shadow-sm bg-white flex flex-col relative animate-fade-in">
+                    <div class="flex items-center gap-1 w-fit mb-2">
+                        <div class="text-slate-600 text-[10px] font-black bg-slate-100 rounded-md py-0.5 px-1.5 border border-slate-200">${a.qty || 1}</div>
+                        <div class="${colorClass} text-[10px] font-black bg-slate-50 rounded-md py-0.5 px-2 border border-slate-200">${label}</div>
+                    </div>
+                    <div class="font-bold text-[11px] leading-tight tracking-wide text-slate-800 break-words">
+                        ${a.empresa ? `<span class="text-slate-500 uppercase text-[9px]">${a.empresa}</span><br>` : ''}
+                        <span class="text-[13px] font-black">${a.obra || 'Sem Nome'}</span>
+                    </div>
+                    <div class="text-[9px] text-slate-500 mt-1 leading-tight"><i class="fas fa-map-marker-alt text-red-400 mr-1"></i>${a.address}</div>
+                    ${a.obs ? `<div class="mt-2 text-[10px] bg-amber-100 text-amber-900 font-bold rounded-lg p-1.5 border border-amber-300"><i class="fas fa-exclamation-triangle"></i> OBS: ${a.obs}</div>` : ''}
+                </div>`;
+            });
+        }
+
+        colAgenda.innerHTML = agendaHeader;
+        colAgenda.appendChild(agendaBody);
+        container.appendChild(colAgenda);
+        // =====================================================================
+
+
+        const drivers = State.getDriversByShift();
         drivers.forEach(name => {
             const d = State.getDriver(name);
             if(!d || !d.trips) return;
@@ -1179,13 +1246,15 @@ const App = {
         const obra = document.getElementById('agenda-obra').value;
         const addr = document.getElementById('agenda-addr').value;
         const obs = document.getElementById('agenda-obs').value;
+        const qty = document.getElementById('agenda-qty').value;
+        const type = State.session.agendaType || 'troca';
 
         if (!date) return UI.toast("Selecione a data do calendário acima!", "error");
         if (!addr && !obra) return UI.toast("Preencha a obra ou endereço", "error");
 
         State.addAgendamento({
             id: Date.now(),
-            date, empresa, obra, address: addr, obs
+            date, empresa, obra, address: addr, obs, qty, type
         });
 
         // Limpa os campos após agendar
@@ -1196,6 +1265,9 @@ const App = {
 
         UI.toast("Serviço Agendado com sucesso!");
         this.renderAgenda();
+        
+        // Atualiza a planilha imediatamente caso o agendamento seja para o dia que está na tela
+        if (date === State.session.routeDate) this.renderSpreadsheet();
     },
 
     renderAgenda() {
@@ -1216,7 +1288,7 @@ const App = {
             return;
         }
 
-        // Desenha os cards agendados
+        // Desenha os cards agendados na listagem lateral
         agendados.forEach(item => {
             const div = document.createElement('div');
             div.className = "flex justify-between items-start bg-slate-50 p-3 rounded-lg border border-slate-200 shadow-sm animate-fade-in";
@@ -1224,10 +1296,22 @@ const App = {
             const empresaTag = item.empresa ? `<span class="text-[9px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded uppercase mr-1 border border-purple-200">${item.empresa}</span>` : '';
             const obsTag = item.obs ? `<div class="mt-1 text-[9px] bg-amber-100 text-amber-800 p-1 rounded font-bold">OBS: ${item.obs}</div>` : '';
 
+            // Definindo a cor do tipo para visualização
+            let typeColor = 'text-slate-800';
+            if(item.type === 'colocacao') typeColor = 'text-red-600';
+            if(item.type === 'retirada') typeColor = 'text-purple-600';
+            if(item.type === 'encher') typeColor = 'text-amber-600';
+            
+            const label = WhatsappService.getPluralLabel(item.type || 'troca', item.qty || 1);
+
             div.innerHTML = `
                 <div class="pr-2 flex-1 min-w-0">
+                    <div class="flex items-center gap-1 mb-1">
+                        <span class="text-[10px] font-black bg-slate-200 text-slate-700 px-1 rounded">${item.qty || 1}</span>
+                        <span class="text-[10px] font-black ${typeColor}">${label}</span>
+                    </div>
                     <div class="text-[11px] font-bold text-slate-800 truncate leading-tight">${empresaTag}${item.obra || 'Sem Nome'}</div>
-                    <div class="text-[9px] text-slate-500 mt-1 truncate"><i class="fas fa-map-marker-alt text-red-400 mr-1"></i>${item.address || 'Sem endereço'}</div>
+                    <div class="text-[9px] text-slate-500 mt-1 leading-tight"><i class="fas fa-map-marker-alt text-red-400 mr-1"></i>${item.address || 'Sem endereço'}</div>
                     ${obsTag}
                 </div>
                 <button onclick="App.deleteAgenda(${item.id})" class="text-slate-300 hover:text-red-500 transition-colors shrink-0 ml-2 p-1" title="Excluir Agendamento"><i class="fas fa-trash-alt"></i></button>
@@ -1240,6 +1324,7 @@ const App = {
         if(confirm("Deseja realmente excluir este agendamento?")) {
             State.removeAgendamento(id);
             this.renderAgenda();
+            this.renderSpreadsheet();
             UI.toast("Agendamento removido");
         }
     }
