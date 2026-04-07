@@ -151,3 +151,32 @@ body.night-mode #section-planning::before {
 /* Animação suave ao abrir */
 .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ========================================================================= */
+/* 🔥 ESTILIZAÇÃO DOS ÍCONES DO MENU LATERAL (Removendo os fundos brancos) 🔥 */
+/* ========================================================================= */
+
+.accordion-icon {
+    /* Força a remoção do fundo claro (bg-blue-50, etc) do Tailwind */
+    background-color: transparent !important; 
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem; /* Uniformiza o tamanho de todos os ícones */
+    transition: all 0.3s ease;
+}
+
+/* --- COMPORTAMENTO DOS ÍCONES NO MODO NOTURNO --- */
+body.night-mode .accordion-icon {
+    /* Garante que o fundo continue transparente no modo escuro */
+    background-color: transparent !important;
+    /* Deixa todos os ícones com uma cor padrão e uniforme no modo noturno */
+    color: #94a3b8 !important; /* Cor slate-400 */
+}
+
+/* (Opcional) Dá um destaque na cor do ícone quando passar o mouse no menu */
+body.night-mode .accordion-header:hover .accordion-icon {
+    color: #38bdf8 !important; /* Muda para um azul claro ao focar */
+}
