@@ -119,15 +119,38 @@ Posto Ipiranga..."></textarea>
     </div>
 
     <div id="spreadsheet-modal" class="hidden fixed inset-0 z-[10005] bg-slate-100 flex flex-col animate-fade-in">
-        <div class="bg-white px-4 py-3 flex justify-between items-center shadow-md z-10 shrink-0 border-b-4 border-green-500">
+        <div class="bg-white px-4 py-3 flex justify-between items-center shadow-md z-20 shrink-0 border-b-4 border-green-500">
             <h2 class="font-black text-xl text-slate-800 flex items-center gap-2"><i class="fas fa-table text-green-600"></i> Planilha de Monitoramento (Tempo Real)</h2>
             <div class="flex gap-3">
                 <button onclick="WhatsappService.shareGeneralSummary()" class="bg-emerald-500 text-white font-bold py-2 px-4 rounded hover:bg-emerald-600 text-sm flex items-center gap-2"><i class="fab fa-whatsapp"></i> RESUMO GERAL</button>
                 <button onclick="UI.toggleModal('spreadsheet-modal')" class="bg-red-500 text-white w-9 h-9 rounded-lg hover:bg-red-600 flex items-center justify-center"><i class="fas fa-times"></i></button>
             </div>
         </div>
-        <div id="spreadsheet-container" class="flex-1 overflow-x-auto overflow-y-auto flex bg-slate-200 p-2 gap-[1px]">
+        
+        <div class="flex-1 flex overflow-hidden bg-slate-200 relative">
+            
+            <div id="spreadsheet-agenda-panel" class="w-80 bg-purple-50 border-r border-purple-200 flex flex-col shadow-2xl transition-all duration-300 z-10">
+                <div class="p-3 bg-purple-800 text-white flex justify-between items-center shadow-md cursor-pointer hover:bg-purple-900 transition" onclick="UI.toggleSpreadsheetAgenda()">
+                    <span class="font-bold text-sm flex items-center gap-2"><i class="far fa-calendar-check"></i> <span>Agendamentos do Dia</span></span>
+                    <i id="spreadsheet-agenda-icon" class="fas fa-chevron-left"></i>
+                </div>
+                
+                <div id="spreadsheet-agenda-content" class="flex-1 flex flex-col overflow-hidden">
+                    <div class="p-3 bg-purple-100 border-b border-purple-200">
+                        <button onclick="App.autoDistributeAgenda()" class="w-full bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold py-3 rounded-lg shadow-md transition transform hover:scale-[1.02] flex items-center justify-center gap-2">
+                            <i class="fas fa-magic"></i> DISTRIBUIR AUTOMATICAMENTE
+                        </button>
+                        <p class="text-[9px] text-purple-600 mt-2 text-center leading-tight">Divide os serviços agendados inteligentemente, priorizando a mesma obra para o mesmo motorista.</p>
+                    </div>
+                    
+                    <div id="spreadsheet-agenda-list" class="flex-1 overflow-y-auto p-3 space-y-2 custom-scroll bg-purple-50/50">
+                        </div>
+                </div>
             </div>
+
+            <div id="spreadsheet-container" class="flex-1 overflow-x-auto overflow-y-auto flex p-2 gap-[1px]">
+            </div>
+        </div>
     </div>
 
     <div id="app-wrapper" class="flex h-screen w-screen overflow-hidden relative transition-all duration-500 bg-slate-200">
@@ -268,7 +291,7 @@ Posto Ipiranga..."></textarea>
                             
                             <div class="bg-purple-100 p-2 rounded-lg flex shadow-inner items-center px-3 mb-2">
                                 <i class="far fa-calendar-alt text-purple-600 mr-2"></i>
-                                <input type="date" id="agenda-date" class="bg-transparent border-none text-sm font-bold text-purple-900 outline-none w-full cursor-pointer" onchange="App.renderAgenda()" title="Data do Agendamento">
+                                <input type="date" id="agenda-date" class="bg-transparent border-none text-sm font-bold text-purple-900 outline-none w-full cursor-pointer" onchange="App.renderAgendaTab()" title="Data do Agendamento">
                             </div>
 
                             <div class="space-y-2 bg-white p-4 rounded-xl border border-purple-100 shadow-sm">
@@ -295,7 +318,7 @@ Posto Ipiranga..."></textarea>
                                 <div class="flex justify-between items-center mb-2">
                                     <p class="text-[10px] font-bold text-slate-500 uppercase">Serviços para o dia selecionado</p>
                                 </div>
-                                <div id="agenda-list" class="space-y-2 max-h-48 overflow-y-auto custom-scroll">
+                                <div id="agenda-tab-list" class="space-y-2 max-h-48 overflow-y-auto custom-scroll">
                                     <div class="text-center text-xs text-slate-400 py-4">Selecione uma data acima para ver os agendamentos</div>
                                 </div>
                             </div>
@@ -303,7 +326,8 @@ Posto Ipiranga..."></textarea>
                         </div>
                     </div>
                 </div>
-                </div>
+
+            </div>
         </aside>
     </div>
 
