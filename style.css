@@ -201,3 +201,19 @@ body.night-mode .bg-emerald-100 {
     color: #34d399 !important; /* Texto verde neon suave */
     border: 1px solid rgba(52, 211, 153, 0.3); /* Bordinha sutil */
 }
+/* ========================================================================= */
+/* 🔥 CORREÇÃO DO SELETOR DE DATA NO MODO NOTURNO 🔥 */
+/* ========================================================================= */
+
+/* 1. Escurece a div container que envolve o input de data */
+body.night-mode div:has(> #route-date) {
+    background-color: #1e293b !important; /* Mesmo fundo escuro do menu */
+    border: 1px solid #334155 !important; /* Borda sutil para dar acabamento */
+}
+
+/* 2. Deixa o input transparente para se misturar ao container e arruma a cor */
+body.night-mode #route-date {
+    background-color: transparent !important;
+    color: #f1f5f9 !important; /* Letra clara */
+    color-scheme: dark; /* Mágica: avisa o navegador para deixar o ícone do calendário claro! */
+}
