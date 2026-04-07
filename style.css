@@ -111,41 +111,41 @@ body.night-mode #spreadsheet-container .bg-white { background-color: #ffffff !im
 }
 
 /* ========================================================================= */
-/* 🔥 NOVA ESTILIZAÇÃO DA LOGO DE FUNDO (MARCA D'ÁGUA) 🔥 */
+/* 🔥 ESTILIZAÇÃO PROFISSIONAL DA LOGO DE FUNDO (MARCA D'ÁGUA) 🔥 */
 /* ========================================================================= */
 
 #section-planning {
     position: relative;
-    /* Forçamos a imagem e removemos qualquer cor de fundo do Tailwind */
     background-color: transparent !important;
-    background-image: url('images.png') !important; 
-    background-repeat: no-repeat !important;
-    background-position: center 200px !important; 
-    background-size: 300px !important;
-    background-attachment: local !important;
-    min-height: 600px; 
+    min-height: 600px;
+    z-index: 1;
 }
 
-/* A película que suaviza a logo para não atrapalhar a leitura */
+/* Colocamos a logo diretamente no ::before para controlar a opacidade dela */
 #section-planning::before {
     content: "";
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
-    background-color: #f8fafc; /* Cor do fundo original */
-    opacity: 0.92; 
-    z-index: 0;
+    background-image: url('images.png'); 
+    background-repeat: no-repeat;
+    background-position: center 200px; 
+    background-size: 300px;
+    
+    /* DICA DE OURO 1: Controla a visibilidade da logo aqui (15% visível) */
+    opacity: 0.12; 
+    
+    /* DICA DE OURO 2: Impede que a logo "roube" os cliques do mouse nos botões */
+    pointer-events: none; 
+    z-index: -1;
 }
 
-/* Garante que o conteúdo fique visível por cima da logo e da película */
-#section-planning > * {
-    position: relative;
-    z-index: 1;
-}
-
-/* Ajuste da película para o Modo Noite */
+/* --- MÁGICA PARA O MODO NOTURNO --- */
 body.night-mode #section-planning::before {
-    background-color: #0f172a; /* Cor do fundo noturno */
-    opacity: 0.96;
+    /* DICA DE OURO 3: Transforma a logo escura em branca/clara automaticamente! */
+    filter: brightness(0) invert(1); 
+    
+    /* No fundo escuro, a marca d'água precisa ser mais sutil para não cansar a vista */
+    opacity: 0.05; 
 }
 
 /* Animação suave ao abrir */
