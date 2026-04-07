@@ -111,7 +111,7 @@ body.night-mode #spreadsheet-container .bg-white { background-color: #ffffff !im
 }
 
 /* ========================================================================= */
-/* 🔥 ESTILIZAÇÃO DA LOGO DE FUNDO (CORES VIVAS NO MODO DIA) 🔥 */
+/* 🔥 CONTAINER DO PLANEJAMENTO 🔥 */
 /* ========================================================================= */
 
 #section-planning {
@@ -119,8 +119,6 @@ body.night-mode #spreadsheet-container .bg-white { background-color: #ffffff !im
     background-color: transparent !important;
     min-height: 600px;
 }
-
-
 
 /* Animação suave ao abrir */
 .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
@@ -262,4 +260,23 @@ body.night-mode .driver-card .text-sm,
 body.night-mode .driver-card .text-slate-500,
 body.night-mode .driver-card .text-slate-400 {
     color: #94a3b8 !important; /* Um cinza claro (slate-400) para dar contraste com o nome */
+}
+
+/* ========================================================================= */
+/* 🔥 TROCA INTELIGENTE DE LOGO (DIA / NOITE) 🔥 */
+/* ========================================================================= */
+
+/* Garante que a logo da noite fique invisível de dia */
+#logo-noite {
+    display: none !important;
+}
+
+/* Quando estiver no modo noite: ESCONDE a logo do dia */
+body.night-mode #logo-dia {
+    display: none !important;
+}
+
+/* Quando estiver no modo noite: MOSTRA a logo da noite */
+body.night-mode #logo-noite {
+    display: block !important;
 }
