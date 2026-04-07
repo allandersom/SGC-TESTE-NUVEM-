@@ -308,3 +308,73 @@ body.night-mode #spreadsheet-container .text-slate-500 {
 body.night-mode #spreadsheet-container .text-slate-400 {
     color: #94a3b8 !important;
 }
+/* ========================================================================= */
+/* 🔥 ESTILIZAÇÃO DO AUTOCOMPLETE (CAIXA DE SUGESTÕES) 🔥 */
+/* ========================================================================= */
+
+#suggestions-box {
+    /* Adiciona uma sombra chique na caixa toda */
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 0.75rem !important;
+    overflow: hidden;
+}
+
+/* --- ESTILO PADRÃO (DIA) --- */
+.suggestion-item {
+    padding: 12px 16px;
+    border-bottom: 1px solid #e2e8f0;
+    background-color: #ffffff;
+    cursor: pointer;
+    /* Prepara a animação suave */
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Animação de quando a sugestão aparece na tela */
+    animation: slideIn 0.3s ease-out forwards;
+}
+
+.suggestion-item:last-child {
+    border-bottom: none;
+}
+
+/* 🖱️ A MÁGICA DO HOVER (DIA) */
+.suggestion-item:hover {
+    background-color: #f0f9ff; /* Fundo azul clarinho */
+    transform: translateX(6px); /* Dá um saltinho animado pra direita */
+    border-left: 4px solid #3b82f6; /* Acende uma barra azul na esquerda */
+}
+
+/* --- ESTILO MODO NOTURNO (NIGHT MODE) --- */
+body.night-mode #suggestions-box {
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+    box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.6) !important;
+}
+
+body.night-mode .suggestion-item {
+    background-color: #1e293b !important;
+    border-bottom-color: #334155 !important;
+}
+
+/* Acendendo as cores apagadas na noite */
+body.night-mode .suggestion-item strong.text-slate-800 {
+    color: #f8fafc !important; /* Branco vivo pro nome da Obra */
+}
+body.night-mode .suggestion-item span.text-slate-400 {
+    color: #94a3b8 !important; /* Cinza claro pro nome da Empresa */
+}
+body.night-mode .suggestion-item div.text-slate-500 {
+    color: #cbd5e1 !important; /* Texto do endereço mais legível */
+}
+
+/* 🖱️ A MÁGICA DO HOVER (NOITE) */
+body.night-mode .suggestion-item:hover {
+    background-color: #0f172a !important; /* Fundo mais escuro pro card focado */
+    transform: translateX(6px); /* Saltinho pra direita */
+    border-left: 4px solid #60a5fa !important; /* Barra azul neon na esquerda */
+}
+
+/* Animação de entrada suave ao digitar */
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
