@@ -114,6 +114,15 @@ const State = {
         if (changed && !this.isInitializing) this.saveFleet();
     },
 
+    // 🔥 SALVAMENTO EM MASSA PRA NÃO DAR BUGS DE DELAY 🔥
+    saveAll() {
+        if (this.isInitializing) return;
+        const updates = {};
+        updates['sgc_data/routes/' + this.session.routeDate + '/fleet'] = this.getCurrentFleet();
+        updates['sgc_data/agendamentos'] = this.data.agendamentos;
+        db.ref().update(updates);
+    },
+
     saveFleet() {
         if (this.isInitializing) return;
         db.ref('sgc_data/routes/' + this.session.routeDate + '/fleet').set(this.getCurrentFleet());
@@ -324,7 +333,7 @@ const WhatsappService = {
 
             if (t.descarteLocal) msg += `*DESCARTE: ${t.descarteLocal.toUpperCase()}*\n`;
             
-            // O MTR já sai formatado como código inline aqui!
+            // O MTR formatado inline no WPP
             if (t.mtr) msg += `\`${t.mtr}\`\n`;
             msg += `\n`; 
         }
@@ -417,7 +426,7 @@ const DataService = {
 
 const UI = {
     tempTripIndex: null,
-    tempDriverName: null, // Novo para o Modal funcionar na Planilha
+    tempDriverName: null, 
 
     init() {
         State.init();
@@ -676,7 +685,7 @@ const App = {
 
     openMtrModal(tripIndex, driverName = null) { 
         UI.tempTripIndex = tripIndex; 
-        UI.tempDriverName = driverName; // Armazena o motorista vindo da Planilha
+        UI.tempDriverName = driverName; 
         UI.toggleModal('select-mtr-modal'); 
     },
 
@@ -686,7 +695,7 @@ const App = {
         if (driver && driver.trips[UI.tempTripIndex]) {
             driver.trips[UI.tempTripIndex].mtr = mtrValue;
             State.saveFleet();
-            App.renderSpreadsheet(); // Atualiza a planilha na hora
+            App.renderSpreadsheet(); 
         }
         UI.toggleModal('select-mtr-modal');
     },
@@ -697,7 +706,7 @@ const App = {
         if (driver && driver.trips[UI.tempTripIndex]) {
             driver.trips[UI.tempTripIndex].mtr = null;
             State.saveFleet();
-            App.renderSpreadsheet(); // Atualiza a planilha na hora
+            App.renderSpreadsheet(); 
         }
         UI.toggleModal('select-mtr-modal');
     },
@@ -738,9 +747,12 @@ const App = {
         if(State.session.currentDriver) State.updatePlate(State.session.currentDriver, document.getElementById('input-plate').value);
     },
 
-    handleAutocomplete(input) {
+    // 🔥 CAIXINHA DE SUGESTÕES ATUALIZADA (SERVE PRA OPERACIONAL E PRA AGENDA) 🔥
+    handleAutocomplete(input, target = 'planning') {
         const val = input.value.toLowerCase();
-        const box = document.getElementById('suggestions-box');
+        const boxId = target === 'agenda' ? 'suggestions-box-agenda' : 'suggestions-box';
+        const box = document.getElementById(boxId);
+        
         if (val.length < 2) return box.classList.add('hidden');
 
         const matches = State.searchAddressBook(val);
@@ -753,7 +765,7 @@ const App = {
                     .trim();
 
                 return `
-                    <div class="suggestion-item" onclick="App.selectSuggestion('${item.company || ''}', '${item.name}', '${item.address}')">
+                    <div class="suggestion-item" onclick="App.selectSuggestion('${item.company || ''}', '${item.name}', '${item.address}', '${target}')">
                         <div class="flex justify-between items-start mb-1">
                             <div class="flex flex-col">
                                 <strong class="text-sm font-bold text-slate-800 uppercase tracking-tight">${item.name}</strong>
@@ -773,13 +785,22 @@ const App = {
         }
     },
 
-    selectSuggestion(company, name, address) {
-        document.getElementById('input-empresa').value = company;
-        document.getElementById('input-obra').value = name;
-        document.getElementById('input-dest').value = address;
-        document.getElementById('input-dest').classList.add('bg-blue-50', 'border-blue-200');
-        setTimeout(() => document.getElementById('input-dest').classList.remove('bg-blue-50', 'border-blue-200'), 1000);
-        document.getElementById('suggestions-box').classList.add('hidden');
+    selectSuggestion(company, name, address, target = 'planning') {
+        if (target === 'agenda') {
+            document.getElementById('agenda-empresa').value = company;
+            document.getElementById('agenda-obra').value = name;
+            document.getElementById('agenda-addr').value = address;
+            document.getElementById('agenda-addr').classList.add('bg-purple-50', 'border-purple-200');
+            setTimeout(() => document.getElementById('agenda-addr').classList.remove('bg-purple-50', 'border-purple-200'), 1000);
+            document.getElementById('suggestions-box-agenda').classList.add('hidden');
+        } else {
+            document.getElementById('input-empresa').value = company;
+            document.getElementById('input-obra').value = name;
+            document.getElementById('input-dest').value = address;
+            document.getElementById('input-dest').classList.add('bg-blue-50', 'border-blue-200');
+            setTimeout(() => document.getElementById('input-dest').classList.remove('bg-blue-50', 'border-blue-200'), 1000);
+            document.getElementById('suggestions-box').classList.add('hidden');
+        }
     },
 
     addRoute() {
@@ -977,6 +998,7 @@ const App = {
         drivers.forEach(name => {
             const d = State.getDriver(name);
             if(!d || !d.trips) return;
+            if(d.trips.length === 0) return; 
             
             const column = document.createElement('div');
             column.className = "driver-column min-w-[240px] max-w-[280px] flex flex-col bg-white snap-start border-r border-slate-300 transition-colors";
@@ -1025,13 +1047,11 @@ const App = {
                 const descTag = t.descarteLocal ? `<div class="mt-1 text-[10px] bg-red-100 text-red-900 font-bold rounded-lg p-1 border border-red-200 text-center truncate">DESC: ${t.descarteLocal}</div>` : '';
                 const timeTag = ((status === 'concluido' || status === 'nao_feito') && t.horaConclusao) ? `<div class="mt-2 text-[9px] font-black ${status==='concluido'?'text-emerald-700':'text-red-700'} text-center"><i class="far fa-clock"></i> ${status==='concluido'?'FEITO':'NÃO FEITO'} ÀS ${t.horaConclusao}</div>` : '';
 
-                // 🔥 NOVOS BOTÕES MÁGICOS DA PLANILHA 🔥
                 const barraAcoesHtml = `
                     <div class="mt-2 pt-2 border-t border-slate-200 flex gap-1 justify-between">
                         <button onclick="App.returnToAgenda('${name}', ${i})" class="text-[9px] bg-purple-50 hover:bg-purple-100 text-purple-700 px-2 py-1 rounded flex items-center gap-1 transition shadow-sm border border-purple-200 font-bold" title="Devolver p/ Agenda">
                             <i class="fas fa-undo"></i> <span class="hidden sm:inline">Agenda</span>
                         </button>
-
                         <div class="flex gap-1">
                             <button onclick="App.editObs('${name}', ${i})" class="text-[9px] bg-amber-50 hover:bg-amber-100 text-amber-700 px-2 py-1 rounded flex items-center gap-1 transition shadow-sm border border-amber-200 font-bold" title="Editar Observação">
                                 <i class="fas fa-comment-dots"></i> OBS
@@ -1111,7 +1131,6 @@ const App = {
     // 🔥 NOVO ARRASTAR E SOLTAR UNIFICADO 🔥
     // ==========================================
     
-    // Quando arrasta da Aba Lateral de Agendamentos
     handleAgendaDragStart(e, id) {
         this.dragSource = { type: 'agenda', id: id };
         e.dataTransfer.effectAllowed = 'move';
@@ -1119,7 +1138,6 @@ const App = {
         setTimeout(() => e.target.classList.add('opacity-50'), 0);
     },
 
-    // Quando arrasta um Card do Motorista
     handleDriverDragStart(e, driverName, index) {
         this.dragSource = { type: 'driver', driver: driverName, index: index };
         e.dataTransfer.effectAllowed = 'move';
@@ -1131,7 +1149,6 @@ const App = {
         if (e.preventDefault) e.preventDefault(); 
         e.dataTransfer.dropEffect = 'move';
         
-        // Dá um feedback visual na coluna
         const col = e.target.closest('.driver-column');
         if(col) col.classList.add('bg-blue-50/50');
         
@@ -1151,7 +1168,6 @@ const App = {
         const targetDriver = State.getCurrentFleet()[targetDriverName];
 
         if (source.type === 'agenda') {
-            // Lógica 1: Arrastando da Agenda para o Motorista
             const agendaItem = State.data.agendamentos.find(a => a.id === source.id);
             if(agendaItem) {
                 const newTrip = {
@@ -1166,10 +1182,9 @@ const App = {
                     targetDriver.trips.splice(targetIndex, 0, newTrip);
                 }
                 
-                // Remove da aba de agendamentos
                 State.data.agendamentos = State.data.agendamentos.filter(a => a.id !== source.id);
-                State.saveFleet();
-                State.saveAgendamentos();
+                // Salva TUDO junto para evitar delays
+                State.saveAll();
                 
                 App.renderSpreadsheet();
                 App.renderAgendaPanel();
@@ -1178,7 +1193,6 @@ const App = {
             }
         } 
         else if (source.type === 'driver') {
-            // Lógica 2: Trocando entre Motoristas ou reordenando
             if (source.driver === targetDriverName && source.index === targetIndex) return false;
             
             const sourceDriver = State.getCurrentFleet()[source.driver];
@@ -1198,18 +1212,21 @@ const App = {
     },
 
     // ==========================================
-    // 🔥 LÓGICA DE DEVOLUÇÃO PRA AGENDA 🔥
+    // 🔥 LÓGICA CORRIGIDA: DEVOLUÇÃO PRA AGENDA 🔥
     // ==========================================
     returnToAgenda(driverName, tripIndex) {
         if(!confirm("Devolver este serviço para os Agendamentos?")) return;
         
         const driver = State.getCurrentFleet()[driverName];
-        const trip = driver.trips.splice(tripIndex, 1)[0]; // Remove do motorista
+        if (!driver || !driver.trips || !driver.trips[tripIndex]) return;
 
-        // Recria o item na agenda
+        // Remove do motorista
+        const trip = driver.trips.splice(tripIndex, 1)[0]; 
+
+        // Recria o item na agenda com os dados exatos do card
         const agendaItem = {
             id: Date.now(),
-            date: State.session.routeDate, // Volta pro dia que está na tela
+            date: State.session.routeDate, // Volta pro dia atual
             empresa: trip.empresa || '',
             obra: trip.obra || '',
             address: typeof trip.to === 'string' ? trip.to : (trip.to && trip.to.text ? trip.to.text : ''),
@@ -1218,15 +1235,21 @@ const App = {
             type: trip.type || 'troca'
         };
 
+        // Garante que o array existe
+        if (!State.data.agendamentos) State.data.agendamentos = [];
+        
+        // Empurra pro array
         State.data.agendamentos.push(agendaItem);
-        State.saveFleet();
-        State.saveAgendamentos();
+        
+        // 🔥 SALVA TUDO AO MESMO TEMPO PARA NÃO PERDER REFERÊNCIA 🔥
+        State.saveAll();
 
         // Atualiza todas as telas
-        App.renderSpreadsheet();
-        App.renderAgendaPanel();
-        App.renderAgendaTab();
-        App.renderGrid();
+        this.renderSpreadsheet();
+        this.renderAgendaPanel();
+        this.renderAgendaTab();
+        this.renderGrid();
+        
         UI.toast("Serviço devolvido para a agenda!");
     },
 
@@ -1239,7 +1262,6 @@ const App = {
 
         if(!confirm("Deseja que o sistema divida os serviços automaticamente?\n\nEle tentará manter a mesma obra com o mesmo motorista e balancear as quantidades.")) return;
 
-        // 1. Agrupa os serviços pela Obra (para evitar que dois caminhões vão no mesmo lugar)
         const groups = {};
         agendados.forEach(a => {
             const key = a.obra ? a.obra.toLowerCase().trim() : 'sem_obra_' + a.id;
@@ -1249,16 +1271,13 @@ const App = {
 
         const drivers = State.getDriversByShift();
         
-        // 2. Mapeia a carga atual de cada motorista (quantos serviços eles já têm)
         const driverLoads = drivers.map(name => {
             const d = State.getDriver(name);
             return { name, count: d && d.trips ? d.trips.length : 0 };
         });
 
-        // 3. Ordena os grupos de obra do MAIOR pro MENOR
         const sortedGroups = Object.values(groups).sort((a, b) => b.length - a.length);
 
-        // 4. Começa a entregar os pacotes de serviço pro motorista mais ocioso
         sortedGroups.forEach(group => {
             driverLoads.sort((a, b) => a.count - b.count);
             const targetDriver = driverLoads[0];
@@ -1273,8 +1292,8 @@ const App = {
             });
         });
 
-        State.saveFleet();
-        State.saveAgendamentos();
+        State.saveAll();
+        
         this.renderSpreadsheet();
         this.renderAgendaPanel();
         this.renderGrid();
@@ -1331,7 +1350,6 @@ const App = {
         }
     },
     
-    // Atualizado para forçar o render da planilha na mesma hora
     editObs(name, index) {
         const d = State.getCurrentFleet()[name];
         const currentObs = d.trips[index].obs || '';
@@ -1343,7 +1361,7 @@ const App = {
         if (newObs !== null) {
             d.trips[index].obs = newObs ? `${newObs}${motObs}` : motObs.replace(' | ', '');
             State.saveFleet();
-            App.renderSpreadsheet(); // Atualiza a planilha
+            App.renderSpreadsheet(); 
             App.renderGrid();
         }
     },
@@ -1381,6 +1399,11 @@ const App = {
 
         State.addAgendamento({ id: Date.now(), date, empresa, obra, address: addr, obs, qty, type });
 
+        // 🔥 SALVA NO BANCO DE ENDEREÇOS AUTOMATICAMENTE 🔥
+        if (empresa || obra) {
+            State.addToAddressBook(empresa, obra, addr);
+        }
+
         document.getElementById('agenda-empresa').value = '';
         document.getElementById('agenda-obra').value = '';
         document.getElementById('agenda-addr').value = '';
@@ -1388,6 +1411,7 @@ const App = {
 
         UI.toast("Serviço Agendado com sucesso!");
         this.renderAgendaTab();
+        this.renderAddressBook(); // Atualiza a aba do banco de endereços visualmente
         
         if (date === State.session.routeDate) {
             this.renderAgendaPanel();
