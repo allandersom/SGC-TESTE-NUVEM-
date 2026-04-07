@@ -458,3 +458,20 @@ body.night-mode .driver-column.bg-blue-50\/50 {
     background-color: rgba(30, 58, 138, 0.3) !important;
     border: 2px dashed #60a5fa !important;
 }
+
+/* ========================================================================= */
+/* 🔥 MODO NOTURNO PARA A BARRA DE AÇÕES NA PLANILHA (MTR / OBS / AGENDA) 🔥 */
+/* ========================================================================= */
+
+body.night-mode #spreadsheet-container .border-t.border-slate-200 { 
+    border-color: #334155 !important; 
+}
+body.night-mode #spreadsheet-container .bg-purple-50 { 
+    background-color: #1e293b !important; border-color: #334155 !important; color: #c084fc !important; 
+}
+body.night-mode #spreadsheet-container .bg-amber-50 { 
+    background-color: #1e293b !important; border-color: #334155 !important; color: #fbbf24 !important; 
+}
+body.night-mode #spreadsheet-container .bg-indigo-50 { 
+    background-color: #1e293b !important; border-color: #334155 !important; color: #818cf8 !important; 
+}
