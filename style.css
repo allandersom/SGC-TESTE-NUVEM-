@@ -378,3 +378,31 @@ body.night-mode .suggestion-item:hover {
     from { opacity: 0; transform: translateY(-5px); }
     to { opacity: 1; transform: translateY(0); }
 }
+
+/* ========================================================================= */
+/* 🔥 MODO NOTURNO PARA A ABA DE AGENDAMENTOS FUTUROS 🔥 */
+/* ========================================================================= */
+
+body.night-mode #section-agenda .bg-purple-100 {
+    background-color: #1e293b !important;
+    border: 1px solid #334155 !important;
+}
+
+body.night-mode #section-agenda .bg-white {
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+}
+
+body.night-mode #agenda-date {
+    color: #f1f5f9 !important;
+    color-scheme: dark; /* Faz o ícone do calendário ficar claro */
+}
+
+/* Arruma os cards de agendamentos no modo escuro */
+body.night-mode #agenda-list .bg-slate-50 {
+    background-color: #0f172a !important;
+    border-color: #334155 !important;
+}
+
+body.night-mode #agenda-list .text-slate-800 { color: #f8fafc !important; }
+body.night-mode #agenda-list .text-slate-500 { color: #94a3b8 !important; }
