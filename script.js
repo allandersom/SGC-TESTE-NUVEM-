@@ -67,7 +67,8 @@ const State = {
                 App.renderSpreadsheet(); 
                 App.renderAddressBook();
                 App.renderDisposalList();
-                App.renderAgenda(); 
+                App.renderAgendaTab(); 
+                App.renderAgendaPanel();
                 
                 if (this.session.currentDriver) {
                     App.renderMiniHistory(this.session.currentDriver);
@@ -138,7 +139,6 @@ const State = {
     },
 
     getDriver(name) { return this.getCurrentFleet()[name]; },
-    
     getDriversByShift() { return this.session.shift === 'day' ? CONFIG.drivers.day : CONFIG.drivers.night; },
 
     addTrip(driverName, tripData) {
@@ -264,7 +264,6 @@ const State = {
 
 const WhatsappService = {
     generateShiftIcon(shift) { return shift === 'day' ? 'DIA' : 'NOITE'; },
-    
     getPluralLabel(type, qty) {
         if(!type) return '';
         const q = parseInt(qty);
@@ -276,7 +275,6 @@ const WhatsappService = {
         if (t.includes('encher')) label = 'ENCHER';
         return label;
     },
-
     formatAddress(text) {
         if (!text) return "Endereço não informado";
         const matchParens = text.match(/\(([^)]+)\)$/);
@@ -285,7 +283,6 @@ const WhatsappService = {
         }
         return text.replace(/, Brasil$/i, ''); 
     },
-    
     getFormattedDate() {
         if (State.session.routeDate) {
             const [y, m, d] = State.session.routeDate.split('-');
@@ -305,12 +302,10 @@ const WhatsappService = {
 
         for (let i = 0; i < trips.length; i++) {
             const t = trips[i];
-            
             if (t.obs) {
                 const logObs = t.obs.replace(/\|? ?MOT:.*$/g, '').trim();
                 if(logObs) msg += `*\`OBS: ${logObs.toUpperCase()}\`*\n`;
             }
-            
             if (t.empresa) msg += `${t.empresa.toUpperCase()}\n`;
 
             let typeHeader = "";
@@ -356,7 +351,6 @@ const WhatsappService = {
                 
                 for (let i = 0; i < activeTrips.length; i++) {
                     const t = activeTrips[i];
-                    
                     if(t.obs) {
                         const logObs = t.obs.replace(/\|? ?MOT:.*$/g, '').trim();
                         if(logObs) msg += `*\`OBS: ${logObs.toUpperCase()}\`*\n`;
@@ -428,7 +422,7 @@ const UI = {
         if(dateInput) dateInput.value = State.session.routeDate;
         this.toggleSection('planning');
         App.initDBForm();
-        this.selectAgendaType('troca'); // Inicializa o tipo do Agendamento
+        this.selectAgendaType('troca'); 
     },
 
     toggleSection(id) {
@@ -454,6 +448,24 @@ const UI = {
         const el = document.getElementById(id);
         if(el) el.classList.toggle('hidden'); 
     },
+
+    toggleSpreadsheetAgenda() {
+        const panel = document.getElementById('spreadsheet-agenda-panel');
+        const content = document.getElementById('spreadsheet-agenda-content');
+        const icon = document.getElementById('spreadsheet-agenda-icon');
+        
+        if (panel.classList.contains('w-80')) {
+            panel.classList.replace('w-80', 'w-12');
+            content.classList.add('hidden');
+            icon.classList.replace('fa-chevron-left', 'fa-calendar-check');
+            panel.querySelector('span > span').classList.add('hidden');
+        } else {
+            panel.classList.replace('w-12', 'w-80');
+            content.classList.remove('hidden');
+            icon.classList.replace('fa-calendar-check', 'fa-chevron-left');
+            panel.querySelector('span > span').classList.remove('hidden');
+        }
+    },
     
     loading(show) { document.getElementById('loading-overlay').classList.toggle('hidden', !show); },
 
@@ -462,7 +474,7 @@ const UI = {
         if(!c) return;
         const el = document.createElement('div');
         const cls = type === 'success' ? 'bg-emerald-600' : (type === 'error' ? 'bg-red-500' : 'bg-blue-600');
-        el.className = `${cls} text-white px-4 py-3 rounded-xl shadow-xl flex items-center gap-3 text-xs font-bold animate-fade-in border border-white/20`;
+        el.className = `${cls} text-white px-4 py-3 rounded-xl shadow-xl flex items-center gap-3 text-xs font-bold animate-fade-in border border-white/20 z-[9999]`;
         el.innerHTML = `<i class="fas fa-info-circle"></i> ${msg}`;
         c.appendChild(el);
         setTimeout(() => el.remove(), 3500);
@@ -569,6 +581,7 @@ const App = {
         UI.closeEditor();
         this.renderGrid();
         this.renderSpreadsheet();
+        this.renderAgendaPanel();
     },
 
     processSmartPaste() {
@@ -948,65 +961,14 @@ const App = {
         if (!container) return; 
         container.innerHTML = '';
 
-        // =====================================================================
-        // 🔥 COLUNA DE AGENDAMENTOS FUTUROS (Aparece na Planilha) 🔥
-        // =====================================================================
-        const agendadosHj = State.data.agendamentos.filter(a => a.date === State.session.routeDate);
-        
-        const colAgenda = document.createElement('div');
-        colAgenda.className = "min-w-[240px] max-w-[280px] flex flex-col bg-purple-50 snap-start border-r-4 border-purple-300 shadow-sm";
-        
-        let agendaHeader = `
-            <div class="bg-purple-800 text-white text-center text-[10px] font-bold py-1 uppercase">Lembretes do Dia</div>
-            <div class="bg-purple-200 text-center text-xs font-bold py-1 border-b border-purple-300 text-purple-900">${WhatsappService.getFormattedDate()}</div>
-            <div class="text-center text-sm font-black py-2 uppercase tracking-wide text-purple-700 bg-purple-100 border-b border-purple-200"><i class="far fa-calendar-check"></i> AGENDADOS</div>
-            <div class="bg-purple-600 text-white text-center text-[10px] font-bold py-1.5 shadow-sm">${agendadosHj.length} PARA HOJE</div>
-        `;
-
-        const agendaBody = document.createElement('div');
-        agendaBody.className = "flex-1 flex flex-col overflow-y-auto custom-scroll p-2 gap-2";
-
-        if(agendadosHj.length === 0) {
-            agendaBody.innerHTML = '<div class="text-center text-xs text-purple-400 py-4 font-bold">Nenhum serviço agendado para esta data.</div>';
-        } else {
-            agendadosHj.forEach(a => {
-                let colorClass = 'text-slate-800';
-                if(a.type === 'colocacao') colorClass = 'text-red-600';
-                if(a.type === 'retirada') colorClass = 'text-purple-600';
-                if(a.type === 'encher') colorClass = 'text-amber-600';
-
-                const label = WhatsappService.getPluralLabel(a.type || 'troca', a.qty || 1);
-                
-                agendaBody.innerHTML += `
-                <div class="p-3 border border-purple-200 rounded-xl shadow-sm bg-white flex flex-col relative animate-fade-in">
-                    <div class="flex items-center gap-1 w-fit mb-2">
-                        <div class="text-slate-600 text-[10px] font-black bg-slate-100 rounded-md py-0.5 px-1.5 border border-slate-200">${a.qty || 1}</div>
-                        <div class="${colorClass} text-[10px] font-black bg-slate-50 rounded-md py-0.5 px-2 border border-slate-200">${label}</div>
-                    </div>
-                    <div class="font-bold text-[11px] leading-tight tracking-wide text-slate-800 break-words">
-                        ${a.empresa ? `<span class="text-slate-500 uppercase text-[9px]">${a.empresa}</span><br>` : ''}
-                        <span class="text-[13px] font-black">${a.obra || 'Sem Nome'}</span>
-                    </div>
-                    <div class="text-[9px] text-slate-500 mt-1 leading-tight"><i class="fas fa-map-marker-alt text-red-400 mr-1"></i>${a.address}</div>
-                    ${a.obs ? `<div class="mt-2 text-[10px] bg-amber-100 text-amber-900 font-bold rounded-lg p-1.5 border border-amber-300"><i class="fas fa-exclamation-triangle"></i> OBS: ${a.obs}</div>` : ''}
-                </div>`;
-            });
-        }
-
-        colAgenda.innerHTML = agendaHeader;
-        colAgenda.appendChild(agendaBody);
-        container.appendChild(colAgenda);
-        // =====================================================================
-
-
         const drivers = State.getDriversByShift();
+        
         drivers.forEach(name => {
             const d = State.getDriver(name);
             if(!d || !d.trips) return;
-            if(d.trips.length === 0) return; 
             
             const column = document.createElement('div');
-            column.className = "min-w-[240px] max-w-[280px] flex flex-col bg-white snap-start border-r border-slate-300";
+            column.className = "driver-column min-w-[240px] max-w-[280px] flex flex-col bg-white snap-start border-r border-slate-300 transition-colors";
 
             let totalServicos = 0;
             d.trips.forEach(t => {
@@ -1022,22 +984,19 @@ const App = {
             `;
             
             const bodyDiv = document.createElement('div');
-            bodyDiv.className = "flex-1 flex flex-col bg-slate-100 overflow-y-auto custom-scroll p-2 gap-2";
+            // O body precisa ocupar o espaço inteiro e ser a DropZone principal da coluna
+            bodyDiv.className = "flex-1 flex flex-col bg-slate-100 overflow-y-auto custom-scroll p-2 gap-2 min-h-[150px]";
+            bodyDiv.setAttribute('ondragover', 'App.handleDragOver(event)');
+            bodyDiv.setAttribute('ondrop', `App.handleDrop(event, '${name}', -1)`);
             
             const buildCell = (t, i, colorClass, customLabel = null) => {
                 let status = t.status || (t.completed ? 'concluido' : 'pendente');
-                
                 let bgClass = 'bg-white border-slate-200'; 
                 let opacityClass = '';
                 
-                if (status === 'concluido') {
-                    bgClass = 'bg-emerald-50 border-emerald-300'; 
-                } else if (status === 'cancelado') {
-                    bgClass = 'bg-slate-100 border-slate-300'; 
-                    opacityClass = 'opacity-60 grayscale';
-                } else if (status === 'nao_feito') {
-                    bgClass = 'bg-red-50 border-red-300';
-                }
+                if (status === 'concluido') { bgClass = 'bg-emerald-50 border-emerald-300'; } 
+                else if (status === 'cancelado') { bgClass = 'bg-slate-100 border-slate-300'; opacityClass = 'opacity-60 grayscale'; } 
+                else if (status === 'nao_feito') { bgClass = 'bg-red-50 border-red-300'; }
 
                 const label = customLabel || WhatsappService.getPluralLabel(t.type || 'troca', t.qty || 1);
                 
@@ -1054,17 +1013,13 @@ const App = {
                 const fotoTag = t.foto ? `<button onclick="UI.showPhoto('${t.foto}')" class="mt-2 w-full flex items-center justify-center gap-1 bg-slate-800 text-white font-bold rounded-lg py-1.5 text-[10px] shadow-sm hover:bg-black transition-colors"><i class="fas fa-camera"></i> VER FOTO COMPROVANTE</button>` : '';
                 const mtrTag = t.mtr ? `<div class="mt-2 text-[10px] bg-indigo-100 text-indigo-900 font-bold rounded-lg p-1 border border-indigo-200 text-center truncate"><i class="fas fa-file-invoice"></i> ${t.mtr}</div>` : '';
                 const descTag = t.descarteLocal ? `<div class="mt-1 text-[10px] bg-red-100 text-red-900 font-bold rounded-lg p-1 border border-red-200 text-center truncate">DESC: ${t.descarteLocal}</div>` : '';
-                
-                const timeTag = ((status === 'concluido' || status === 'nao_feito') && t.horaConclusao) 
-                ? `<div class="mt-2 text-[9px] font-black ${status==='concluido'?'text-emerald-700':'text-red-700'} text-center"><i class="far fa-clock"></i> ${status==='concluido'?'FEITO':'NÃO FEITO'} ÀS ${t.horaConclusao}</div>` 
-                : '';
+                const timeTag = ((status === 'concluido' || status === 'nao_feito') && t.horaConclusao) ? `<div class="mt-2 text-[9px] font-black ${status==='concluido'?'text-emerald-700':'text-red-700'} text-center"><i class="far fa-clock"></i> ${status==='concluido'?'FEITO':'NÃO FEITO'} ÀS ${t.horaConclusao}</div>` : '';
 
                 return `
                 <div draggable="true" 
-                     ondragstart="App.handleDragStart(event, '${name}', ${i})"
-                     ondragover="App.handleDragOver(event)"
+                     ondragstart="App.handleDriverDragStart(event, '${name}', ${i})"
                      ondrop="App.handleDrop(event, '${name}', ${i})"
-                     class="drag-item p-3 border rounded-xl shadow-sm relative flex flex-col cursor-grab active:cursor-grabbing transition-all ${bgClass} ${opacityClass}">
+                     class="drag-item p-3 border rounded-xl shadow-sm relative flex flex-col cursor-grab active:cursor-grabbing transition-all hover:border-blue-400 ${bgClass} ${opacityClass}">
                     
                     <div class="absolute top-2 right-2 flex gap-1">
                         <button onclick="App.setTripStatus('${name}', ${i}, 'concluido')" class="w-6 h-6 rounded bg-emerald-100 hover:bg-emerald-200 text-emerald-700 flex items-center justify-center shadow-sm border border-emerald-200 transition" title="Marcar Concluído"><i class="fas fa-check text-[10px]"></i></button>
@@ -1122,8 +1077,22 @@ const App = {
             container.appendChild(column);
         });
     },
-    handleDragStart(e, driverName, index) {
-        this.dragSource = { driver: driverName, index: index };
+
+    // ==========================================
+    // 🔥 NOVO ARRASTAR E SOLTAR UNIFICADO 🔥
+    // ==========================================
+    
+    // Quando arrasta da Aba Lateral de Agendamentos
+    handleAgendaDragStart(e, id) {
+        this.dragSource = { type: 'agenda', id: id };
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', JSON.stringify(this.dragSource));
+        setTimeout(() => e.target.classList.add('opacity-50'), 0);
+    },
+
+    // Quando arrasta um Card do Motorista
+    handleDriverDragStart(e, driverName, index) {
+        this.dragSource = { type: 'driver', driver: driverName, index: index };
         e.dataTransfer.effectAllowed = 'move';
         e.dataTransfer.setData('text/plain', JSON.stringify(this.dragSource));
         setTimeout(() => e.target.classList.add('opacity-50', 'bg-blue-50'), 0);
@@ -1132,29 +1101,125 @@ const App = {
     handleDragOver(e) {
         if (e.preventDefault) e.preventDefault(); 
         e.dataTransfer.dropEffect = 'move';
+        
+        // Dá um feedback visual na coluna
+        const col = e.target.closest('.driver-column');
+        if(col) col.classList.add('bg-blue-50/50');
+        
         return false;
     },
 
     handleDrop(e, targetDriverName, targetIndex) {
         e.stopPropagation();
+        e.preventDefault();
         
         document.querySelectorAll('.drag-item').forEach(el => el.classList.remove('opacity-50', 'bg-blue-50'));
+        document.querySelectorAll('.driver-column').forEach(el => el.classList.remove('bg-blue-50/50'));
 
         const source = this.dragSource;
-        if (!source || source.driver !== targetDriverName) {
-            UI.toast("Mova apenas dentro do mesmo motorista", "error");
-            return false;
+        if (!source) return false;
+
+        const targetDriver = State.getCurrentFleet()[targetDriverName];
+
+        if (source.type === 'agenda') {
+            // Lógica 1: Arrastando da Agenda para o Motorista
+            const agendaItem = State.data.agendamentos.find(a => a.id === source.id);
+            if(agendaItem) {
+                const newTrip = {
+                    empresa: agendaItem.empresa, obra: agendaItem.obra, qty: agendaItem.qty, type: agendaItem.type,
+                    obs: agendaItem.obs, to: { text: agendaItem.address }, mtr: null, descarteLocal: null, status: 'pendente', completed: false
+                };
+                
+                if (targetIndex === -1 || !targetDriver.trips) {
+                    State.addTrip(targetDriverName, newTrip);
+                } else {
+                    newTrip.id = Date.now() + Math.random();
+                    targetDriver.trips.splice(targetIndex, 0, newTrip);
+                }
+                
+                // Remove da aba de agendamentos
+                State.data.agendamentos = State.data.agendamentos.filter(a => a.id !== source.id);
+                State.saveFleet();
+                State.saveAgendamentos();
+                
+                App.renderSpreadsheet();
+                App.renderAgendaPanel();
+                App.renderGrid();
+                UI.toast(`Agendamento atribuído a ${targetDriverName}!`);
+            }
+        } 
+        else if (source.type === 'driver') {
+            // Lógica 2: Trocando entre Motoristas ou reordenando
+            if (source.driver === targetDriverName && source.index === targetIndex) return false;
+            
+            const sourceDriver = State.getCurrentFleet()[source.driver];
+            const movedItem = sourceDriver.trips.splice(source.index, 1)[0];
+            
+            if (!targetDriver.trips) targetDriver.trips = [];
+            
+            if (targetIndex === -1) {
+                targetDriver.trips.push(movedItem);
+            } else {
+                targetDriver.trips.splice(targetIndex, 0, movedItem);
+            }
+            State.saveFleet();
+            App.renderSpreadsheet();
         }
-
-        if (source.index === targetIndex) return false;
-
-        const driver = State.getCurrentFleet()[source.driver];
-        const movedItem = driver.trips.splice(source.index, 1)[0];
-        driver.trips.splice(targetIndex, 0, movedItem);
-        State.saveFleet();
         return false;
     },
+
+    // ==========================================
+    // 🔥 LÓGICA INTELIGENTE DE DISTRIBUIÇÃO 🔥
+    // ==========================================
+    autoDistributeAgenda() {
+        const agendados = State.data.agendamentos.filter(a => a.date === State.session.routeDate);
+        if (agendados.length === 0) return UI.toast("Nenhum agendamento para hoje.", "info");
+
+        if(!confirm("Deseja que o sistema divida os serviços automaticamente?\n\nEle tentará manter a mesma obra com o mesmo motorista e balancear as quantidades.")) return;
+
+        // 1. Agrupa os serviços pela Obra (para evitar que dois caminhões vão no mesmo lugar)
+        const groups = {};
+        agendados.forEach(a => {
+            const key = a.obra ? a.obra.toLowerCase().trim() : 'sem_obra_' + a.id;
+            if (!groups[key]) groups[key] = [];
+            groups[key].push(a);
+        });
+
+        const drivers = State.getDriversByShift();
+        
+        // 2. Mapeia a carga atual de cada motorista (quantos serviços eles já têm)
+        const driverLoads = drivers.map(name => {
+            const d = State.getDriver(name);
+            return { name, count: d && d.trips ? d.trips.length : 0 };
+        });
+
+        // 3. Ordena os grupos de obra do MAIOR pro MENOR
+        const sortedGroups = Object.values(groups).sort((a, b) => b.length - a.length);
+
+        // 4. Começa a entregar os pacotes de serviço pro motorista mais ocioso
+        sortedGroups.forEach(group => {
+            driverLoads.sort((a, b) => a.count - b.count);
+            const targetDriver = driverLoads[0];
+
+            group.forEach(a => {
+                State.addTrip(targetDriver.name, {
+                    empresa: a.empresa, obra: a.obra, qty: a.qty, type: a.type,
+                    obs: a.obs, to: { text: a.address }, mtr: null, descarteLocal: null, status: 'pendente', completed: false
+                });
+                State.data.agendamentos = State.data.agendamentos.filter(ag => ag.id !== a.id);
+                targetDriver.count++;
+            });
+        });
+
+        State.saveFleet();
+        State.saveAgendamentos();
+        this.renderSpreadsheet();
+        this.renderAgendaPanel();
+        this.renderGrid();
+        UI.toast("Serviços distribuídos inteligentemente!");
+    },
     
+    // ... restante dos métodos menores (Edições, Exclusão, etc)
     quickDelete(name, index) { if(confirm("Excluir viagem rápida?")) State.removeTrip(name, index); },
     deleteTrip(name, index) { if(confirm("Apagar esta entrega?")) State.removeTrip(name, index); },
     toggleStatus(n, i) { State.toggleTripStatus(n, i); },
@@ -1237,9 +1302,7 @@ const App = {
         window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
     },
 
-    // ==========================================
-    // 🔥 LÓGICA DA ABA DE AGENDAMENTOS 🔥
-    // ==========================================
+    // Lógica Base do Agendamento
     addAgenda() {
         const date = document.getElementById('agenda-date').value;
         const empresa = document.getElementById('agenda-empresa').value;
@@ -1252,26 +1315,23 @@ const App = {
         if (!date) return UI.toast("Selecione a data do calendário acima!", "error");
         if (!addr && !obra) return UI.toast("Preencha a obra ou endereço", "error");
 
-        State.addAgendamento({
-            id: Date.now(),
-            date, empresa, obra, address: addr, obs, qty, type
-        });
+        State.addAgendamento({ id: Date.now(), date, empresa, obra, address: addr, obs, qty, type });
 
-        // Limpa os campos após agendar
         document.getElementById('agenda-empresa').value = '';
         document.getElementById('agenda-obra').value = '';
         document.getElementById('agenda-addr').value = '';
         document.getElementById('agenda-obs').value = '';
 
         UI.toast("Serviço Agendado com sucesso!");
-        this.renderAgenda();
+        this.renderAgendaTab();
         
-        // Atualiza a planilha imediatamente caso o agendamento seja para o dia que está na tela
-        if (date === State.session.routeDate) this.renderSpreadsheet();
+        if (date === State.session.routeDate) {
+            this.renderAgendaPanel();
+        }
     },
 
-    renderAgenda() {
-        const list = document.getElementById('agenda-list');
+    renderAgendaTab() {
+        const list = document.getElementById('agenda-tab-list');
         if(!list) return;
         const selectedDate = document.getElementById('agenda-date').value;
 
@@ -1282,13 +1342,11 @@ const App = {
         }
 
         const agendados = State.data.agendamentos.filter(a => a.date === selectedDate);
-
         if (agendados.length === 0) {
             list.innerHTML = '<div class="text-center text-xs text-slate-400 py-4">Nenhum serviço agendado para este dia</div>';
             return;
         }
 
-        // Desenha os cards agendados na listagem lateral
         agendados.forEach(item => {
             const div = document.createElement('div');
             div.className = "flex justify-between items-start bg-slate-50 p-3 rounded-lg border border-slate-200 shadow-sm animate-fade-in";
@@ -1296,7 +1354,6 @@ const App = {
             const empresaTag = item.empresa ? `<span class="text-[9px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded uppercase mr-1 border border-purple-200">${item.empresa}</span>` : '';
             const obsTag = item.obs ? `<div class="mt-1 text-[9px] bg-amber-100 text-amber-800 p-1 rounded font-bold">OBS: ${item.obs}</div>` : '';
 
-            // Definindo a cor do tipo para visualização
             let typeColor = 'text-slate-800';
             if(item.type === 'colocacao') typeColor = 'text-red-600';
             if(item.type === 'retirada') typeColor = 'text-purple-600';
@@ -1314,17 +1371,56 @@ const App = {
                     <div class="text-[9px] text-slate-500 mt-1 leading-tight"><i class="fas fa-map-marker-alt text-red-400 mr-1"></i>${item.address || 'Sem endereço'}</div>
                     ${obsTag}
                 </div>
-                <button onclick="App.deleteAgenda(${item.id})" class="text-slate-300 hover:text-red-500 transition-colors shrink-0 ml-2 p-1" title="Excluir Agendamento"><i class="fas fa-trash-alt"></i></button>
+                <button onclick="App.deleteAgenda(${item.id})" class="text-slate-300 hover:text-red-500 transition-colors shrink-0 ml-2 p-1"><i class="fas fa-trash-alt"></i></button>
             `;
             list.appendChild(div);
+        });
+    },
+
+    // Renderiza a Aba Lateral dentro da Planilha de Monitoramento
+    renderAgendaPanel() {
+        const list = document.getElementById('spreadsheet-agenda-list');
+        if(!list) return;
+
+        const agendadosHj = State.data.agendamentos.filter(a => a.date === State.session.routeDate);
+        list.innerHTML = '';
+
+        if(agendadosHj.length === 0) {
+            list.innerHTML = '<div class="text-center text-xs text-purple-400 py-4 font-bold mt-10"><i class="far fa-smile text-2xl mb-2"></i><br>Nenhum agendamento pendente.</div>';
+            return;
+        }
+
+        agendadosHj.forEach(a => {
+            let colorClass = 'text-slate-800';
+            if(a.type === 'colocacao') colorClass = 'text-red-600';
+            if(a.type === 'retirada') colorClass = 'text-purple-600';
+            if(a.type === 'encher') colorClass = 'text-amber-600';
+            
+            const label = WhatsappService.getPluralLabel(a.type || 'troca', a.qty || 1);
+
+            list.innerHTML += `
+            <div draggable="true" 
+                 ondragstart="App.handleAgendaDragStart(event, ${a.id})"
+                 class="drag-item p-3 border border-purple-200 rounded-xl shadow-sm bg-white flex flex-col relative animate-fade-in cursor-grab active:cursor-grabbing hover:border-purple-400 hover:shadow-md transition">
+                <div class="flex items-center gap-1 w-fit mb-2">
+                    <div class="text-slate-600 text-[10px] font-black bg-slate-100 rounded-md py-0.5 px-1.5 border border-slate-200">${a.qty || 1}</div>
+                    <div class="${colorClass} text-[10px] font-black bg-slate-50 rounded-md py-0.5 px-2 border border-slate-200">${label}</div>
+                </div>
+                <div class="font-bold text-[11px] leading-tight tracking-wide text-slate-800 break-words">
+                    ${a.empresa ? `<span class="text-slate-500 uppercase text-[9px]">${a.empresa}</span><br>` : ''}
+                    <span class="text-[13px] font-black">${a.obra || 'Sem Nome'}</span>
+                </div>
+                <div class="text-[9px] text-slate-500 mt-1 leading-tight"><i class="fas fa-map-marker-alt text-red-400 mr-1"></i>${a.address}</div>
+                ${a.obs ? `<div class="mt-2 text-[10px] bg-amber-100 text-amber-900 font-bold rounded-lg p-1.5 border border-amber-300"><i class="fas fa-exclamation-triangle"></i> OBS: ${a.obs}</div>` : ''}
+            </div>`;
         });
     },
 
     deleteAgenda(id) {
         if(confirm("Deseja realmente excluir este agendamento?")) {
             State.removeAgendamento(id);
-            this.renderAgenda();
-            this.renderSpreadsheet();
+            this.renderAgendaTab();
+            this.renderAgendaPanel();
             UI.toast("Agendamento removido");
         }
     }
