@@ -266,18 +266,29 @@ Posto Ipiranga..."></textarea>
                     <div id="section-agenda" class="accordion-body hidden bg-slate-50/30">
                         <div class="p-4 space-y-4 max-w-4xl mx-auto">
                             
-                            <div class="bg-purple-100 p-2 rounded-lg flex shadow-inner items-center px-3 mb-4">
+                            <div class="bg-purple-100 p-2 rounded-lg flex shadow-inner items-center px-3 mb-2">
                                 <i class="far fa-calendar-alt text-purple-600 mr-2"></i>
                                 <input type="date" id="agenda-date" class="bg-transparent border-none text-sm font-bold text-purple-900 outline-none w-full cursor-pointer" onchange="App.renderAgenda()" title="Data do Agendamento">
                             </div>
 
                             <div class="space-y-2 bg-white p-4 rounded-xl border border-purple-100 shadow-sm">
                                 <p class="text-[10px] font-bold text-purple-600 uppercase mb-2"><i class="fas fa-plus-circle mr-1"></i> Agendar Novo Serviço</p>
+                                
+                                <div class="flex gap-3 items-center mt-2 mb-3">
+                                    <input id="agenda-qty" type="number" value="1" min="1" class="w-16 h-10 text-center font-bold text-lg bg-slate-50 border border-slate-200 rounded-lg">
+                                    <div class="flex-grow grid grid-cols-4 gap-2">
+                                        <button onclick="UI.selectAgendaType('troca')" id="btn-agenda-troca" class="agenda-type-sel active bg-slate-800 text-white border-slate-800 shadow-md scale-105 rounded-md font-bold text-lg">T</button>
+                                        <button onclick="UI.selectAgendaType('colocacao')" id="btn-agenda-colocacao" class="agenda-type-sel border border-slate-200 text-slate-500 rounded-md font-bold text-lg hover:bg-slate-50">C</button>
+                                        <button onclick="UI.selectAgendaType('retirada')" id="btn-agenda-retirada" class="agenda-type-sel border border-slate-200 text-slate-500 rounded-md font-bold text-lg hover:bg-slate-50">R</button>
+                                        <button onclick="UI.selectAgendaType('encher')" id="btn-agenda-encher" class="agenda-type-sel border border-slate-200 text-slate-500 rounded-md font-bold text-lg hover:bg-slate-50">E</button>
+                                    </div>
+                                </div>
+
                                 <input id="agenda-empresa" type="text" class="input-modern" placeholder="Empresa (Opcional)">
                                 <input id="agenda-obra" type="text" class="input-modern" placeholder="Obra (Opcional)">
                                 <input id="agenda-addr" type="text" class="input-modern" placeholder="Endereço">
                                 <input id="agenda-obs" type="text" class="input-modern bg-amber-50/30" placeholder="Observação">
-                                <button onclick="App.addAgenda()" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-lg text-xs shadow-md transition mt-2">Salvar Agendamento</button>
+                                <button onclick="App.addAgenda()" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-lg text-xs shadow-md transition mt-2"><i class="fas fa-calendar-plus mr-1"></i> Salvar Agendamento</button>
                             </div>
 
                             <div class="pt-4 border-t border-slate-200">
