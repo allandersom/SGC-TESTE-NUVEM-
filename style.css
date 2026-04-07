@@ -120,40 +120,7 @@ body.night-mode #spreadsheet-container .bg-white { background-color: #ffffff !im
     min-height: 600px;
 }
 
-/* --- MODO DIA (Logo com cores originais e forte) --- */
-#section-planning::before {
-    content: "";
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background-image: url('images.png'); 
-    background-repeat: no-repeat;
-    
-    /* Puxa a logo mais para o topo e deixa ela maior, como no seu print */
-    background-position: center 60px; 
-    background-size: 400px; 
-    
-    /* SEM FILTRO! Mantém o azul e amarelo originais */
-    filter: none; 
-    
-    /* Opacidade bem alta para ficar nítida (1.0 é a cor 100% real) */
-    opacity: 0.9; 
-    
-    pointer-events: none; 
-    z-index: 0; 
-}
 
-/* Garante que os cards dos motoristas fiquem clicáveis por cima da logo */
-#section-planning > * {
-    position: relative;
-    z-index: 1;
-}
-
-/* --- MODO NOTURNO --- */
-body.night-mode #section-planning::before {
-    /* De noite a logo original sumiria no fundo escuro, então aqui mantemos ela branca e sutil */
-    filter: brightness(0) invert(1); 
-    opacity: 0.05; 
-}
 
 /* Animação suave ao abrir */
 .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
