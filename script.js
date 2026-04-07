@@ -114,7 +114,6 @@ const State = {
         if (changed && !this.isInitializing) this.saveFleet();
     },
 
-    // 🔥 SALVAMENTO EM MASSA PRA NÃO DAR BUGS DE DELAY 🔥
     saveAll() {
         if (this.isInitializing) return;
         const updates = {};
@@ -332,8 +331,6 @@ const WhatsappService = {
             msg += `END: ${displayEnd}\n`;
 
             if (t.descarteLocal) msg += `*DESCARTE: ${t.descarteLocal.toUpperCase()}*\n`;
-            
-            // O MTR formatado inline no WPP
             if (t.mtr) msg += `\`${t.mtr}\`\n`;
             msg += `\n`; 
         }
@@ -747,7 +744,6 @@ const App = {
         if(State.session.currentDriver) State.updatePlate(State.session.currentDriver, document.getElementById('input-plate').value);
     },
 
-    // 🔥 CAIXINHA DE SUGESTÕES ATUALIZADA (SERVE PRA OPERACIONAL E PRA AGENDA) 🔥
     handleAutocomplete(input, target = 'planning') {
         const val = input.value.toLowerCase();
         const boxId = target === 'agenda' ? 'suggestions-box-agenda' : 'suggestions-box';
@@ -988,6 +984,7 @@ const App = {
         });
     },
 
+    // 🔥 RENDER SPREADSHEET (TODOS OS MOTORISTAS APARECEM) 🔥
     renderSpreadsheet() {
         const container = document.getElementById('spreadsheet-container');
         if (!container) return; 
@@ -996,15 +993,15 @@ const App = {
         const drivers = State.getDriversByShift();
         
         drivers.forEach(name => {
-            const d = State.getDriver(name);
-            if(!d || !d.trips) return;
-            if(d.trips.length === 0) return; 
+            const d = State.getDriver(name) || { plate: '', color: '#ccc', trips: [] };
+            const trips = d.trips || [];
             
             const column = document.createElement('div');
-            column.className = "driver-column min-w-[240px] max-w-[280px] flex flex-col bg-white snap-start border-r border-slate-300 transition-colors";
+            // 'h-full' adicionado para as colunas vazias não encolherem
+            column.className = "driver-column min-w-[240px] max-w-[280px] flex flex-col bg-white snap-start border-r border-slate-300 transition-colors h-full";
 
             let totalServicos = 0;
-            d.trips.forEach(t => {
+            trips.forEach(t => {
                 let qty = parseInt(t.qty) || 1;
                 totalServicos += (t.type === 'encher') ? (qty * 2) : qty;
             });
@@ -1012,7 +1009,7 @@ const App = {
             let headerHtml = `
                 <div class="bg-slate-800 text-white text-center text-[10px] font-bold py-1">MOTORISTA</div>
                 <div class="bg-yellow-300 text-center text-xs font-bold py-1 border-b border-slate-300 text-slate-800">${d.plate || 'SEM PLACA'}</div>
-                <div class="text-center text-sm font-black py-2 uppercase tracking-wide bg-slate-50 border-b border-slate-200" style="color: ${d.color};">${name}</div>
+                <div class="text-center text-sm font-black py-2 uppercase tracking-wide bg-slate-50 border-b border-slate-200" style="color: ${d.color || '#333'};">${name}</div>
                 <div class="bg-blue-600 text-white text-center text-[10px] font-bold py-1.5 shadow-sm">HOJE: ${totalServicos} SERVIÇOS</div>
             `;
             
@@ -1099,21 +1096,31 @@ const App = {
 
             let tripsHtml = '';
             
-            d.trips.forEach((t, i) => {
-                if (t.type === 'troca') tripsHtml += buildCell(t, i, 'text-slate-800'); 
-                else if (t.type === 'colocacao') tripsHtml += buildCell(t, i, 'text-red-600'); 
-                else if (t.type === 'retirada') tripsHtml += buildCell(t, i, 'text-purple-600'); 
-                else if (t.type === 'encher') {
-                    tripsHtml += buildCell(t, i, 'text-red-600', 'COLOCAÇÕES (ENCHER)');
-                    tripsHtml += buildCell(t, i, 'text-purple-600', 'RETIRADAS (ENCHER)');
-                }
-            });
+            // Se a coluna estiver vazia, renderiza uma área de Drop pontilhada
+            if (trips.length === 0) {
+                tripsHtml = `
+                    <div class="text-center text-slate-400 font-bold opacity-50 flex flex-col items-center justify-center h-full border-2 border-dashed border-slate-300 rounded-xl m-2 pointer-events-none">
+                        <i class="fas fa-truck-loading text-2xl mb-2"></i>
+                        <span class="text-[10px] uppercase tracking-wider">Arraste rotas<br>para cá</span>
+                    </div>
+                `;
+            } else {
+                trips.forEach((t, i) => {
+                    if (t.type === 'troca') tripsHtml += buildCell(t, i, 'text-slate-800'); 
+                    else if (t.type === 'colocacao') tripsHtml += buildCell(t, i, 'text-red-600'); 
+                    else if (t.type === 'retirada') tripsHtml += buildCell(t, i, 'text-purple-600'); 
+                    else if (t.type === 'encher') {
+                        tripsHtml += buildCell(t, i, 'text-red-600', 'COLOCAÇÕES (ENCHER)');
+                        tripsHtml += buildCell(t, i, 'text-purple-600', 'RETIRADAS (ENCHER)');
+                    }
+                });
+            }
 
             bodyDiv.innerHTML = tripsHtml;
 
             const footerHtml = `
                 <div class="mt-auto p-2 border-t border-slate-300 bg-white">
-                    <button onclick="App.shareDriverRoute('${name}')" class="w-full py-2.5 bg-green-600 hover:bg-green-700 text-white text-[11px] font-black rounded-lg shadow-sm flex items-center justify-center gap-2 transition transform hover:scale-[1.02]">
+                    <button onclick="App.shareDriverRoute('${name}')" class="w-full py-2.5 bg-green-600 hover:bg-green-700 text-white text-[11px] font-black rounded-lg shadow-sm flex items-center justify-center gap-2 transition transform hover:scale-[1.02] ${trips.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}" ${trips.length === 0 ? 'disabled' : ''}>
                         <i class="fab fa-whatsapp text-lg"></i> ENVIAR ROTA
                     </button>
                 </div>
@@ -1166,6 +1173,7 @@ const App = {
         if (!source) return false;
 
         const targetDriver = State.getCurrentFleet()[targetDriverName];
+        if (!targetDriver.trips) targetDriver.trips = []; // Garante que tem onde dropar
 
         if (source.type === 'agenda') {
             const agendaItem = State.data.agendamentos.find(a => a.id === source.id);
@@ -1175,7 +1183,7 @@ const App = {
                     obs: agendaItem.obs, to: { text: agendaItem.address }, mtr: null, descarteLocal: null, status: 'pendente', completed: false
                 };
                 
-                if (targetIndex === -1 || !targetDriver.trips) {
+                if (targetIndex === -1) {
                     State.addTrip(targetDriverName, newTrip);
                 } else {
                     newTrip.id = Date.now() + Math.random();
@@ -1197,8 +1205,6 @@ const App = {
             
             const sourceDriver = State.getCurrentFleet()[source.driver];
             const movedItem = sourceDriver.trips.splice(source.index, 1)[0];
-            
-            if (!targetDriver.trips) targetDriver.trips = [];
             
             if (targetIndex === -1) {
                 targetDriver.trips.push(movedItem);
@@ -1226,7 +1232,7 @@ const App = {
         // Recria o item na agenda com os dados exatos do card
         const agendaItem = {
             id: Date.now(),
-            date: State.session.routeDate, // Volta pro dia atual
+            date: State.session.routeDate, // Volta pro dia atual que está selecionado na planilha
             empresa: trip.empresa || '',
             obra: trip.obra || '',
             address: typeof trip.to === 'string' ? trip.to : (trip.to && trip.to.text ? trip.to.text : ''),
