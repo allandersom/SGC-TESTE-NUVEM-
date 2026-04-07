@@ -984,7 +984,6 @@ const App = {
         });
     },
 
-    // 🔥 RENDER SPREADSHEET (TODOS OS MOTORISTAS APARECEM) 🔥
     renderSpreadsheet() {
         const container = document.getElementById('spreadsheet-container');
         if (!container) return; 
@@ -997,7 +996,6 @@ const App = {
             const trips = d.trips || [];
             
             const column = document.createElement('div');
-            // 'h-full' adicionado para as colunas vazias não encolherem
             column.className = "driver-column min-w-[240px] max-w-[280px] flex flex-col bg-white snap-start border-r border-slate-300 transition-colors h-full";
 
             let totalServicos = 0;
@@ -1096,7 +1094,6 @@ const App = {
 
             let tripsHtml = '';
             
-            // Se a coluna estiver vazia, renderiza uma área de Drop pontilhada
             if (trips.length === 0) {
                 tripsHtml = `
                     <div class="text-center text-slate-400 font-bold opacity-50 flex flex-col items-center justify-center h-full border-2 border-dashed border-slate-300 rounded-xl m-2 pointer-events-none">
@@ -1134,10 +1131,6 @@ const App = {
         });
     },
 
-    // ==========================================
-    // 🔥 NOVO ARRASTAR E SOLTAR UNIFICADO 🔥
-    // ==========================================
-    
     handleAgendaDragStart(e, id) {
         this.dragSource = { type: 'agenda', id: id };
         e.dataTransfer.effectAllowed = 'move';
@@ -1173,7 +1166,7 @@ const App = {
         if (!source) return false;
 
         const targetDriver = State.getCurrentFleet()[targetDriverName];
-        if (!targetDriver.trips) targetDriver.trips = []; // Garante que tem onde dropar
+        if (!targetDriver.trips) targetDriver.trips = [];
 
         if (source.type === 'agenda') {
             const agendaItem = State.data.agendamentos.find(a => a.id === source.id);
@@ -1191,7 +1184,6 @@ const App = {
                 }
                 
                 State.data.agendamentos = State.data.agendamentos.filter(a => a.id !== source.id);
-                // Salva TUDO junto para evitar delays
                 State.saveAll();
                 
                 App.renderSpreadsheet();
@@ -1217,22 +1209,17 @@ const App = {
         return false;
     },
 
-    // ==========================================
-    // 🔥 LÓGICA CORRIGIDA: DEVOLUÇÃO PRA AGENDA 🔥
-    // ==========================================
     returnToAgenda(driverName, tripIndex) {
         if(!confirm("Devolver este serviço para os Agendamentos?")) return;
         
         const driver = State.getCurrentFleet()[driverName];
         if (!driver || !driver.trips || !driver.trips[tripIndex]) return;
 
-        // Remove do motorista
         const trip = driver.trips.splice(tripIndex, 1)[0]; 
 
-        // Recria o item na agenda com os dados exatos do card
         const agendaItem = {
             id: Date.now(),
-            date: State.session.routeDate, // Volta pro dia atual que está selecionado na planilha
+            date: State.session.routeDate, 
             empresa: trip.empresa || '',
             obra: trip.obra || '',
             address: typeof trip.to === 'string' ? trip.to : (trip.to && trip.to.text ? trip.to.text : ''),
@@ -1241,16 +1228,11 @@ const App = {
             type: trip.type || 'troca'
         };
 
-        // Garante que o array existe
         if (!State.data.agendamentos) State.data.agendamentos = [];
-        
-        // Empurra pro array
         State.data.agendamentos.push(agendaItem);
         
-        // 🔥 SALVA TUDO AO MESMO TEMPO PARA NÃO PERDER REFERÊNCIA 🔥
         State.saveAll();
 
-        // Atualiza todas as telas
         this.renderSpreadsheet();
         this.renderAgendaPanel();
         this.renderAgendaTab();
@@ -1259,9 +1241,6 @@ const App = {
         UI.toast("Serviço devolvido para a agenda!");
     },
 
-    // ==========================================
-    // 🔥 LÓGICA INTELIGENTE DE DISTRIBUIÇÃO 🔥
-    // ==========================================
     autoDistributeAgenda() {
         const agendados = State.data.agendamentos.filter(a => a.date === State.session.routeDate);
         if (agendados.length === 0) return UI.toast("Nenhum agendamento para hoje.", "info");
@@ -1390,6 +1369,35 @@ const App = {
         window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
     },
 
+    // ==========================================
+    // 🔥 FUNÇÕES NOVAS DE EDIÇÃO DIRETO NA AGENDA 🔥
+    // ==========================================
+    
+    cycleAgendaType(id) {
+        const ag = State.data.agendamentos.find(a => a.id === id);
+        if (!ag) return;
+        const types = ['troca', 'colocacao', 'retirada', 'encher'];
+        let nextIndex = types.indexOf(ag.type || 'troca') + 1;
+        if (nextIndex >= types.length) nextIndex = 0;
+        
+        ag.type = types[nextIndex];
+        State.saveAgendamentos();
+        this.renderAgendaTab();
+        this.renderAgendaPanel();
+    },
+
+    changeAgendaQty(id) {
+        const ag = State.data.agendamentos.find(a => a.id === id);
+        if (!ag) return;
+        const newQty = prompt("Nova quantidade:", ag.qty || 1);
+        if (newQty !== null && parseInt(newQty) > 0) {
+            ag.qty = parseInt(newQty);
+            State.saveAgendamentos();
+            this.renderAgendaTab();
+            this.renderAgendaPanel();
+        }
+    },
+
     // Lógica Base do Agendamento
     addAgenda() {
         const date = document.getElementById('agenda-date').value;
@@ -1405,7 +1413,6 @@ const App = {
 
         State.addAgendamento({ id: Date.now(), date, empresa, obra, address: addr, obs, qty, type });
 
-        // 🔥 SALVA NO BANCO DE ENDEREÇOS AUTOMATICAMENTE 🔥
         if (empresa || obra) {
             State.addToAddressBook(empresa, obra, addr);
         }
@@ -1417,7 +1424,7 @@ const App = {
 
         UI.toast("Serviço Agendado com sucesso!");
         this.renderAgendaTab();
-        this.renderAddressBook(); // Atualiza a aba do banco de endereços visualmente
+        this.renderAddressBook(); 
         
         if (date === State.session.routeDate) {
             this.renderAgendaPanel();
@@ -1455,11 +1462,14 @@ const App = {
             
             const label = WhatsappService.getPluralLabel(item.type || 'troca', item.qty || 1);
 
+            // 🔥 BOTÕES DE EDIÇÃO INSERIDOS AQUI 🔥
             div.innerHTML = `
                 <div class="pr-2 flex-1 min-w-0">
-                    <div class="flex items-center gap-1 mb-1">
-                        <span class="text-[10px] font-black bg-slate-200 text-slate-700 px-1 rounded">${item.qty || 1}</span>
-                        <span class="text-[10px] font-black ${typeColor}">${label}</span>
+                    <div class="flex items-center gap-1 mb-1 w-fit">
+                        <button onclick="App.changeAgendaQty(${item.id})" class="text-[10px] font-black bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded hover:bg-slate-300 transition cursor-pointer" title="Mudar Quantidade">${item.qty || 1}</button>
+                        <button onclick="App.cycleAgendaType(${item.id})" class="text-[10px] font-black ${typeColor} bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded transition cursor-pointer flex items-center gap-1 border border-slate-200" title="Mudar Tipo">
+                            ${label} <i class="fas fa-sync-alt opacity-40 hover:opacity-100 text-[8px]"></i>
+                        </button>
                     </div>
                     <div class="text-[11px] font-bold text-slate-800 truncate leading-tight">${empresaTag}${item.obra || 'Sem Nome'}</div>
                     <div class="text-[9px] text-slate-500 mt-1 leading-tight"><i class="fas fa-map-marker-alt text-red-400 mr-1"></i>${item.address || 'Sem endereço'}</div>
@@ -1491,14 +1501,19 @@ const App = {
             
             const label = WhatsappService.getPluralLabel(a.type || 'troca', a.qty || 1);
 
+            // 🔥 BOTÕES DE EDIÇÃO INSERIDOS AQUI TAMBÉM 🔥
             list.innerHTML += `
             <div draggable="true" 
                  ondragstart="App.handleAgendaDragStart(event, ${a.id})"
                  class="drag-item p-3 border border-purple-200 rounded-xl shadow-sm bg-white flex flex-col relative animate-fade-in cursor-grab active:cursor-grabbing hover:border-purple-400 hover:shadow-md transition">
+                
                 <div class="flex items-center gap-1 w-fit mb-2">
-                    <div class="text-slate-600 text-[10px] font-black bg-slate-100 rounded-md py-0.5 px-1.5 border border-slate-200">${a.qty || 1}</div>
-                    <div class="${colorClass} text-[10px] font-black bg-slate-50 rounded-md py-0.5 px-2 border border-slate-200">${label}</div>
+                    <button onclick="App.changeAgendaQty(${a.id})" class="text-slate-600 hover:text-blue-600 text-[10px] font-black bg-slate-100 rounded-md py-0.5 px-1.5 border border-slate-200 shadow-sm transition cursor-pointer" title="Mudar Quantidade">${a.qty || 1}</button>
+                    <button onclick="App.cycleAgendaType(${a.id})" class="${colorClass} text-[10px] font-black bg-slate-50 hover:bg-slate-200 rounded-md py-0.5 px-2 border border-slate-200 shadow-sm transition cursor-pointer flex items-center gap-1" title="Clique para mudar o Tipo de Serviço">
+                        ${label} <i class="fas fa-sync-alt opacity-40 hover:opacity-100 text-[8px]"></i>
+                    </button>
                 </div>
+                
                 <div class="font-bold text-[11px] leading-tight tracking-wide text-slate-800 break-words">
                     ${a.empresa ? `<span class="text-slate-500 uppercase text-[9px]">${a.empresa}</span><br>` : ''}
                     <span class="text-[13px] font-black">${a.obra || 'Sem Nome'}</span>
