@@ -555,3 +555,19 @@ body.night-mode #search-agenda-panel {
     border-color: #334155 !important;
     color: #f1f5f9 !important; /* Letra clara pra não sumir */
 }
+
+/* ========================================================================= */
+/* 🔥 ESTILO PARA SERVIÇOS REPROGRAMADOS NO MODO NOTURNO (FANTASMA LARANJA) 🔥 */
+/* ========================================================================= */
+
+body.night-mode .ag-item-card.bg-orange-50 {
+    background-color: rgba(194, 65, 12, 0.2) !important;
+    border-color: #9a3412 !important;
+}
+body.night-mode .ag-item-card.bg-orange-50 .text-orange-900,
+body.night-mode .ag-item-card.bg-orange-50 .text-orange-800 {
+    color: #fdba74 !important; /* Laranja claro e nítido */
+}
+body.night-mode .ag-item-card.bg-orange-50 .text-orange-700 {
+    color: #fb923c !important;
+}
