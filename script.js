@@ -1132,12 +1132,18 @@ const App = {
     },
 
     handleAgendaDragStart(e, id) {
+        const agendaItem = State.data.agendamentos.find(a => a.id === id);
+        // 🔥 TRAVA ABSOLUTA: Se já foi distribuído, bloqueia o arrastar na hora
+        if (agendaItem && agendaItem.distribuido) {
+            e.preventDefault(); 
+            return false;
+        }
+
         this.dragSource = { type: 'agenda', id: id };
         e.dataTransfer.effectAllowed = 'move';
         e.dataTransfer.setData('text/plain', JSON.stringify(this.dragSource));
         setTimeout(() => e.target.classList.add('opacity-50'), 0);
     },
-
     handleDriverDragStart(e, driverName, index) {
         this.dragSource = { type: 'driver', driver: driverName, index: index };
         e.dataTransfer.effectAllowed = 'move';
@@ -1171,21 +1177,35 @@ const App = {
         if (source.type === 'agenda') {
             const agendaItem = State.data.agendamentos.find(a => a.id === source.id);
             if(agendaItem) {
+                // 🔥 TRAVA 2: Se por algum milagre arrastar, o sistema expulsa
+                if(agendaItem.distribuido) {
+                    UI.toast("Este serviço já está na rota de alguém!", "error");
+                    return false;
+                }
+
                 const newTrip = {
+                    id: Date.now() + Math.random(),
+                    status: 'pendente',
+                    completed: false,
                     agendaId: agendaItem.id, // VINCULA
-                    empresa: agendaItem.empresa, obra: agendaItem.obra, qty: agendaItem.qty, type: agendaItem.type,
-                    obs: agendaItem.obs, to: { text: agendaItem.address }, mtr: null, descarteLocal: null, status: 'pendente', completed: false
+                    empresa: agendaItem.empresa, 
+                    obra: agendaItem.obra, 
+                    qty: agendaItem.qty, 
+                    type: agendaItem.type,
+                    obs: agendaItem.obs, 
+                    to: { text: agendaItem.address }, 
+                    mtr: null, 
+                    descarteLocal: null
                 };
                 
                 if (targetIndex === -1) {
-                    State.addTrip(targetDriverName, newTrip);
+                    targetDriver.trips.push(newTrip); // Insere silenciosamente sem dar gatilho de delay
                 } else {
-                    newTrip.id = Date.now() + Math.random();
                     targetDriver.trips.splice(targetIndex, 0, newTrip);
                 }
                 
                 agendaItem.distribuido = true; // MARCA COMO DISTRIBUÍDO
-                State.saveAll();
+                State.saveAll(); // 🔥 SALVA TUDO DE UMA ÚNICA VEZ NO BANCO DE DADOS
                 
                 App.renderSpreadsheet();
                 App.renderAgendaPanel();
@@ -1210,7 +1230,6 @@ const App = {
         }
         return false;
     },
-
     returnToAgenda(driverName, tripIndex) {
         if(!confirm("Devolver este serviço para os Agendamentos?")) return;
         
@@ -1266,19 +1285,32 @@ const App = {
         sortedGroups.forEach(group => {
             driverLoads.sort((a, b) => a.count - b.count);
             const targetDriver = driverLoads[0];
+            
+            // Pega o motorista alvo silenciosamente
+            const targetDriverObj = State.getCurrentFleet()[targetDriver.name];
+            if (!targetDriverObj.trips) targetDriverObj.trips = [];
 
             group.forEach(a => {
-                State.addTrip(targetDriver.name, {
+                targetDriverObj.trips.push({
+                    id: Date.now() + Math.random(),
+                    status: 'pendente',
+                    completed: false,
                     agendaId: a.id,
-                    empresa: a.empresa, obra: a.obra, qty: a.qty, type: a.type,
-                    obs: a.obs, to: { text: a.address }, mtr: null, descarteLocal: null, status: 'pendente', completed: false
+                    empresa: a.empresa, 
+                    obra: a.obra, 
+                    qty: a.qty, 
+                    type: a.type,
+                    obs: a.obs, 
+                    to: { text: a.address }, 
+                    mtr: null, 
+                    descarteLocal: null
                 });
                 a.distribuido = true;
                 targetDriver.count++;
             });
         });
 
-        State.saveAll();
+        State.saveAll(); // 🔥 SALVA DISTRIBUIÇÃO E CORES DE UMA VEZ
         
         this.renderSpreadsheet();
         this.renderAgendaPanel();
