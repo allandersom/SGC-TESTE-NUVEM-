@@ -283,13 +283,22 @@ const WhatsappService = {
         if (t.includes('encher')) label = 'ENCHER';
         return label;
     },
+    // 🔥 LÓGICA NOVA: LIMPADOR INTELIGENTE DE ENDEREÇO 🔥
     formatAddress(text) {
         if (!text) return "Endereço não informado";
-        const matchParens = text.match(/\(([^)]+)\)$/);
-        if (matchParens) {
-            return matchParens[1];
+        // Remove as coordenadas numéricas do começo da string
+        let clean = text.replace(/^-?\d{1,3}\.\d+,\s*-?\d{1,3}\.\d+\s*/g, '').trim();
+        
+        // Se o endereço todo ficou dentro de ( ), tira os parênteses
+        if (clean.startsWith('(') && clean.endsWith(')')) {
+            clean = clean.substring(1, clean.length - 1).trim();
+        } else if (clean.startsWith('(') && !clean.includes(')')) {
+            clean = clean.substring(1).trim();
         }
-        return text.replace(/, Brasil$/i, ''); 
+        
+        // Remove "END:" e o "Brasil" do final
+        clean = clean.replace(/^END:\s*/i, '').replace(/,\s*Brasil$/i, '').trim();
+        return clean || text;
     },
     getFormattedDate() {
         if (State.session.routeDate) {
@@ -327,6 +336,7 @@ const WhatsappService = {
             if (t.obra) msg += `OBRA: ${t.obra.toUpperCase()}\n`;
 
             const addressText = typeof t.to === 'string' ? t.to : (t.to && t.to.text ? t.to.text : '');
+            // 🔥 Aplica o limpador aqui no WPP 🔥
             const displayEnd = this.formatAddress(addressText).toUpperCase();
             msg += `END: ${displayEnd}\n`;
 
@@ -376,6 +386,7 @@ const WhatsappService = {
                     if (t.obra) msg += `OBRA: ${t.obra.toUpperCase()}\n`;
                     
                     const addressText = typeof t.to === 'string' ? t.to : (t.to && t.to.text ? t.to.text : '');
+                    // 🔥 Aplica o limpador no WPP Resumo 🔥
                     msg += `END: ${this.formatAddress(addressText).toUpperCase()}\n`;
                     if(t.descarteLocal) msg += `*DESCARTE: ${t.descarteLocal.toUpperCase()}*\n`;
                     if (t.mtr) msg += `\`${t.mtr}\`\n`;
@@ -392,7 +403,6 @@ const WhatsappService = {
         }
     }
 };
-
 const DataService = {
     export() {
         const blob = new Blob([JSON.stringify(State.data)], {type: 'application/json'});
@@ -754,11 +764,8 @@ const App = {
         const matches = State.searchAddressBook(val);
         if (matches.length > 0) {
             box.innerHTML = matches.map(item => {
-                let cleanAddress = item.address
-                    .replace(/^-?\d+(\.\d+)?,\s*-?\d+(\.\d+)?\s*/, '') 
-                    .replace(/\s*\([^)]*\)$/, '') 
-                    .replace(/, Brasil$/i, '') 
-                    .trim();
+                // 🔥 Usa a nova inteligência aqui 🔥
+                const cleanAddress = WhatsappService.formatAddress(item.address);
 
                 return `
                     <div class="suggestion-item" onclick="App.selectSuggestion('${item.company || ''}', '${item.name}', '${item.address}', '${target}')">
@@ -780,7 +787,6 @@ const App = {
             box.classList.add('hidden');
         }
     },
-
     selectSuggestion(company, name, address, target = 'planning') {
         if (target === 'agenda') {
             document.getElementById('agenda-empresa').value = company;
@@ -915,7 +921,7 @@ const App = {
                         <div class="font-bold text-xs text-slate-700 truncate">${item.name}</div>
                         ${item.company ? `<span class="text-[8px] bg-blue-50 text-blue-500 px-1 rounded uppercase">${item.company}</span>` : ''}
                     </div>
-                    <div class="text-[9px] text-slate-400 truncate">${item.address}</div>
+                    <div class="text-[9px] text-slate-400 truncate">${WhatsappService.formatAddress(item.address)}</div>
                 </div>
                 <button onclick="App.deleteFromAddressBook(${item.id})" class="text-slate-300 hover:text-red-500"><i class="fas fa-trash-alt"></i></button>
             `;
@@ -1482,7 +1488,10 @@ const App = {
 
         agendados.forEach(item => {
             const isDist = item.distribuido;
-            const bgClass = isDist ? 'bg-blue-50 border-blue-200 opacity-80' : 'bg-slate-50 border-slate-200';
+            const extraStyle = isDist ? 'background-color: #eff6ff !important; border-color: #bfdbfe !important;' : '';
+            const darkExtraStyle = isDist ? 'background-color: rgba(30, 58, 138, 0.4) !important; border-color: #1e3a8a !important;' : '';
+            const isNight = document.body.classList.contains('night-mode');
+            const finalStyle = isNight && isDist ? darkExtraStyle : extraStyle;
             
             const empresaTag = item.empresa ? `<span class="text-[9px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded uppercase mr-1 border border-purple-200">${item.empresa}</span>` : '';
             const obsTag = item.obs ? `<div class="mt-1 text-[9px] bg-amber-100 text-amber-800 p-1 rounded font-bold">OBS: ${item.obs}</div>` : '';
@@ -1506,7 +1515,8 @@ const App = {
             const btnLixo = isDist ? '' : `<button onclick="App.deleteAgenda(${item.id})" class="text-slate-300 hover:text-red-500 transition-colors shrink-0 ml-2 p-1"><i class="fas fa-trash-alt"></i></button>`;
 
             const div = document.createElement('div');
-            div.className = `flex justify-between items-start p-3 rounded-lg border shadow-sm animate-fade-in ag-item-card ${bgClass}`;
+            div.className = `flex justify-between items-start p-3 rounded-lg border shadow-sm animate-fade-in ag-item-card transition-all ${isDist ? 'opacity-80' : 'bg-slate-50 border-slate-200'}`;
+            div.style = finalStyle;
             
             div.innerHTML = `
                 <div class="pr-2 flex-1 min-w-0">
@@ -1514,7 +1524,7 @@ const App = {
                         ${botoesEdit}
                     </div>
                     <div class="text-[11px] font-bold ${isDist ? 'text-blue-900' : 'text-slate-800'} truncate leading-tight mt-1">${empresaTag}${item.obra || 'Sem Nome'}</div>
-                    <div class="text-[9px] ${isDist ? 'text-blue-600' : 'text-slate-500'} mt-1 leading-tight"><i class="fas fa-map-marker-alt ${isDist ? 'text-blue-500' : 'text-red-400'} mr-1"></i>${item.address || 'Sem endereço'}</div>
+                    <div class="text-[9px] ${isDist ? 'text-blue-600' : 'text-slate-500'} mt-1 leading-tight"><i class="fas fa-map-marker-alt ${isDist ? 'text-blue-500' : 'text-red-400'} mr-1"></i>${WhatsappService.formatAddress(item.address)}</div>
                     ${obsTag}
                 </div>
                 ${btnLixo}
@@ -1522,7 +1532,6 @@ const App = {
             list.appendChild(div);
         });
     },
-
     renderAgendaPanel() {
         const list = document.getElementById('spreadsheet-agenda-list');
         if(!list) return;
@@ -1535,6 +1544,8 @@ const App = {
             return;
         }
 
+        const isNight = document.body.classList.contains('night-mode');
+
         agendadosHj.forEach(a => {
             const isDist = a.distribuido;
             let colorClass = 'text-slate-800';
@@ -1545,7 +1556,11 @@ const App = {
             const label = WhatsappService.getPluralLabel(a.type || 'troca', a.qty || 1);
 
             const dragAttrs = isDist ? '' : `draggable="true" ondragstart="App.handleAgendaDragStart(event, ${a.id})"`;
-            const baseClass = isDist ? 'bg-blue-50 border-blue-200 opacity-60 cursor-not-allowed' : 'bg-white border-purple-200 hover:border-purple-400 hover:shadow-md cursor-grab active:cursor-grabbing';
+            const baseClass = isDist ? 'opacity-60 cursor-not-allowed' : 'bg-white border-purple-200 hover:border-purple-400 hover:shadow-md cursor-grab active:cursor-grabbing';
+
+            const extraStyle = isDist ? 'background-color: #eff6ff !important; border-color: #bfdbfe !important;' : '';
+            const darkExtraStyle = isDist ? 'background-color: rgba(30, 58, 138, 0.4) !important; border-color: #1e3a8a !important;' : '';
+            const finalStyle = isNight && isDist ? darkExtraStyle : extraStyle;
 
             const botoesEdit = isDist ? 
                 `<span class="text-[10px] font-black text-blue-700 bg-blue-100 rounded-md py-0.5 px-2 border border-blue-200 shadow-sm"><i class="fas fa-check"></i> JÁ DISTRIBUÍDO</span>` : 
@@ -1558,6 +1573,7 @@ const App = {
 
             list.innerHTML += `
             <div ${dragAttrs}
+                 style="${finalStyle}"
                  class="drag-item p-3 border rounded-xl shadow-sm flex flex-col relative animate-fade-in transition ag-item-card ${baseClass}">
                 
                 <div class="flex items-center gap-1 w-fit mb-2">
@@ -1568,7 +1584,7 @@ const App = {
                     ${a.empresa ? `<span class="text-slate-500 uppercase text-[9px]">${a.empresa}</span><br>` : ''}
                     <span class="text-[13px] font-black">${a.obra || 'Sem Nome'}</span>
                 </div>
-                <div class="text-[9px] ${isDist ? 'text-blue-600' : 'text-slate-500'} mt-1 leading-tight"><i class="fas fa-map-marker-alt ${isDist ? 'text-blue-500' : 'text-red-400'} mr-1"></i>${a.address}</div>
+                <div class="text-[9px] ${isDist ? 'text-blue-600' : 'text-slate-500'} mt-1 leading-tight"><i class="fas fa-map-marker-alt ${isDist ? 'text-blue-500' : 'text-red-400'} mr-1"></i>${WhatsappService.formatAddress(a.address)}</div>
                 ${a.obs ? `<div class="mt-2 text-[10px] bg-amber-100 text-amber-900 font-bold rounded-lg p-1.5 border border-amber-300"><i class="fas fa-exclamation-triangle"></i> OBS: ${a.obs}</div>` : ''}
             </div>`;
         });
