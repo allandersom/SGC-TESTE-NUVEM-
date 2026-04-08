@@ -283,17 +283,20 @@ const WhatsappService = {
         if (t.includes('encher')) label = 'ENCHER';
         return label;
     },
-    // 🔥 LÓGICA DE LIMPEZA DE ENDEREÇO 🔥
+    // 🔥 LÓGICA NOVA: LIMPADOR INTELIGENTE DE ENDEREÇO 🔥
     formatAddress(text) {
         if (!text) return "Endereço não informado";
+        // Remove as coordenadas numéricas do começo da string
         let clean = text.replace(/^-?\d{1,3}\.\d+,\s*-?\d{1,3}\.\d+\s*/g, '').trim();
         
+        // Se o endereço todo ficou dentro de ( ), tira os parênteses
         if (clean.startsWith('(') && clean.endsWith(')')) {
             clean = clean.substring(1, clean.length - 1).trim();
         } else if (clean.startsWith('(') && !clean.includes(')')) {
             clean = clean.substring(1).trim();
         }
         
+        // Remove "END:" e o "Brasil" do final
         clean = clean.replace(/^END:\s*/i, '').replace(/,\s*Brasil$/i, '').trim();
         return clean || text;
     },
@@ -333,6 +336,7 @@ const WhatsappService = {
             if (t.obra) msg += `OBRA: ${t.obra.toUpperCase()}\n`;
 
             const addressText = typeof t.to === 'string' ? t.to : (t.to && t.to.text ? t.to.text : '');
+            // 🔥 Aplica o limpador aqui no WPP 🔥
             const displayEnd = this.formatAddress(addressText).toUpperCase();
             msg += `END: ${displayEnd}\n`;
 
@@ -382,6 +386,7 @@ const WhatsappService = {
                     if (t.obra) msg += `OBRA: ${t.obra.toUpperCase()}\n`;
                     
                     const addressText = typeof t.to === 'string' ? t.to : (t.to && t.to.text ? t.to.text : '');
+                    // 🔥 Aplica o limpador no WPP Resumo 🔥
                     msg += `END: ${this.formatAddress(addressText).toUpperCase()}\n`;
                     if(t.descarteLocal) msg += `*DESCARTE: ${t.descarteLocal.toUpperCase()}*\n`;
                     if (t.mtr) msg += `\`${t.mtr}\`\n`;
@@ -398,7 +403,6 @@ const WhatsappService = {
         }
     }
 };
-
 const DataService = {
     export() {
         const blob = new Blob([JSON.stringify(State.data)], {type: 'application/json'});
@@ -430,8 +434,6 @@ const DataService = {
 const UI = {
     tempTripIndex: null,
     tempDriverName: null, 
-    tempAgendaId: null,
-    rescheduleSource: null,
 
     init() {
         State.init();
@@ -744,15 +746,13 @@ const App = {
         document.getElementById('shift-night').className = `shift-btn ${shift==='night'?'active':''}`;
         document.body.classList.toggle('night-mode', shift === 'night');
         
-        // 🔥 LÓGICA NOVA: Sincronizar o formulário lá de baixo com o turno atual 🔥
-        const shiftRadio = document.querySelector(`input[name="agenda-shift-sel"][value="${shift}"]`);
-        if (shiftRadio) shiftRadio.checked = true;
-        
-        // 🔥 LÓGICA NOVA: TROCAR A LOGO E FAVICON 🔥
+        // 🔥 LÓGICA NOVA: TROCAR A LOGO PRINCIPAL LÁ DE CIMA 🔥
         const mainLogo = document.getElementById('app-logo');
         if (mainLogo) {
             mainLogo.src = shift === 'night' ? 'images2.png' : 'images.png';
         }
+
+        // 🔥 LÓGICA NOVA: TROCAR O FAVICON (ÍCONE DA ABA DO NAVEGADOR) 🔥
         const favicon = document.querySelector("link[rel~='icon']");
         if (favicon) {
             favicon.href = shift === 'night' ? 'images2.png' : 'images.png';
@@ -761,8 +761,6 @@ const App = {
         UI.closeEditor();
         this.renderGrid();
         this.renderSpreadsheet();
-        this.renderAgendaPanel(); // 🔥 GARANTE QUE A PLANILHA ROXA ATUALIZA NA MESMA HORA 🔥
-        this.renderAgendaTab();   // 🔥 GARANTE QUE A ABA LATERAL INFERIOR ATUALIZA TAMBÉM 🔥
     },
 
     updatePlate() {
@@ -779,7 +777,9 @@ const App = {
         const matches = State.searchAddressBook(val);
         if (matches.length > 0) {
             box.innerHTML = matches.map(item => {
+                // 🔥 Usa a nova inteligência aqui 🔥
                 const cleanAddress = WhatsappService.formatAddress(item.address);
+
                 return `
                     <div class="suggestion-item" onclick="App.selectSuggestion('${item.company || ''}', '${item.name}', '${item.address}', '${target}')">
                         <div class="flex justify-between items-start mb-1">
@@ -800,7 +800,6 @@ const App = {
             box.classList.add('hidden');
         }
     },
-
     selectSuggestion(company, name, address, target = 'planning') {
         if (target === 'agenda') {
             document.getElementById('agenda-empresa').value = company;
@@ -1063,15 +1062,10 @@ const App = {
                 const timeTag = ((status === 'concluido' || status === 'nao_feito') && t.horaConclusao) ? `<div class="mt-2 text-[9px] font-black ${status==='concluido'?'text-emerald-700':'text-red-700'} text-center"><i class="far fa-clock"></i> ${status==='concluido'?'FEITO':'NÃO FEITO'} ÀS ${t.horaConclusao}</div>` : '';
 
                 const barraAcoesHtml = `
-                    <div class="mt-2 pt-2 border-t border-slate-200 flex gap-1 justify-between flex-wrap">
-                        <div class="flex gap-1">
-                            <button onclick="App.returnToAgenda('${name}', ${i})" class="text-[9px] bg-purple-50 hover:bg-purple-100 text-purple-700 px-2 py-1 rounded flex items-center gap-1 transition shadow-sm border border-purple-200 font-bold" title="Devolver p/ Agenda">
-                                <i class="fas fa-undo"></i> <span class="hidden sm:inline">Agenda</span>
-                            </button>
-                            <button onclick="App.openDriverRescheduleModal('${name}', ${i})" class="text-[9px] bg-orange-50 hover:bg-orange-100 text-orange-700 px-2 py-1 rounded flex items-center gap-1 transition shadow-sm border border-orange-200 font-bold" title="Adiar / Reprogramar">
-                                <i class="fas fa-calendar-alt"></i> <span class="hidden sm:inline">Adiar</span>
-                            </button>
-                        </div>
+                    <div class="mt-2 pt-2 border-t border-slate-200 flex gap-1 justify-between">
+                        <button onclick="App.returnToAgenda('${name}', ${i})" class="text-[9px] bg-purple-50 hover:bg-purple-100 text-purple-700 px-2 py-1 rounded flex items-center gap-1 transition shadow-sm border border-purple-200 font-bold" title="Devolver p/ Agenda">
+                            <i class="fas fa-undo"></i> <span class="hidden sm:inline">Agenda</span>
+                        </button>
                         <div class="flex gap-1">
                             <button onclick="App.editObs('${name}', ${i})" class="text-[9px] bg-amber-50 hover:bg-amber-100 text-amber-700 px-2 py-1 rounded flex items-center gap-1 transition shadow-sm border border-amber-200 font-bold" title="Editar Observação">
                                 <i class="fas fa-comment-dots"></i> OBS
@@ -1158,8 +1152,8 @@ const App = {
 
     handleAgendaDragStart(e, id) {
         const agendaItem = State.data.agendamentos.find(a => a.id === id);
-        // 🔥 TRAVA ABSOLUTA: Bloqueia serviços distribuídos ou reprogramados
-        if (agendaItem && (agendaItem.distribuido || agendaItem.reprogramado)) {
+        // 🔥 TRAVA ABSOLUTA: Se já foi distribuído, bloqueia o arrastar na hora
+        if (agendaItem && agendaItem.distribuido) {
             e.preventDefault(); 
             return false;
         }
@@ -1169,7 +1163,6 @@ const App = {
         e.dataTransfer.setData('text/plain', JSON.stringify(this.dragSource));
         setTimeout(() => e.target.classList.add('opacity-50'), 0);
     },
-    
     handleDriverDragStart(e, driverName, index) {
         this.dragSource = { type: 'driver', driver: driverName, index: index };
         e.dataTransfer.effectAllowed = 'move';
@@ -1203,9 +1196,9 @@ const App = {
         if (source.type === 'agenda') {
             const agendaItem = State.data.agendamentos.find(a => a.id === source.id);
             if(agendaItem) {
-                // 🔥 TRAVA 2: Expulsa se houver delay na nuvem
-                if(agendaItem.distribuido || agendaItem.reprogramado) {
-                    UI.toast("Este serviço já está bloqueado!", "error");
+                // 🔥 TRAVA 2: Se por algum milagre arrastar, o sistema expulsa
+                if(agendaItem.distribuido) {
+                    UI.toast("Este serviço já está na rota de alguém!", "error");
                     return false;
                 }
 
@@ -1225,13 +1218,13 @@ const App = {
                 };
                 
                 if (targetIndex === -1) {
-                    targetDriver.trips.push(newTrip);
+                    targetDriver.trips.push(newTrip); // Insere silenciosamente sem dar gatilho de delay
                 } else {
                     targetDriver.trips.splice(targetIndex, 0, newTrip);
                 }
                 
                 agendaItem.distribuido = true; // MARCA COMO DISTRIBUÍDO
-                State.saveAll(); // 🔥 SALVA TUDO NUM BLOCO SÓ
+                State.saveAll(); // 🔥 SALVA TUDO DE UMA ÚNICA VEZ NO BANCO DE DADOS
                 
                 App.renderSpreadsheet();
                 App.renderAgendaPanel();
@@ -1256,7 +1249,6 @@ const App = {
         }
         return false;
     },
-    
     returnToAgenda(driverName, tripIndex) {
         if(!confirm("Devolver este serviço para os Agendamentos?")) return;
         
@@ -1270,7 +1262,7 @@ const App = {
             if (ag) ag.distribuido = false; 
         } else {
             const agendaItem = {
-                id: Date.now(), date: State.session.routeDate, shift: State.session.shift, empresa: trip.empresa || '',
+                id: Date.now(), date: State.session.routeDate, empresa: trip.empresa || '',
                 obra: trip.obra || '', address: typeof trip.to === 'string' ? trip.to : (trip.to && trip.to.text ? trip.to.text : ''),
                 obs: trip.obs || '', qty: trip.qty || 1, type: trip.type || 'troca'
             };
@@ -1288,317 +1280,11 @@ const App = {
         UI.toast("Serviço devolvido para a agenda!");
     },
 
-    // ==========================================
-    // 🔥 LÓGICA DE AGENDAMENTO COM TURNOS E REPROGRAMAÇÃO 🔥
-    // ==========================================
-    
-    openRescheduleModal(id) {
-        UI.tempAgendaId = id;
-        UI.rescheduleSource = 'agenda'; // Marca que veio da aba de Agendamentos
-        UI.toggleModal('reschedule-modal');
-    },
-
-    openDriverRescheduleModal(driverName, tripIndex) {
-        UI.tempDriverName = driverName;
-        UI.tempTripIndex = tripIndex;
-        UI.rescheduleSource = 'driver'; // Marca que veio da Planilha do Motorista
-        UI.toggleModal('reschedule-modal');
-    },
-
-    confirmReschedule() {
-        const newDate = document.getElementById('reschedule-date').value;
-        const newShift = document.querySelector('input[name="reschedule-shift"]:checked').value;
-
-        if (!newDate) return UI.toast("Selecione a nova data!", "error");
-
-        const shiftNome = newShift === 'night' ? 'Noite' : 'Dia';
-        const dataBr = newDate.split('-').reverse().join('/');
-        const appendObs = `[Reprogramado p/ ${dataBr} - ${shiftNome}]`;
-
-        if (UI.rescheduleSource === 'agenda') {
-            const id = UI.tempAgendaId;
-            const original = State.data.agendamentos.find(a => a.id === id);
-            if (original) {
-                const novoItem = {
-                    ...original, id: Date.now() + Math.random(), date: newDate, shift: newShift, distribuido: false, reprogramado: false
-                };
-                original.reprogramado = true;
-                original.obs = (original.obs ? original.obs + ' | ' : '') + appendObs;
-
-                State.data.agendamentos.push(novoItem);
-                State.saveAll();
-
-                UI.toggleModal('reschedule-modal');
-                App.renderAgendaTab();
-                App.renderAgendaPanel();
-                UI.toast("Serviço reprogramado com sucesso!");
-            }
-        } 
-        else if (UI.rescheduleSource === 'driver') {
-            const driverName = UI.tempDriverName;
-            const tripIndex = UI.tempTripIndex;
-            const driver = State.getCurrentFleet()[driverName];
-            
-            if (driver && driver.trips[tripIndex]) {
-                const trip = driver.trips[tripIndex];
-                
-                if (trip.agendaId) {
-                    const originalAgenda = State.data.agendamentos.find(a => a.id === trip.agendaId);
-                    if (originalAgenda) {
-                        const novoItem = {
-                            ...originalAgenda, id: Date.now() + Math.random(), date: newDate, shift: newShift, distribuido: false, reprogramado: false
-                        };
-                        originalAgenda.reprogramado = true;
-                        originalAgenda.obs = (originalAgenda.obs ? originalAgenda.obs + ' | ' : '') + appendObs;
-                        State.data.agendamentos.push(novoItem);
-                    }
-                } else {
-                    const novoItem = {
-                        id: Date.now() + Math.random(), date: newDate, shift: newShift, empresa: trip.empresa || '',
-                        obra: trip.obra || '', address: typeof trip.to === 'string' ? trip.to : (trip.to && trip.to.text ? trip.to.text : ''),
-                        obs: trip.obs || '', qty: trip.qty || 1, type: trip.type || 'troca', distribuido: false, reprogramado: false
-                    };
-                    State.data.agendamentos.push(novoItem);
-                }
-
-                driver.trips.splice(tripIndex, 1);
-                
-                State.saveAll();
-                UI.toggleModal('reschedule-modal');
-                App.renderSpreadsheet();
-                App.renderAgendaTab();
-                App.renderAgendaPanel();
-                App.renderGrid();
-                UI.toast("Retirado da rota e Reprogramado!");
-            }
-        }
-    },
-
-    addAgenda() {
-        const date = document.getElementById('agenda-date').value;
-        const shift = document.querySelector('input[name="agenda-shift-sel"]:checked')?.value || 'day';
-        
-        const empresa = document.getElementById('agenda-empresa').value;
-        const obra = document.getElementById('agenda-obra').value;
-        const addr = document.getElementById('agenda-addr').value;
-        const obs = document.getElementById('agenda-obs').value;
-        const qty = document.getElementById('agenda-qty').value;
-        const type = State.session.agendaType || 'troca';
-
-        if (!date) return UI.toast("Selecione a data do calendário acima!", "error");
-        if (!addr && !obra) return UI.toast("Preencha a obra ou endereço", "error");
-
-        State.addAgendamento({ id: Date.now(), date, shift, empresa, obra, address: addr, obs, qty, type, distribuido: false, reprogramado: false });
-
-        if (empresa || obra) State.addToAddressBook(empresa, obra, addr);
-
-        document.getElementById('agenda-empresa').value = '';
-        document.getElementById('agenda-obra').value = '';
-        document.getElementById('agenda-addr').value = '';
-        document.getElementById('agenda-obs').value = '';
-
-        UI.toast("Serviço Agendado com sucesso!");
-        this.renderAgendaTab();
-        this.renderAddressBook(); 
-        
-        if (date === State.session.routeDate) this.renderAgendaPanel();
-    },
-
-    renderAgendaTab() {
-        const list = document.getElementById('agenda-tab-list');
-        if(!list) return;
-        const selectedDate = document.getElementById('agenda-date').value;
-        const searchInput = document.getElementById('search-agenda');
-        const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
-
-        list.innerHTML = '';
-        if (!selectedDate) {
-            list.innerHTML = '<div class="text-center text-xs text-slate-400 py-4">Selecione uma data acima</div>';
-            return;
-        }
-
-        let agendados = State.data.agendamentos.filter(a => a.date === selectedDate);
-        
-        if (searchTerm) {
-            agendados = agendados.filter(a => 
-                (a.obra && a.obra.toLowerCase().includes(searchTerm)) ||
-                (a.empresa && a.empresa.toLowerCase().includes(searchTerm)) ||
-                (a.address && a.address.toLowerCase().includes(searchTerm))
-            );
-        }
-
-        if (agendados.length === 0) {
-            if (searchTerm) return list.innerHTML = '<div class="text-center text-xs text-slate-400 py-4"><i class="fas fa-search-minus text-2xl mb-2 opacity-50"></i><br>Nenhum serviço encontrado.</div>';
-            return list.innerHTML = '<div class="text-center text-xs text-slate-400 py-4">Nenhum serviço agendado</div>';
-        }
-
-        const ordemPrioridade = { 'troca': 1, 'retirada': 2, 'colocacao': 3, 'encher': 4 };
-        agendados.sort((a, b) => (ordemPrioridade[a.type] || 5) - (ordemPrioridade[b.type] || 5));
-
-        agendados.forEach(item => {
-            const isDist = item.distribuido;
-            const isReprog = item.reprogramado;
-            const isLocked = isDist || isReprog;
-            const isNight = document.body.classList.contains('night-mode');
-            
-            let baseClass = 'bg-slate-50 border-slate-200';
-            let finalStyle = '';
-            
-            if (isReprog) {
-                baseClass = 'opacity-80';
-                finalStyle = isNight ? 'background-color: rgba(194,65,12,0.2) !important; border-color: #9a3412 !important;' : 'background-color: #fff7ed !important; border-color: #fed7aa !important;';
-            } else if (isDist) {
-                baseClass = 'opacity-80';
-                finalStyle = isNight ? 'background-color: rgba(30,58,138,0.4) !important; border-color: #1e3a8a !important;' : 'background-color: #eff6ff !important; border-color: #bfdbfe !important;';
-            }
-
-            const empresaTag = item.empresa ? `<span class="text-[9px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded uppercase mr-1 border border-purple-200">${item.empresa}</span>` : '';
-            const shiftBadge = (item.shift === 'night') ? `<span class="bg-slate-800 text-white px-1.5 py-0.5 rounded text-[8px] uppercase border border-slate-600 shadow-sm ml-1">🌙 Noite</span>` : `<span class="bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded text-[8px] uppercase border border-yellow-300 shadow-sm ml-1">🌞 Dia</span>`;
-            const obsTag = item.obs ? `<div class="mt-1 text-[9px] bg-amber-100 text-amber-800 p-1 rounded font-bold">OBS: ${item.obs}</div>` : '';
-
-            let typeColor = 'text-slate-800';
-            if(item.type === 'colocacao') typeColor = 'text-red-600';
-            if(item.type === 'retirada') typeColor = 'text-purple-600';
-            if(item.type === 'encher') typeColor = 'text-amber-600';
-            const label = WhatsappService.getPluralLabel(item.type || 'troca', item.qty || 1);
-
-            let botoesEdit = '';
-            if (isReprog) {
-                botoesEdit = `<span class="text-[9px] font-black text-orange-600 bg-orange-100 px-2 py-1 rounded border border-orange-200"><i class="fas fa-calendar-check"></i> REPROGRAMADO</span>`;
-            } else if (isDist) {
-                botoesEdit = `<div class="flex gap-1"><span class="text-[9px] font-black text-blue-600 bg-blue-100 px-2 py-1 rounded border border-blue-200"><i class="fas fa-check-circle"></i> NA ROTA</span><button onclick="App.forceUnlockAgenda(${item.id})" class="text-[10px] font-black text-red-600 bg-red-100 hover:bg-red-200 rounded py-0.5 px-2 border border-red-200 shadow-sm transition" title="Desbloquear"><i class="fas fa-unlock"></i></button></div>`;
-            } else {
-                botoesEdit = `<button onclick="App.changeAgendaQty(${item.id})" class="text-[10px] font-black bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded hover:bg-slate-300 transition cursor-pointer">${item.qty || 1}</button><button onclick="App.cycleAgendaType(${item.id})" class="text-[10px] font-black ${typeColor} bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded transition cursor-pointer flex items-center gap-1 border border-slate-200">${label} <i class="fas fa-sync-alt opacity-40 hover:opacity-100 text-[8px]"></i></button>`;
-            }
-
-            // 🔥 SE FOR REPROGRAMADO, O BOTÃO DE LIXEIRA APARECE PRA LIMPAR O HISTÓRICO 🔥
-            let acoesDireita = '';
-            if (!isLocked) {
-                acoesDireita = `
-                    <div class="flex flex-col gap-2 items-center">
-                        <button onclick="App.openRescheduleModal(${item.id})" class="text-slate-300 hover:text-orange-500 transition-colors p-1" title="Reprogramar"><i class="fas fa-calendar-alt text-sm"></i></button>
-                        <button onclick="App.deleteAgenda(${item.id})" class="text-slate-300 hover:text-red-500 transition-colors p-1" title="Excluir"><i class="fas fa-trash-alt text-sm"></i></button>
-                    </div>
-                `;
-            } else if (isReprog) {
-                acoesDireita = `
-                    <div class="flex flex-col gap-2 items-center">
-                        <button onclick="App.deleteAgenda(${item.id})" class="text-orange-300 hover:text-red-500 transition-colors p-1" title="Excluir Histórico"><i class="fas fa-trash-alt text-sm"></i></button>
-                    </div>
-                `;
-            }
-
-            const div = document.createElement('div');
-            div.className = `flex justify-between items-start p-3 rounded-lg border shadow-sm animate-fade-in ag-item-card transition-all ${baseClass}`;
-            div.style = finalStyle;
-            
-            div.innerHTML = `
-                <div class="pr-2 flex-1 min-w-0">
-                    <div class="flex items-center gap-1 mb-1 w-fit">${botoesEdit}</div>
-                    <div class="text-[11px] font-bold ${isDist ? 'text-blue-900' : (isReprog ? 'text-orange-900' : 'text-slate-800')} truncate leading-tight mt-1">${empresaTag}${item.obra || 'Sem Nome'} ${shiftBadge}</div>
-                    <div class="text-[9px] ${isDist ? 'text-blue-600' : (isReprog ? 'text-orange-700' : 'text-slate-500')} mt-1 leading-tight"><i class="fas fa-map-marker-alt ${isDist ? 'text-blue-500' : (isReprog ? 'text-orange-400' : 'text-red-400')} mr-1"></i>${WhatsappService.formatAddress(item.address)}</div>
-                    ${obsTag}
-                </div>
-                ${acoesDireita}
-            `;
-            list.appendChild(div);
-        });
-    },
-
-    renderAgendaPanel() {
-        const list = document.getElementById('spreadsheet-agenda-list');
-        if(!list) return;
-
-        const searchInput = document.getElementById('search-agenda-panel');
-        const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
-
-        // 🔥 FILTRA SÓ O TURNO SELECIONADO NA PLANILHA (Dia ou Noite) 🔥
-        let agendadosHj = State.data.agendamentos.filter(a => a.date === State.session.routeDate && (a.shift || 'day') === State.session.shift);
-        
-        const badge = document.getElementById('agenda-count-badge');
-        if (badge) badge.innerText = agendadosHj.length;
-
-        if (searchTerm) {
-            agendadosHj = agendadosHj.filter(a => 
-                (a.obra && a.obra.toLowerCase().includes(searchTerm)) || (a.empresa && a.empresa.toLowerCase().includes(searchTerm)) || (a.address && a.address.toLowerCase().includes(searchTerm))
-            );
-        }
-
-        list.innerHTML = '';
-        if(agendadosHj.length === 0) return list.innerHTML = '<div class="text-center text-xs text-purple-400 py-4 font-bold mt-10"><i class="far fa-smile text-2xl mb-2"></i><br>Nenhum agendamento para este turno.</div>';
-
-        const ordemPrioridade = { 'troca': 1, 'retirada': 2, 'colocacao': 3, 'encher': 4 };
-        agendadosHj.sort((a, b) => (ordemPrioridade[a.type] || 5) - (ordemPrioridade[b.type] || 5));
-        const isNight = document.body.classList.contains('night-mode');
-
-        agendadosHj.forEach(a => {
-            const isDist = a.distribuido;
-            const isReprog = a.reprogramado;
-            const isLocked = isDist || isReprog;
-
-            let colorClass = 'text-slate-800';
-            if(a.type === 'colocacao') colorClass = 'text-red-600';
-            if(a.type === 'retirada') colorClass = 'text-purple-600';
-            if(a.type === 'encher') colorClass = 'text-amber-600';
-            const label = WhatsappService.getPluralLabel(a.type || 'troca', a.qty || 1);
-
-            const dragAttrs = isLocked ? '' : `draggable="true" ondragstart="App.handleAgendaDragStart(event, ${a.id})"`;
-            let baseClass = isLocked ? 'opacity-60 cursor-not-allowed' : 'bg-white border-purple-200 hover:border-purple-400 hover:shadow-md cursor-grab active:cursor-grabbing';
-
-            let finalStyle = '';
-            if (isReprog) {
-                finalStyle = isNight ? 'background-color: rgba(194,65,12,0.2) !important; border-color: #9a3412 !important;' : 'background-color: #fff7ed !important; border-color: #fed7aa !important;';
-            } else if (isDist) {
-                finalStyle = isNight ? 'background-color: rgba(30,58,138,0.4) !important; border-color: #1e3a8a !important;' : 'background-color: #eff6ff !important; border-color: #bfdbfe !important;';
-            }
-
-            let botoesEdit = '';
-            if (isReprog) {
-                botoesEdit = `<span class="text-[10px] font-black text-orange-700 bg-orange-100 rounded-md py-0.5 px-2 border border-orange-200 shadow-sm"><i class="fas fa-calendar-check"></i> REPROGRAMADO</span>`;
-            } else if (isDist) {
-                botoesEdit = `<div class="flex gap-1"><span class="text-[10px] font-black text-blue-700 bg-blue-100 rounded-md py-0.5 px-2 border border-blue-200 shadow-sm"><i class="fas fa-check"></i> JÁ DISTRIBUÍDO</span><button onclick="App.forceUnlockAgenda(${a.id})" class="text-[10px] font-black text-red-600 bg-red-100 hover:bg-red-200 rounded-md py-0.5 px-2 border border-red-200 shadow-sm transition" title="Desbloquear"><i class="fas fa-unlock"></i></button></div>`;
-            } else {
-                botoesEdit = `<button onclick="App.changeAgendaQty(${a.id})" class="text-slate-600 hover:text-blue-600 text-[10px] font-black bg-slate-100 rounded-md py-0.5 px-1.5 border border-slate-200 shadow-sm transition">${a.qty || 1}</button><button onclick="App.cycleAgendaType(${a.id})" class="${colorClass} text-[10px] font-black bg-slate-50 hover:bg-slate-200 rounded-md py-0.5 px-2 border border-slate-200 shadow-sm transition flex items-center gap-1">${label} <i class="fas fa-sync-alt opacity-40 hover:opacity-100 text-[8px]"></i></button>`;
-            }
-
-            // 🔥 SE FOR REPROGRAMADO, O BOTÃO DE LIXEIRA APARECE PRA LIMPAR O HISTÓRICO 🔥
-            let botoesAcaoPanel = '';
-            if (!isLocked) {
-                botoesAcaoPanel = `
-                    <div class="flex gap-2 items-center">
-                        <button onclick="App.openRescheduleModal(${a.id})" class="text-slate-300 hover:text-orange-500 transition-colors p-1" title="Reprogramar"><i class="fas fa-calendar-alt"></i></button>
-                        <button onclick="App.deleteAgenda(${a.id})" class="text-slate-300 hover:text-red-500 transition-colors p-1" title="Excluir"><i class="fas fa-trash-alt"></i></button>
-                    </div>
-                `;
-            } else if (isReprog) {
-                botoesAcaoPanel = `
-                    <div class="flex gap-2 items-center">
-                        <button onclick="App.deleteAgenda(${a.id})" class="text-orange-300 hover:text-red-500 transition-colors p-1" title="Excluir Histórico"><i class="fas fa-trash-alt"></i></button>
-                    </div>
-                `;
-            }
-
-            list.innerHTML += `
-            <div ${dragAttrs} style="${finalStyle}" class="drag-item p-3 border rounded-xl shadow-sm flex flex-col relative animate-fade-in transition ag-item-card ${baseClass}">
-                <div class="flex items-center justify-between gap-1 w-full mb-2">
-                    <div class="flex gap-1">${botoesEdit}</div>
-                    ${botoesAcaoPanel}
-                </div>
-                <div class="font-bold text-[11px] leading-tight tracking-wide ${isDist ? 'text-blue-900' : (isReprog ? 'text-orange-900' : 'text-slate-800')} break-words">
-                    ${a.empresa ? `<span class="text-slate-500 uppercase text-[9px]">${a.empresa}</span><br>` : ''}
-                    <span class="text-[13px] font-black">${a.obra || 'Sem Nome'}</span>
-                </div>
-                <div class="text-[9px] ${isDist ? 'text-blue-600' : (isReprog ? 'text-orange-700' : 'text-slate-500')} mt-1 leading-tight"><i class="fas fa-map-marker-alt ${isDist ? 'text-blue-500' : (isReprog ? 'text-orange-400' : 'text-red-400')} mr-1"></i>${WhatsappService.formatAddress(a.address)}</div>
-                ${a.obs ? `<div class="mt-2 text-[10px] bg-amber-100 text-amber-900 font-bold rounded-lg p-1.5 border border-amber-300"><i class="fas fa-exclamation-triangle"></i> OBS: ${a.obs}</div>` : ''}
-            </div>`;
-        });
-    },
-
     autoDistributeAgenda() {
-        const agendados = State.data.agendamentos.filter(a => a.date === State.session.routeDate && !a.distribuido && !a.reprogramado && (a.shift || 'day') === State.session.shift);
-        if (agendados.length === 0) return UI.toast("Nenhum agendamento do turno atual pendente.", "info");
+        const agendados = State.data.agendamentos.filter(a => a.date === State.session.routeDate && !a.distribuido);
+        if (agendados.length === 0) return UI.toast("Nenhum agendamento pendente para hoje.", "info");
 
-        if(!confirm("Deseja que o sistema divida os serviços automaticamente?")) return;
+        if(!confirm("Deseja que o sistema divida os serviços automaticamente?\n\nEle tentará manter a mesma obra com o mesmo motorista e balancear as quantidades.")) return;
 
         const groups = {};
         agendados.forEach(a => {
@@ -1613,28 +1299,43 @@ const App = {
             return { name, count: d && d.trips ? d.trips.length : 0 };
         });
 
-        Object.values(groups).sort((a, b) => b.length - a.length).forEach(group => {
+        const sortedGroups = Object.values(groups).sort((a, b) => b.length - a.length);
+
+        sortedGroups.forEach(group => {
             driverLoads.sort((a, b) => a.count - b.count);
             const targetDriver = driverLoads[0];
+            
+            // Pega o motorista alvo silenciosamente
             const targetDriverObj = State.getCurrentFleet()[targetDriver.name];
             if (!targetDriverObj.trips) targetDriverObj.trips = [];
 
             group.forEach(a => {
                 targetDriverObj.trips.push({
-                    id: Date.now() + Math.random(), status: 'pendente', completed: false, agendaId: a.id,
-                    empresa: a.empresa, obra: a.obra, qty: a.qty, type: a.type, obs: a.obs, to: { text: a.address }, mtr: null, descarteLocal: null
+                    id: Date.now() + Math.random(),
+                    status: 'pendente',
+                    completed: false,
+                    agendaId: a.id,
+                    empresa: a.empresa, 
+                    obra: a.obra, 
+                    qty: a.qty, 
+                    type: a.type,
+                    obs: a.obs, 
+                    to: { text: a.address }, 
+                    mtr: null, 
+                    descarteLocal: null
                 });
                 a.distribuido = true;
                 targetDriver.count++;
             });
         });
 
-        State.saveAll();
+        State.saveAll(); // 🔥 SALVA DISTRIBUIÇÃO E CORES DE UMA VEZ
+        
         this.renderSpreadsheet();
         this.renderAgendaPanel();
         this.renderAgendaTab();
         this.renderGrid();
-        UI.toast("Serviços distribuídos!");
+        UI.toast("Serviços distribuídos inteligentemente!");
     },
     
     quickDelete(name, index) { if(confirm("Excluir viagem rápida?")) State.removeTrip(name, index); },
@@ -1721,13 +1422,243 @@ const App = {
         window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
     },
 
+    // ==========================================
+    // 🔥 FUNÇÕES DE EDIÇÃO DIRETO NA AGENDA 🔥
+    // ==========================================
+    cycleAgendaType(id) {
+        const ag = State.data.agendamentos.find(a => a.id === id);
+        if (!ag) return;
+        const types = ['troca', 'colocacao', 'retirada', 'encher'];
+        let nextIndex = types.indexOf(ag.type || 'troca') + 1;
+        if (nextIndex >= types.length) nextIndex = 0;
+        
+        ag.type = types[nextIndex];
+        State.saveAgendamentos();
+        this.renderAgendaTab();
+        this.renderAgendaPanel();
+    },
+
+    changeAgendaQty(id) {
+        const ag = State.data.agendamentos.find(a => a.id === id);
+        if (!ag) return;
+        const newQty = prompt("Nova quantidade:", ag.qty || 1);
+        if (newQty !== null && parseInt(newQty) > 0) {
+            ag.qty = parseInt(newQty);
+            State.saveAgendamentos();
+            this.renderAgendaTab();
+            this.renderAgendaPanel();
+        }
+    },
+
+    addAgenda() {
+        const date = document.getElementById('agenda-date').value;
+        const empresa = document.getElementById('agenda-empresa').value;
+        const obra = document.getElementById('agenda-obra').value;
+        const addr = document.getElementById('agenda-addr').value;
+        const obs = document.getElementById('agenda-obs').value;
+        const qty = document.getElementById('agenda-qty').value;
+        const type = State.session.agendaType || 'troca';
+
+        if (!date) return UI.toast("Selecione a data do calendário acima!", "error");
+        if (!addr && !obra) return UI.toast("Preencha a obra ou endereço", "error");
+
+        State.addAgendamento({ id: Date.now(), date, empresa, obra, address: addr, obs, qty, type, distribuido: false });
+
+        if (empresa || obra) {
+            State.addToAddressBook(empresa, obra, addr);
+        }
+
+        document.getElementById('agenda-empresa').value = '';
+        document.getElementById('agenda-obra').value = '';
+        document.getElementById('agenda-addr').value = '';
+        document.getElementById('agenda-obs').value = '';
+
+        UI.toast("Serviço Agendado com sucesso!");
+        this.renderAgendaTab();
+        this.renderAddressBook(); 
+        
+        if (date === State.session.routeDate) {
+            this.renderAgendaPanel();
+        }
+    },
+
+   renderAgendaTab() {
+        const list = document.getElementById('agenda-tab-list');
+        if(!list) return;
+        const selectedDate = document.getElementById('agenda-date').value;
+        const searchInput = document.getElementById('search-agenda');
+        const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+
+        list.innerHTML = '';
+        if (!selectedDate) {
+            list.innerHTML = '<div class="text-center text-xs text-slate-400 py-4">Selecione uma data acima para ver os agendamentos</div>';
+            return;
+        }
+
+        let agendados = State.data.agendamentos.filter(a => a.date === selectedDate);
+        
+        if (searchTerm) {
+            agendados = agendados.filter(a => 
+                (a.obra && a.obra.toLowerCase().includes(searchTerm)) ||
+                (a.empresa && a.empresa.toLowerCase().includes(searchTerm)) ||
+                (a.address && a.address.toLowerCase().includes(searchTerm))
+            );
+        }
+
+        if (agendados.length === 0) {
+            if (searchTerm) {
+                list.innerHTML = '<div class="text-center text-xs text-slate-400 py-4"><i class="fas fa-search-minus text-2xl mb-2 opacity-50"></i><br>Nenhum serviço encontrado na busca.</div>';
+            } else {
+                list.innerHTML = '<div class="text-center text-xs text-slate-400 py-4">Nenhum serviço agendado para este dia</div>';
+            }
+            return;
+        }
+
+        // 🔥 NOVA LÓGICA DE ORDENAÇÃO: Troca > Retirada > Colocação > Encher 🔥
+        const ordemPrioridade = { 'troca': 1, 'retirada': 2, 'colocacao': 3, 'encher': 4 };
+        agendados.sort((a, b) => (ordemPrioridade[a.type] || 5) - (ordemPrioridade[b.type] || 5));
+
+        agendados.forEach(item => {
+            const isDist = item.distribuido;
+            const extraStyle = isDist ? 'background-color: #eff6ff !important; border-color: #bfdbfe !important;' : '';
+            const darkExtraStyle = isDist ? 'background-color: rgba(30, 58, 138, 0.4) !important; border-color: #1e3a8a !important;' : '';
+            const isNight = document.body.classList.contains('night-mode');
+            const finalStyle = isNight && isDist ? darkExtraStyle : extraStyle;
+            
+            const empresaTag = item.empresa ? `<span class="text-[9px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded uppercase mr-1 border border-purple-200">${item.empresa}</span>` : '';
+            const obsTag = item.obs ? `<div class="mt-1 text-[9px] bg-amber-100 text-amber-800 p-1 rounded font-bold">OBS: ${item.obs}</div>` : '';
+
+            let typeColor = 'text-slate-800';
+            if(item.type === 'colocacao') typeColor = 'text-red-600';
+            if(item.type === 'retirada') typeColor = 'text-purple-600';
+            if(item.type === 'encher') typeColor = 'text-amber-600';
+            
+            const label = WhatsappService.getPluralLabel(item.type || 'troca', item.qty || 1);
+
+            const botoesEdit = isDist ? 
+                `<div class="flex gap-1">
+                    <span class="text-[9px] font-black text-blue-600 bg-blue-100 px-2 py-1 rounded border border-blue-200"><i class="fas fa-check-circle"></i> NA ROTA</span>
+                    <button onclick="App.forceUnlockAgenda(${item.id})" class="text-[10px] font-black text-red-600 bg-red-100 hover:bg-red-200 rounded py-0.5 px-2 border border-red-200 shadow-sm transition cursor-pointer" title="Desbloquear serviço preso (Fantasma)"><i class="fas fa-unlock"></i></button>
+                 </div>` : 
+                `
+                <button onclick="App.changeAgendaQty(${item.id})" class="text-[10px] font-black bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded hover:bg-slate-300 transition cursor-pointer" title="Mudar Quantidade">${item.qty || 1}</button>
+                <button onclick="App.cycleAgendaType(${item.id})" class="text-[10px] font-black ${typeColor} bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded transition cursor-pointer flex items-center gap-1 border border-slate-200" title="Mudar Tipo">
+                    ${label} <i class="fas fa-sync-alt opacity-40 hover:opacity-100 text-[8px]"></i>
+                </button>
+                `;
+
+            const btnLixo = isDist ? '' : `<button onclick="App.deleteAgenda(${item.id})" class="text-slate-300 hover:text-red-500 transition-colors shrink-0 ml-2 p-1"><i class="fas fa-trash-alt"></i></button>`;
+
+            const div = document.createElement('div');
+            div.className = `flex justify-between items-start p-3 rounded-lg border shadow-sm animate-fade-in ag-item-card transition-all ${isDist ? 'opacity-80' : 'bg-slate-50 border-slate-200'}`;
+            div.style = finalStyle;
+            
+            div.innerHTML = `
+                <div class="pr-2 flex-1 min-w-0">
+                    <div class="flex items-center gap-1 mb-1 w-fit">
+                        ${botoesEdit}
+                    </div>
+                    <div class="text-[11px] font-bold ${isDist ? 'text-blue-900' : 'text-slate-800'} truncate leading-tight mt-1">${empresaTag}${item.obra || 'Sem Nome'}</div>
+                    <div class="text-[9px] ${isDist ? 'text-blue-600' : 'text-slate-500'} mt-1 leading-tight"><i class="fas fa-map-marker-alt ${isDist ? 'text-blue-500' : 'text-red-400'} mr-1"></i>${WhatsappService.formatAddress(item.address)}</div>
+                    ${obsTag}
+                </div>
+                ${btnLixo}
+            `;
+            list.appendChild(div);
+        });
+    },
+    
+   renderAgendaPanel() {
+        const list = document.getElementById('spreadsheet-agenda-list');
+        if(!list) return;
+
+        const searchInput = document.getElementById('search-agenda-panel');
+        const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+
+        let agendadosHj = State.data.agendamentos.filter(a => a.date === State.session.routeDate);
+        
+        if (searchTerm) {
+            agendadosHj = agendadosHj.filter(a => 
+                (a.obra && a.obra.toLowerCase().includes(searchTerm)) ||
+                (a.empresa && a.empresa.toLowerCase().includes(searchTerm)) ||
+                (a.address && a.address.toLowerCase().includes(searchTerm))
+            );
+        }
+
+        list.innerHTML = '';
+
+        if(agendadosHj.length === 0) {
+            if (searchTerm) {
+                list.innerHTML = '<div class="text-center text-xs text-purple-400 py-4 font-bold mt-10"><i class="fas fa-search-minus text-2xl mb-2 opacity-50"></i><br>Nenhum serviço encontrado.</div>';
+            } else {
+                list.innerHTML = '<div class="text-center text-xs text-purple-400 py-4 font-bold mt-10"><i class="far fa-smile text-2xl mb-2"></i><br>Nenhum agendamento pendente.</div>';
+            }
+            return;
+        }
+
+        // 🔥 NOVA LÓGICA DE ORDENAÇÃO AQUI NA PLANILHA TAMBÉM 🔥
+        const ordemPrioridade = { 'troca': 1, 'retirada': 2, 'colocacao': 3, 'encher': 4 };
+        agendadosHj.sort((a, b) => (ordemPrioridade[a.type] || 5) - (ordemPrioridade[b.type] || 5));
+
+        const isNight = document.body.classList.contains('night-mode');
+
+        agendadosHj.forEach(a => {
+            const isDist = a.distribuido;
+            let colorClass = 'text-slate-800';
+            if(a.type === 'colocacao') colorClass = 'text-red-600';
+            if(a.type === 'retirada') colorClass = 'text-purple-600';
+            if(a.type === 'encher') colorClass = 'text-amber-600';
+            
+            const label = WhatsappService.getPluralLabel(a.type || 'troca', a.qty || 1);
+
+            const dragAttrs = isDist ? '' : `draggable="true" ondragstart="App.handleAgendaDragStart(event, ${a.id})"`;
+            const baseClass = isDist ? 'opacity-60 cursor-not-allowed' : 'bg-white border-purple-200 hover:border-purple-400 hover:shadow-md cursor-grab active:cursor-grabbing';
+
+            const extraStyle = isDist ? 'background-color: #eff6ff !important; border-color: #bfdbfe !important;' : '';
+            const darkExtraStyle = isDist ? 'background-color: rgba(30, 58, 138, 0.4) !important; border-color: #1e3a8a !important;' : '';
+            const finalStyle = isNight && isDist ? darkExtraStyle : extraStyle;
+
+            const botoesEdit = isDist ? 
+                `<div class="flex gap-1">
+                    <span class="text-[10px] font-black text-blue-700 bg-blue-100 rounded-md py-0.5 px-2 border border-blue-200 shadow-sm"><i class="fas fa-check"></i> JÁ DISTRIBUÍDO</span>
+                    <button onclick="App.forceUnlockAgenda(${a.id})" class="text-[10px] font-black text-red-600 bg-red-100 hover:bg-red-200 rounded-md py-0.5 px-2 border border-red-200 shadow-sm transition cursor-pointer" title="Desbloquear serviço preso"><i class="fas fa-unlock"></i></button>
+                 </div>` : 
+                `
+                <button onclick="App.changeAgendaQty(${a.id})" class="text-slate-600 hover:text-blue-600 text-[10px] font-black bg-slate-100 rounded-md py-0.5 px-1.5 border border-slate-200 shadow-sm transition cursor-pointer" title="Mudar Quantidade">${a.qty || 1}</button>
+                <button onclick="App.cycleAgendaType(${a.id})" class="${colorClass} text-[10px] font-black bg-slate-50 hover:bg-slate-200 rounded-md py-0.5 px-2 border border-slate-200 shadow-sm transition cursor-pointer flex items-center gap-1" title="Clique para mudar o Tipo de Serviço">
+                    ${label} <i class="fas fa-sync-alt opacity-40 hover:opacity-100 text-[8px]"></i>
+                </button>
+                `;
+
+            list.innerHTML += `
+            <div ${dragAttrs}
+                 style="${finalStyle}"
+                 class="drag-item p-3 border rounded-xl shadow-sm flex flex-col relative animate-fade-in transition ag-item-card ${baseClass}">
+                
+                <div class="flex items-center gap-1 w-fit mb-2">
+                    ${botoesEdit}
+                </div>
+                
+                <div class="font-bold text-[11px] leading-tight tracking-wide ${isDist ? 'text-blue-900' : 'text-slate-800'} break-words">
+                    ${a.empresa ? `<span class="text-slate-500 uppercase text-[9px]">${a.empresa}</span><br>` : ''}
+                    <span class="text-[13px] font-black">${a.obra || 'Sem Nome'}</span>
+                </div>
+                <div class="text-[9px] ${isDist ? 'text-blue-600' : 'text-slate-500'} mt-1 leading-tight"><i class="fas fa-map-marker-alt ${isDist ? 'text-blue-500' : 'text-red-400'} mr-1"></i>${WhatsappService.formatAddress(a.address)}</div>
+                ${a.obs ? `<div class="mt-2 text-[10px] bg-amber-100 text-amber-900 font-bold rounded-lg p-1.5 border border-amber-300"><i class="fas fa-exclamation-triangle"></i> OBS: ${a.obs}</div>` : ''}
+            </div>`;
+        });
+    },
+
+    // ==========================================
+    // 🔥 TRAVA DE SEGURANÇA: DESBLOQUEIO MANUAL 🔥
+    // ==========================================
     forceUnlockAgenda(id) {
         if(!confirm("Tem certeza que deseja desbloquear este serviço? (Use isso caso ele tenha sumido da rota dos motoristas).")) return;
         
         const ag = State.data.agendamentos.find(a => a.id === id);
         if(ag) {
-            ag.distribuido = false;
-            State.saveAgendamentos();
+            ag.distribuido = false; // Tira o bloqueio azul
+            State.saveAgendamentos(); // Salva no banco na hora
             
             this.renderAgendaTab();
             this.renderAgendaPanel();
