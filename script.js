@@ -749,8 +749,13 @@ const App = {
         // 🔥 LÓGICA NOVA: TROCAR A LOGO PRINCIPAL LÁ DE CIMA 🔥
         const mainLogo = document.getElementById('app-logo');
         if (mainLogo) {
-            // Se for noite, usa a images2.png, se for dia, usa a images.png
             mainLogo.src = shift === 'night' ? 'images2.png' : 'images.png';
+        }
+
+        // 🔥 LÓGICA NOVA: TROCAR O FAVICON (ÍCONE DA ABA DO NAVEGADOR) 🔥
+        const favicon = document.querySelector("link[rel~='icon']");
+        if (favicon) {
+            favicon.href = shift === 'night' ? 'images2.png' : 'images.png';
         }
 
         UI.closeEditor();
