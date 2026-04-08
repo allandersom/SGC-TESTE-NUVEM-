@@ -140,7 +140,10 @@ Posto Ipiranga..."></textarea>
                         <button onclick="App.autoDistributeAgenda()" class="w-full bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold py-3 rounded-lg shadow-md transition transform hover:scale-[1.02] flex items-center justify-center gap-2">
                             <i class="fas fa-magic"></i> DISTRIBUIR AUTOMATICAMENTE
                         </button>
-                        <p class="text-[9px] text-purple-600 mt-2 text-center leading-tight"></p>
+                        <div class="mt-3 relative">
+                            <input type="text" id="search-agenda-panel" oninput="App.renderAgendaPanel()" class="input-modern pl-9 bg-white border-purple-200 text-xs w-full text-purple-900" placeholder="Buscar obra, empresa...">
+                            <i class="fas fa-search absolute left-3 top-3 text-purple-400 text-xs"></i>
+                        </div>
                     </div>
                     
                     <div id="spreadsheet-agenda-list" class="flex-1 overflow-y-auto p-3 space-y-2 custom-scroll bg-purple-50/50">
