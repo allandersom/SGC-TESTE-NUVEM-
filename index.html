@@ -322,6 +322,11 @@ Posto Ipiranga..."></textarea>
                                 <div class="flex justify-between items-center mb-2">
                                     <p class="text-[10px] font-bold text-slate-500 uppercase">Serviços para o dia selecionado</p>
                                 </div>
+
+                                <div class="mb-3 relative">
+                                    <input type="text" id="search-agenda" oninput="App.renderAgendaTab()" class="input-modern pl-9 bg-slate-50 border-slate-200 text-xs" placeholder="Buscar por obra, empresa ou endereço...">
+                                    <i class="fas fa-search absolute left-3 top-3 text-slate-400 text-xs"></i>
+                                </div>
                                 <div id="agenda-tab-list" class="space-y-2 max-h-48 overflow-y-auto custom-scroll">
                                     <div class="text-center text-xs text-slate-400 py-4">Selecione uma data acima para ver os agendamentos</div>
                                 </div>
