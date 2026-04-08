@@ -535,3 +535,13 @@ body.night-mode .ag-item-card.bg-blue-50 .text-blue-900,
 body.night-mode .ag-item-card.bg-blue-50 .text-blue-600 {
     color: #93c5fd !important; /* Azul claro neon pro texto brilhar */
 }
+
+/* ========================================================================= */
+/* 🔥 MODO NOTURNO PARA A NOVA BARRA DE BUSCA DA AGENDA 🔥 */
+/* ========================================================================= */
+
+body.night-mode #search-agenda {
+    background-color: #0f172a !important; /* Fundo escurão */
+    border-color: #334155 !important; /* Bordinha chique */
+    color: #f1f5f9 !important; /* Letra branca */
+}
