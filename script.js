@@ -1055,11 +1055,16 @@ const App = {
                 const descTag = t.descarteLocal ? `<div class="mt-1 text-[10px] bg-red-100 text-red-900 font-bold rounded-lg p-1 border border-red-200 text-center truncate">DESC: ${t.descarteLocal}</div>` : '';
                 const timeTag = ((status === 'concluido' || status === 'nao_feito') && t.horaConclusao) ? `<div class="mt-2 text-[9px] font-black ${status==='concluido'?'text-emerald-700':'text-red-700'} text-center"><i class="far fa-clock"></i> ${status==='concluido'?'FEITO':'NÃO FEITO'} ÀS ${t.horaConclusao}</div>` : '';
 
-                const barraAcoesHtml = `
-                    <div class="mt-2 pt-2 border-t border-slate-200 flex gap-1 justify-between">
-                        <button onclick="App.returnToAgenda('${name}', ${i})" class="text-[9px] bg-purple-50 hover:bg-purple-100 text-purple-700 px-2 py-1 rounded flex items-center gap-1 transition shadow-sm border border-purple-200 font-bold" title="Devolver p/ Agenda">
-                            <i class="fas fa-undo"></i> <span class="hidden sm:inline">Agenda</span>
-                        </button>
+               const barraAcoesHtml = `
+                    <div class="mt-2 pt-2 border-t border-slate-200 flex gap-1 justify-between flex-wrap">
+                        <div class="flex gap-1">
+                            <button onclick="App.returnToAgenda('${name}', ${i})" class="text-[9px] bg-purple-50 hover:bg-purple-100 text-purple-700 px-2 py-1 rounded flex items-center gap-1 transition shadow-sm border border-purple-200 font-bold" title="Devolver p/ Agenda">
+                                <i class="fas fa-undo"></i> <span class="hidden sm:inline">Agenda</span>
+                            </button>
+                            <button onclick="App.openDriverRescheduleModal('${name}', ${i})" class="text-[9px] bg-orange-50 hover:bg-orange-100 text-orange-700 px-2 py-1 rounded flex items-center gap-1 transition shadow-sm border border-orange-200 font-bold" title="Adiar / Reprogramar">
+                                <i class="fas fa-calendar-alt"></i> <span class="hidden sm:inline">Adiar</span>
+                            </button>
+                        </div>
                         <div class="flex gap-1">
                             <button onclick="App.editObs('${name}', ${i})" class="text-[9px] bg-amber-50 hover:bg-amber-100 text-amber-700 px-2 py-1 rounded flex items-center gap-1 transition shadow-sm border border-amber-200 font-bold" title="Editar Observação">
                                 <i class="fas fa-comment-dots"></i> OBS
@@ -1280,41 +1285,95 @@ const App = {
     // 🔥 LÓGICA DE AGENDAMENTO COM TURNOS E REPROGRAMAÇÃO 🔥
     // ==========================================
     
+    // ==========================================
+    // 🔥 LÓGICA DE AGENDAMENTO COM TURNOS E REPROGRAMAÇÃO 🔥
+    // ==========================================
+    
     openRescheduleModal(id) {
         UI.tempAgendaId = id;
+        UI.rescheduleSource = 'agenda'; // Marca que veio da aba de Agendamentos
+        UI.toggleModal('reschedule-modal');
+    },
+
+    // 🔥 NOVA FUNÇÃO: ABRIR MODAL DIRETO DO MOTORISTA 🔥
+    openDriverRescheduleModal(driverName, tripIndex) {
+        UI.tempDriverName = driverName;
+        UI.tempTripIndex = tripIndex;
+        UI.rescheduleSource = 'driver'; // Marca que veio da Planilha do Motorista
         UI.toggleModal('reschedule-modal');
     },
 
     confirmReschedule() {
-        const id = UI.tempAgendaId;
         const newDate = document.getElementById('reschedule-date').value;
         const newShift = document.querySelector('input[name="reschedule-shift"]:checked').value;
 
         if (!newDate) return UI.toast("Selecione a nova data!", "error");
 
-        const original = State.data.agendamentos.find(a => a.id === id);
-        if (original) {
-            const novoItem = {
-                ...original,
-                id: Date.now() + Math.random(),
-                date: newDate,
-                shift: newShift,
-                distribuido: false,
-                reprogramado: false
-            };
+        const shiftNome = newShift === 'night' ? 'Noite' : 'Dia';
+        const dataBr = newDate.split('-').reverse().join('/');
+        const appendObs = `[Reprogramado p/ ${dataBr} - ${shiftNome}]`;
+
+        // 1. SE VEIO DA LISTA DE AGENDAMENTOS
+        if (UI.rescheduleSource === 'agenda') {
+            const id = UI.tempAgendaId;
+            const original = State.data.agendamentos.find(a => a.id === id);
+            if (original) {
+                const novoItem = {
+                    ...original, id: Date.now() + Math.random(), date: newDate, shift: newShift, distribuido: false, reprogramado: false
+                };
+                original.reprogramado = true;
+                original.obs = (original.obs ? original.obs + ' | ' : '') + appendObs;
+
+                State.data.agendamentos.push(novoItem);
+                State.saveAll();
+
+                UI.toggleModal('reschedule-modal');
+                App.renderAgendaTab();
+                App.renderAgendaPanel();
+                UI.toast("Serviço reprogramado com sucesso!");
+            }
+        } 
+        // 2. SE VEIO DIRETO DA CÉLULA DO MOTORISTA (NA ROTA)
+        else if (UI.rescheduleSource === 'driver') {
+            const driverName = UI.tempDriverName;
+            const tripIndex = UI.tempTripIndex;
+            const driver = State.getCurrentFleet()[driverName];
             
-            original.reprogramado = true;
-            const shiftNome = newShift === 'night' ? 'Noite' : 'Dia';
-            const dataBr = newDate.split('-').reverse().join('/');
-            original.obs = (original.obs ? original.obs + ' | ' : '') + `[Reprogramado p/ ${dataBr} - ${shiftNome}]`;
+            if (driver && driver.trips[tripIndex]) {
+                const trip = driver.trips[tripIndex];
+                
+                // Atualiza o original se ele tiver vindo da agenda
+                if (trip.agendaId) {
+                    const originalAgenda = State.data.agendamentos.find(a => a.id === trip.agendaId);
+                    if (originalAgenda) {
+                        const novoItem = {
+                            ...originalAgenda, id: Date.now() + Math.random(), date: newDate, shift: newShift, distribuido: false, reprogramado: false
+                        };
+                        originalAgenda.reprogramado = true;
+                        originalAgenda.obs = (originalAgenda.obs ? originalAgenda.obs + ' | ' : '') + appendObs;
+                        State.data.agendamentos.push(novoItem);
+                    }
+                } else {
+                    // Se foi um serviço adicionado manualmente na rota
+                    const novoItem = {
+                        id: Date.now() + Math.random(), date: newDate, shift: newShift, empresa: trip.empresa || '',
+                        obra: trip.obra || '', address: typeof trip.to === 'string' ? trip.to : (trip.to && trip.to.text ? trip.to.text : ''),
+                        obs: trip.obs || '', qty: trip.qty || 1, type: trip.type || 'troca', distribuido: false, reprogramado: false
+                    };
+                    State.data.agendamentos.push(novoItem);
+                }
 
-            State.data.agendamentos.push(novoItem);
-            State.saveAll();
-
-            UI.toggleModal('reschedule-modal');
-            App.renderAgendaTab();
-            App.renderAgendaPanel();
-            UI.toast("Serviço reprogramado com sucesso!");
+                // 🔥 REMOVE DA ROTA DO MOTORISTA IMEDIATAMENTE 🔥
+                driver.trips.splice(tripIndex, 1);
+                
+                State.saveAll();
+                UI.toggleModal('reschedule-modal');
+                App.renderSpreadsheet();
+                App.renderAgendaTab();
+                App.renderAgendaPanel();
+                App.renderGrid();
+                UI.toast("Retirado da rota e Reprogramado!");
+            }
         }
     },
 
