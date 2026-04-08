@@ -118,6 +118,33 @@ Posto Ipiranga..."></textarea>
         </div>
     </div>
 
+    <div id="reschedule-modal" class="hidden fixed inset-0 z-[10006] modal-backdrop flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full animate-fade-in">
+            <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-orange-50">
+                <h3 class="font-black text-sm text-orange-800"><i class="fas fa-calendar-day mr-2"></i>Reprogramar Serviço</h3>
+                <button onclick="UI.toggleModal('reschedule-modal')" class="text-orange-400 hover:text-orange-700"><i class="fas fa-times text-lg"></i></button>
+            </div>
+            <div class="p-5 space-y-4">
+                <div>
+                    <label class="text-[10px] font-bold text-slate-500 uppercase mb-1 block">Nova Data:</label>
+                    <input type="date" id="reschedule-date" class="input-modern w-full font-bold text-slate-800">
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-slate-500 uppercase mb-1 block">Novo Turno:</label>
+                    <div class="flex gap-2">
+                        <label class="flex-1 flex items-center justify-center gap-2 bg-slate-50 p-3 rounded-lg border border-slate-200 cursor-pointer shadow-sm">
+                            <input type="radio" name="reschedule-shift" value="day" checked class="accent-orange-500"> 🌞 Dia
+                        </label>
+                        <label class="flex-1 flex items-center justify-center gap-2 bg-slate-50 p-3 rounded-lg border border-slate-200 cursor-pointer shadow-sm">
+                            <input type="radio" name="reschedule-shift" value="night" class="accent-orange-500"> 🌙 Noite
+                        </label>
+                    </div>
+                </div>
+                <button onclick="App.confirmReschedule()" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-black py-3 rounded-xl shadow-lg transition transform hover:scale-[1.02]">CONFIRMAR</button>
+            </div>
+        </div>
+    </div>
+
     <div id="spreadsheet-modal" class="hidden fixed inset-0 z-[10005] bg-slate-100 flex flex-col animate-fade-in">
         <div class="bg-white px-4 py-3 flex justify-between items-center shadow-md z-20 shrink-0 border-b-4 border-green-500">
             <h2 class="font-black text-xl text-slate-800 flex items-center gap-2"><i class="fas fa-table text-green-600"></i> Planilha de Monitoramento (Tempo Real)</h2>
@@ -300,6 +327,15 @@ Posto Ipiranga..."></textarea>
                             <div class="space-y-2 bg-white p-4 rounded-xl border border-purple-100 shadow-sm">
                                 <p class="text-[10px] font-bold text-purple-600 uppercase mb-2"><i class="fas fa-plus-circle mr-1"></i> Agendar Novo Serviço</p>
                                 
+                                <div class="flex gap-2 mb-3">
+                                    <label class="flex-1 flex items-center justify-center gap-2 bg-slate-50 p-2 rounded-lg border border-slate-200 cursor-pointer shadow-sm hover:bg-blue-50 transition">
+                                        <input type="radio" name="agenda-shift-sel" value="day" checked class="accent-blue-600 w-4 h-4"> <span class="text-xs font-bold text-slate-700">🌞 Dia</span>
+                                    </label>
+                                    <label class="flex-1 flex items-center justify-center gap-2 bg-slate-50 p-2 rounded-lg border border-slate-200 cursor-pointer shadow-sm hover:bg-slate-800 hover:text-white transition">
+                                        <input type="radio" name="agenda-shift-sel" value="night" class="accent-slate-800 w-4 h-4"> <span class="text-xs font-bold text-slate-700">🌙 Noite</span>
+                                    </label>
+                                </div>
+
                                 <div class="flex gap-3 items-center mt-2 mb-3">
                                     <input id="agenda-qty" type="number" value="1" min="1" class="w-16 h-10 text-center font-bold text-lg bg-slate-50 border border-slate-200 rounded-lg">
                                     <div class="flex-grow grid grid-cols-4 gap-2">
@@ -338,7 +374,7 @@ Posto Ipiranga..."></textarea>
                         </div>
                     </div>
                 </div>
-                </div>
+            </div>
         </aside>
     </div>
 
