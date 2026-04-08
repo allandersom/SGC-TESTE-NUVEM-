@@ -1473,6 +1473,9 @@ const App = {
         const list = document.getElementById('agenda-tab-list');
         if(!list) return;
         const selectedDate = document.getElementById('agenda-date').value;
+        // Pega o que você digitou na barra de pesquisa (em minúsculo pra facilitar a busca)
+        const searchInput = document.getElementById('search-agenda');
+        const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
 
         list.innerHTML = '';
         if (!selectedDate) {
@@ -1480,9 +1483,24 @@ const App = {
             return;
         }
 
-        const agendados = State.data.agendamentos.filter(a => a.date === selectedDate);
+        // Filtra os serviços do dia
+        let agendados = State.data.agendamentos.filter(a => a.date === selectedDate);
+        
+        // 🔥 LÓGICA DA BUSCA: Se tiver algo digitado, ele filtra a lista na hora! 🔥
+        if (searchTerm) {
+            agendados = agendados.filter(a => 
+                (a.obra && a.obra.toLowerCase().includes(searchTerm)) ||
+                (a.empresa && a.empresa.toLowerCase().includes(searchTerm)) ||
+                (a.address && a.address.toLowerCase().includes(searchTerm))
+            );
+        }
+
         if (agendados.length === 0) {
-            list.innerHTML = '<div class="text-center text-xs text-slate-400 py-4">Nenhum serviço agendado para este dia</div>';
+            if (searchTerm) {
+                list.innerHTML = '<div class="text-center text-xs text-slate-400 py-4"><i class="fas fa-search-minus text-2xl mb-2 opacity-50"></i><br>Nenhum serviço encontrado na busca.</div>';
+            } else {
+                list.innerHTML = '<div class="text-center text-xs text-slate-400 py-4">Nenhum serviço agendado para este dia</div>';
+            }
             return;
         }
 
@@ -1532,6 +1550,7 @@ const App = {
             list.appendChild(div);
         });
     },
+    
     renderAgendaPanel() {
         const list = document.getElementById('spreadsheet-agenda-list');
         if(!list) return;
