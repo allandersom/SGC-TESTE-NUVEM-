@@ -523,3 +523,15 @@ body.night-mode .suggestion-item span.text-slate-400 {
 body.night-mode .suggestion-item div.text-slate-500 {
     color: #cbd5e1 !important; /* Endereço bem visível */
 }
+/* ========================================================================= */
+/* 🔥 ESTILO PARA AGENDAMENTOS JÁ DISTRIBUÍDOS NO MODO NOTURNO 🔥 */
+/* ========================================================================= */
+
+body.night-mode .ag-item-card.bg-blue-50 {
+    background-color: rgba(30, 58, 138, 0.4) !important; /* Azul marinho escuro com opacidade */
+    border-color: #1e3a8a !important;
+}
+body.night-mode .ag-item-card.bg-blue-50 .text-blue-900,
+body.night-mode .ag-item-card.bg-blue-50 .text-blue-600 {
+    color: #93c5fd !important; /* Azul claro neon pro texto brilhar */
+}
