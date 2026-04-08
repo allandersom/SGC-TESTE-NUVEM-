@@ -431,6 +431,7 @@ const UI = {
     tempTripIndex: null,
     tempDriverName: null, 
     tempAgendaId: null,
+    rescheduleSource: null,
 
     init() {
         State.init();
@@ -1055,7 +1056,7 @@ const App = {
                 const descTag = t.descarteLocal ? `<div class="mt-1 text-[10px] bg-red-100 text-red-900 font-bold rounded-lg p-1 border border-red-200 text-center truncate">DESC: ${t.descarteLocal}</div>` : '';
                 const timeTag = ((status === 'concluido' || status === 'nao_feito') && t.horaConclusao) ? `<div class="mt-2 text-[9px] font-black ${status==='concluido'?'text-emerald-700':'text-red-700'} text-center"><i class="far fa-clock"></i> ${status==='concluido'?'FEITO':'NÃO FEITO'} ÀS ${t.horaConclusao}</div>` : '';
 
-               const barraAcoesHtml = `
+                const barraAcoesHtml = `
                     <div class="mt-2 pt-2 border-t border-slate-200 flex gap-1 justify-between flex-wrap">
                         <div class="flex gap-1">
                             <button onclick="App.returnToAgenda('${name}', ${i})" class="text-[9px] bg-purple-50 hover:bg-purple-100 text-purple-700 px-2 py-1 rounded flex items-center gap-1 transition shadow-sm border border-purple-200 font-bold" title="Devolver p/ Agenda">
@@ -1285,17 +1286,12 @@ const App = {
     // 🔥 LÓGICA DE AGENDAMENTO COM TURNOS E REPROGRAMAÇÃO 🔥
     // ==========================================
     
-    // ==========================================
-    // 🔥 LÓGICA DE AGENDAMENTO COM TURNOS E REPROGRAMAÇÃO 🔥
-    // ==========================================
-    
     openRescheduleModal(id) {
         UI.tempAgendaId = id;
         UI.rescheduleSource = 'agenda'; // Marca que veio da aba de Agendamentos
         UI.toggleModal('reschedule-modal');
     },
 
-    // 🔥 NOVA FUNÇÃO: ABRIR MODAL DIRETO DO MOTORISTA 🔥
     openDriverRescheduleModal(driverName, tripIndex) {
         UI.tempDriverName = driverName;
         UI.tempTripIndex = tripIndex;
@@ -1313,7 +1309,6 @@ const App = {
         const dataBr = newDate.split('-').reverse().join('/');
         const appendObs = `[Reprogramado p/ ${dataBr} - ${shiftNome}]`;
 
-        // 1. SE VEIO DA LISTA DE AGENDAMENTOS
         if (UI.rescheduleSource === 'agenda') {
             const id = UI.tempAgendaId;
             const original = State.data.agendamentos.find(a => a.id === id);
@@ -1333,7 +1328,6 @@ const App = {
                 UI.toast("Serviço reprogramado com sucesso!");
             }
         } 
-        // 2. SE VEIO DIRETO DA CÉLULA DO MOTORISTA (NA ROTA)
         else if (UI.rescheduleSource === 'driver') {
             const driverName = UI.tempDriverName;
             const tripIndex = UI.tempTripIndex;
@@ -1342,7 +1336,6 @@ const App = {
             if (driver && driver.trips[tripIndex]) {
                 const trip = driver.trips[tripIndex];
                 
-                // Atualiza o original se ele tiver vindo da agenda
                 if (trip.agendaId) {
                     const originalAgenda = State.data.agendamentos.find(a => a.id === trip.agendaId);
                     if (originalAgenda) {
@@ -1354,7 +1347,6 @@ const App = {
                         State.data.agendamentos.push(novoItem);
                     }
                 } else {
-                    // Se foi um serviço adicionado manualmente na rota
                     const novoItem = {
                         id: Date.now() + Math.random(), date: newDate, shift: newShift, empresa: trip.empresa || '',
                         obra: trip.obra || '', address: typeof trip.to === 'string' ? trip.to : (trip.to && trip.to.text ? trip.to.text : ''),
@@ -1363,7 +1355,6 @@ const App = {
                     State.data.agendamentos.push(novoItem);
                 }
 
-                // 🔥 REMOVE DA ROTA DO MOTORISTA IMEDIATAMENTE 🔥
                 driver.trips.splice(tripIndex, 1);
                 
                 State.saveAll();
@@ -1474,12 +1465,22 @@ const App = {
                 botoesEdit = `<button onclick="App.changeAgendaQty(${item.id})" class="text-[10px] font-black bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded hover:bg-slate-300 transition cursor-pointer">${item.qty || 1}</button><button onclick="App.cycleAgendaType(${item.id})" class="text-[10px] font-black ${typeColor} bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded transition cursor-pointer flex items-center gap-1 border border-slate-200">${label} <i class="fas fa-sync-alt opacity-40 hover:opacity-100 text-[8px]"></i></button>`;
             }
 
-            let acoesDireita = isLocked ? '' : `
-                <div class="flex flex-col gap-2 items-center">
-                    <button onclick="App.openRescheduleModal(${item.id})" class="text-slate-300 hover:text-orange-500 transition-colors p-1" title="Reprogramar"><i class="fas fa-calendar-alt text-sm"></i></button>
-                    <button onclick="App.deleteAgenda(${item.id})" class="text-slate-300 hover:text-red-500 transition-colors p-1" title="Excluir"><i class="fas fa-trash-alt text-sm"></i></button>
-                </div>
-            `;
+            // 🔥 SE FOR REPROGRAMADO, O BOTÃO DE LIXEIRA APARECE PRA LIMPAR O HISTÓRICO 🔥
+            let acoesDireita = '';
+            if (!isLocked) {
+                acoesDireita = `
+                    <div class="flex flex-col gap-2 items-center">
+                        <button onclick="App.openRescheduleModal(${item.id})" class="text-slate-300 hover:text-orange-500 transition-colors p-1" title="Reprogramar"><i class="fas fa-calendar-alt text-sm"></i></button>
+                        <button onclick="App.deleteAgenda(${item.id})" class="text-slate-300 hover:text-red-500 transition-colors p-1" title="Excluir"><i class="fas fa-trash-alt text-sm"></i></button>
+                    </div>
+                `;
+            } else if (isReprog) {
+                acoesDireita = `
+                    <div class="flex flex-col gap-2 items-center">
+                        <button onclick="App.deleteAgenda(${item.id})" class="text-orange-300 hover:text-red-500 transition-colors p-1" title="Excluir Histórico"><i class="fas fa-trash-alt text-sm"></i></button>
+                    </div>
+                `;
+            }
 
             const div = document.createElement('div');
             div.className = `flex justify-between items-start p-3 rounded-lg border shadow-sm animate-fade-in ag-item-card transition-all ${baseClass}`;
@@ -1554,11 +1555,28 @@ const App = {
                 botoesEdit = `<button onclick="App.changeAgendaQty(${a.id})" class="text-slate-600 hover:text-blue-600 text-[10px] font-black bg-slate-100 rounded-md py-0.5 px-1.5 border border-slate-200 shadow-sm transition">${a.qty || 1}</button><button onclick="App.cycleAgendaType(${a.id})" class="${colorClass} text-[10px] font-black bg-slate-50 hover:bg-slate-200 rounded-md py-0.5 px-2 border border-slate-200 shadow-sm transition flex items-center gap-1">${label} <i class="fas fa-sync-alt opacity-40 hover:opacity-100 text-[8px]"></i></button>`;
             }
 
+            // 🔥 SE FOR REPROGRAMADO, O BOTÃO DE LIXEIRA APARECE PRA LIMPAR O HISTÓRICO 🔥
+            let botoesAcaoPanel = '';
+            if (!isLocked) {
+                botoesAcaoPanel = `
+                    <div class="flex gap-2">
+                        <button onclick="App.openRescheduleModal(${a.id})" class="text-slate-300 hover:text-orange-500 transition-colors p-1" title="Reprogramar"><i class="fas fa-calendar-alt"></i></button>
+                        <button onclick="App.deleteAgenda(${a.id})" class="text-slate-300 hover:text-red-500 transition-colors p-1" title="Excluir"><i class="fas fa-trash-alt"></i></button>
+                    </div>
+                `;
+            } else if (isReprog) {
+                botoesAcaoPanel = `
+                    <div class="flex gap-2">
+                        <button onclick="App.deleteAgenda(${a.id})" class="text-orange-300 hover:text-red-500 transition-colors p-1" title="Excluir Histórico"><i class="fas fa-trash-alt"></i></button>
+                    </div>
+                `;
+            }
+
             list.innerHTML += `
             <div ${dragAttrs} style="${finalStyle}" class="drag-item p-3 border rounded-xl shadow-sm flex flex-col relative animate-fade-in transition ag-item-card ${baseClass}">
                 <div class="flex items-center justify-between gap-1 w-full mb-2">
                     <div class="flex gap-1">${botoesEdit}</div>
-                    ${!isLocked ? `<button onclick="App.openRescheduleModal(${a.id})" class="text-slate-300 hover:text-orange-500 transition-colors p-1" title="Reprogramar"><i class="fas fa-calendar-alt"></i></button>` : ''}
+                    ${botoesAcaoPanel}
                 </div>
                 <div class="font-bold text-[11px] leading-tight tracking-wide ${isDist ? 'text-blue-900' : (isReprog ? 'text-orange-900' : 'text-slate-800')} break-words">
                     ${a.empresa ? `<span class="text-slate-500 uppercase text-[9px]">${a.empresa}</span><br>` : ''}
