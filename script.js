@@ -1469,11 +1469,10 @@ const App = {
         }
     },
 
-    renderAgendaTab() {
+   renderAgendaTab() {
         const list = document.getElementById('agenda-tab-list');
         if(!list) return;
         const selectedDate = document.getElementById('agenda-date').value;
-        // Pega o que você digitou na barra de pesquisa (em minúsculo pra facilitar a busca)
         const searchInput = document.getElementById('search-agenda');
         const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
 
@@ -1483,10 +1482,8 @@ const App = {
             return;
         }
 
-        // Filtra os serviços do dia
         let agendados = State.data.agendamentos.filter(a => a.date === selectedDate);
         
-        // 🔥 LÓGICA DA BUSCA: Se tiver algo digitado, ele filtra a lista na hora! 🔥
         if (searchTerm) {
             agendados = agendados.filter(a => 
                 (a.obra && a.obra.toLowerCase().includes(searchTerm)) ||
@@ -1521,8 +1518,12 @@ const App = {
             
             const label = WhatsappService.getPluralLabel(item.type || 'troca', item.qty || 1);
 
+            // 🔥 BOTÃO DE DESBLOQUEIO DE EMERGÊNCIA AQUI 🔥
             const botoesEdit = isDist ? 
-                `<span class="text-[9px] font-black text-blue-600 bg-blue-100 px-2 py-1 rounded border border-blue-200"><i class="fas fa-check-circle"></i> NA ROTA</span>` : 
+                `<div class="flex gap-1">
+                    <span class="text-[9px] font-black text-blue-600 bg-blue-100 px-2 py-1 rounded border border-blue-200"><i class="fas fa-check-circle"></i> NA ROTA</span>
+                    <button onclick="App.forceUnlockAgenda(${item.id})" class="text-[10px] font-black text-red-600 bg-red-100 hover:bg-red-200 rounded py-0.5 px-2 border border-red-200 shadow-sm transition cursor-pointer" title="Desbloquear serviço preso (Fantasma)"><i class="fas fa-unlock"></i></button>
+                 </div>` : 
                 `
                 <button onclick="App.changeAgendaQty(${item.id})" class="text-[10px] font-black bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded hover:bg-slate-300 transition cursor-pointer" title="Mudar Quantidade">${item.qty || 1}</button>
                 <button onclick="App.cycleAgendaType(${item.id})" class="text-[10px] font-black ${typeColor} bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded transition cursor-pointer flex items-center gap-1 border border-slate-200" title="Mudar Tipo">
@@ -1550,19 +1551,15 @@ const App = {
             list.appendChild(div);
         });
     },
-    
    renderAgendaPanel() {
         const list = document.getElementById('spreadsheet-agenda-list');
         if(!list) return;
 
-        // Pega o texto da nova barra de pesquisa
         const searchInput = document.getElementById('search-agenda-panel');
         const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
 
-        // Puxa os agendamentos de hoje
         let agendadosHj = State.data.agendamentos.filter(a => a.date === State.session.routeDate);
         
-        // 🔥 LÓGICA DO FILTRO: Se digitou algo, ele filtra na hora 🔥
         if (searchTerm) {
             agendadosHj = agendadosHj.filter(a => 
                 (a.obra && a.obra.toLowerCase().includes(searchTerm)) ||
@@ -1600,8 +1597,12 @@ const App = {
             const darkExtraStyle = isDist ? 'background-color: rgba(30, 58, 138, 0.4) !important; border-color: #1e3a8a !important;' : '';
             const finalStyle = isNight && isDist ? darkExtraStyle : extraStyle;
 
+            // 🔥 BOTÃO DE DESBLOQUEIO AQUI TAMBÉM 🔥
             const botoesEdit = isDist ? 
-                `<span class="text-[10px] font-black text-blue-700 bg-blue-100 rounded-md py-0.5 px-2 border border-blue-200 shadow-sm"><i class="fas fa-check"></i> JÁ DISTRIBUÍDO</span>` : 
+                `<div class="flex gap-1">
+                    <span class="text-[10px] font-black text-blue-700 bg-blue-100 rounded-md py-0.5 px-2 border border-blue-200 shadow-sm"><i class="fas fa-check"></i> JÁ DISTRIBUÍDO</span>
+                    <button onclick="App.forceUnlockAgenda(${a.id})" class="text-[10px] font-black text-red-600 bg-red-100 hover:bg-red-200 rounded-md py-0.5 px-2 border border-red-200 shadow-sm transition cursor-pointer" title="Desbloquear serviço preso"><i class="fas fa-unlock"></i></button>
+                 </div>` : 
                 `
                 <button onclick="App.changeAgendaQty(${a.id})" class="text-slate-600 hover:text-blue-600 text-[10px] font-black bg-slate-100 rounded-md py-0.5 px-1.5 border border-slate-200 shadow-sm transition cursor-pointer" title="Mudar Quantidade">${a.qty || 1}</button>
                 <button onclick="App.cycleAgendaType(${a.id})" class="${colorClass} text-[10px] font-black bg-slate-50 hover:bg-slate-200 rounded-md py-0.5 px-2 border border-slate-200 shadow-sm transition cursor-pointer flex items-center gap-1" title="Clique para mudar o Tipo de Serviço">
@@ -1626,6 +1627,23 @@ const App = {
                 ${a.obs ? `<div class="mt-2 text-[10px] bg-amber-100 text-amber-900 font-bold rounded-lg p-1.5 border border-amber-300"><i class="fas fa-exclamation-triangle"></i> OBS: ${a.obs}</div>` : ''}
             </div>`;
         });
+    },
+
+    // ==========================================
+    // 🔥 TRAVA DE SEGURANÇA: DESBLOQUEIO MANUAL 🔥
+    // ==========================================
+    forceUnlockAgenda(id) {
+        if(!confirm("Tem certeza que deseja desbloquear este serviço? (Use isso caso ele tenha sumido da rota dos motoristas).")) return;
+        
+        const ag = State.data.agendamentos.find(a => a.id === id);
+        if(ag) {
+            ag.distribuido = false; // Tira o bloqueio azul
+            State.saveAgendamentos(); // Salva no banco na hora
+            
+            this.renderAgendaTab();
+            this.renderAgendaPanel();
+            UI.toast("Serviço destravado com sucesso!");
+        }
     },
     
     deleteAgenda(id) {
