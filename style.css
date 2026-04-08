@@ -545,3 +545,13 @@ body.night-mode #search-agenda {
     border-color: #334155 !important; /* Bordinha chique */
     color: #f1f5f9 !important; /* Letra branca */
 }
+
+/* ========================================================================= */
+/* 🔥 MODO NOTURNO PARA A NOVA BARRA DE BUSCA DENTRO DA PLANILHA 🔥 */
+/* ========================================================================= */
+
+body.night-mode #search-agenda-panel {
+    background-color: #0f172a !important; /* Fundo escurão da barra */
+    border-color: #334155 !important;
+    color: #f1f5f9 !important; /* Letra clara pra não sumir */
+}
