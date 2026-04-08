@@ -1514,6 +1514,10 @@ const App = {
             return;
         }
 
+        // 🔥 NOVA LÓGICA DE ORDENAÇÃO: Troca > Retirada > Colocação > Encher 🔥
+        const ordemPrioridade = { 'troca': 1, 'retirada': 2, 'colocacao': 3, 'encher': 4 };
+        agendados.sort((a, b) => (ordemPrioridade[a.type] || 5) - (ordemPrioridade[b.type] || 5));
+
         agendados.forEach(item => {
             const isDist = item.distribuido;
             const extraStyle = isDist ? 'background-color: #eff6ff !important; border-color: #bfdbfe !important;' : '';
@@ -1531,7 +1535,6 @@ const App = {
             
             const label = WhatsappService.getPluralLabel(item.type || 'troca', item.qty || 1);
 
-            // 🔥 BOTÃO DE DESBLOQUEIO DE EMERGÊNCIA AQUI 🔥
             const botoesEdit = isDist ? 
                 `<div class="flex gap-1">
                     <span class="text-[9px] font-black text-blue-600 bg-blue-100 px-2 py-1 rounded border border-blue-200"><i class="fas fa-check-circle"></i> NA ROTA</span>
@@ -1564,6 +1567,7 @@ const App = {
             list.appendChild(div);
         });
     },
+    
    renderAgendaPanel() {
         const list = document.getElementById('spreadsheet-agenda-list');
         if(!list) return;
@@ -1592,6 +1596,10 @@ const App = {
             return;
         }
 
+        // 🔥 NOVA LÓGICA DE ORDENAÇÃO AQUI NA PLANILHA TAMBÉM 🔥
+        const ordemPrioridade = { 'troca': 1, 'retirada': 2, 'colocacao': 3, 'encher': 4 };
+        agendadosHj.sort((a, b) => (ordemPrioridade[a.type] || 5) - (ordemPrioridade[b.type] || 5));
+
         const isNight = document.body.classList.contains('night-mode');
 
         agendadosHj.forEach(a => {
@@ -1610,7 +1618,6 @@ const App = {
             const darkExtraStyle = isDist ? 'background-color: rgba(30, 58, 138, 0.4) !important; border-color: #1e3a8a !important;' : '';
             const finalStyle = isNight && isDist ? darkExtraStyle : extraStyle;
 
-            // 🔥 BOTÃO DE DESBLOQUEIO AQUI TAMBÉM 🔥
             const botoesEdit = isDist ? 
                 `<div class="flex gap-1">
                     <span class="text-[10px] font-black text-blue-700 bg-blue-100 rounded-md py-0.5 px-2 border border-blue-200 shadow-sm"><i class="fas fa-check"></i> JÁ DISTRIBUÍDO</span>
