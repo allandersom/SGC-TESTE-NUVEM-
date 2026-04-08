@@ -1172,7 +1172,7 @@ const App = {
             const agendaItem = State.data.agendamentos.find(a => a.id === source.id);
             if(agendaItem) {
                 const newTrip = {
-                    agendaId: agendaItem.id, // 🔥 VINCULA A ROTA COM A AGENDA 🔥
+                    agendaId: agendaItem.id, // VINCULA
                     empresa: agendaItem.empresa, obra: agendaItem.obra, qty: agendaItem.qty, type: agendaItem.type,
                     obs: agendaItem.obs, to: { text: agendaItem.address }, mtr: null, descarteLocal: null, status: 'pendente', completed: false
                 };
@@ -1184,13 +1184,13 @@ const App = {
                     targetDriver.trips.splice(targetIndex, 0, newTrip);
                 }
                 
-                agendaItem.distribuido = true; // 🔥 MARCA COMO DISTRIBUÍDO EM VEZ DE APAGAR 🔥
+                agendaItem.distribuido = true; // MARCA COMO DISTRIBUÍDO
                 State.saveAll();
                 
                 App.renderSpreadsheet();
                 App.renderAgendaPanel();
-                App.renderGrid();
                 App.renderAgendaTab();
+                App.renderGrid();
                 UI.toast(`Agendamento atribuído a ${targetDriverName}!`);
             }
         } 
@@ -1219,7 +1219,6 @@ const App = {
 
         const trip = driver.trips.splice(tripIndex, 1)[0]; 
 
-        // 🔥 SE VEIO DA AGENDA, SÓ DESMARCA O AZUL. SE CRIOU NA MÃO, CRIA UM NOVO NA AGENDA 🔥
         if (trip.agendaId) {
             const ag = State.data.agendamentos.find(a => a.id === trip.agendaId);
             if (ag) ag.distribuido = false; 
@@ -1270,11 +1269,11 @@ const App = {
 
             group.forEach(a => {
                 State.addTrip(targetDriver.name, {
-                    agendaId: a.id, // VINCULA
+                    agendaId: a.id,
                     empresa: a.empresa, obra: a.obra, qty: a.qty, type: a.type,
                     obs: a.obs, to: { text: a.address }, mtr: null, descarteLocal: null, status: 'pendente', completed: false
                 });
-                a.distribuido = true; // MARCA DE AZUL
+                a.distribuido = true;
                 targetDriver.count++;
             });
         });
@@ -1373,9 +1372,8 @@ const App = {
     },
 
     // ==========================================
-    // 🔥 FUNÇÕES NOVAS DE EDIÇÃO DIRETO NA AGENDA 🔥
+    // 🔥 FUNÇÕES DE EDIÇÃO DIRETO NA AGENDA 🔥
     // ==========================================
-    
     cycleAgendaType(id) {
         const ag = State.data.agendamentos.find(a => a.id === id);
         if (!ag) return;
@@ -1401,7 +1399,6 @@ const App = {
         }
     },
 
-    // Lógica Base do Agendamento
     addAgenda() {
         const date = document.getElementById('agenda-date').value;
         const empresa = document.getElementById('agenda-empresa').value;
@@ -1414,7 +1411,7 @@ const App = {
         if (!date) return UI.toast("Selecione a data do calendário acima!", "error");
         if (!addr && !obra) return UI.toast("Preencha a obra ou endereço", "error");
 
-        State.addAgendamento({ id: Date.now(), date, empresa, obra, address: addr, obs, qty, type });
+        State.addAgendamento({ id: Date.now(), date, empresa, obra, address: addr, obs, qty, type, distribuido: false });
 
         if (empresa || obra) {
             State.addToAddressBook(empresa, obra, addr);
@@ -1493,7 +1490,7 @@ const App = {
             list.appendChild(div);
         });
     },
-    
+
     renderAgendaPanel() {
         const list = document.getElementById('spreadsheet-agenda-list');
         if(!list) return;
