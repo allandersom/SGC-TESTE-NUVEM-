@@ -1172,6 +1172,7 @@ const App = {
             const agendaItem = State.data.agendamentos.find(a => a.id === source.id);
             if(agendaItem) {
                 const newTrip = {
+                    agendaId: agendaItem.id, // 🔥 VINCULA A ROTA COM A AGENDA 🔥
                     empresa: agendaItem.empresa, obra: agendaItem.obra, qty: agendaItem.qty, type: agendaItem.type,
                     obs: agendaItem.obs, to: { text: agendaItem.address }, mtr: null, descarteLocal: null, status: 'pendente', completed: false
                 };
@@ -1183,12 +1184,13 @@ const App = {
                     targetDriver.trips.splice(targetIndex, 0, newTrip);
                 }
                 
-                State.data.agendamentos = State.data.agendamentos.filter(a => a.id !== source.id);
+                agendaItem.distribuido = true; // 🔥 MARCA COMO DISTRIBUÍDO EM VEZ DE APAGAR 🔥
                 State.saveAll();
                 
                 App.renderSpreadsheet();
                 App.renderAgendaPanel();
                 App.renderGrid();
+                App.renderAgendaTab();
                 UI.toast(`Agendamento atribuído a ${targetDriverName}!`);
             }
         } 
@@ -1217,19 +1219,19 @@ const App = {
 
         const trip = driver.trips.splice(tripIndex, 1)[0]; 
 
-        const agendaItem = {
-            id: Date.now(),
-            date: State.session.routeDate, 
-            empresa: trip.empresa || '',
-            obra: trip.obra || '',
-            address: typeof trip.to === 'string' ? trip.to : (trip.to && trip.to.text ? trip.to.text : ''),
-            obs: trip.obs || '',
-            qty: trip.qty || 1,
-            type: trip.type || 'troca'
-        };
-
-        if (!State.data.agendamentos) State.data.agendamentos = [];
-        State.data.agendamentos.push(agendaItem);
+        // 🔥 SE VEIO DA AGENDA, SÓ DESMARCA O AZUL. SE CRIOU NA MÃO, CRIA UM NOVO NA AGENDA 🔥
+        if (trip.agendaId) {
+            const ag = State.data.agendamentos.find(a => a.id === trip.agendaId);
+            if (ag) ag.distribuido = false; 
+        } else {
+            const agendaItem = {
+                id: Date.now(), date: State.session.routeDate, empresa: trip.empresa || '',
+                obra: trip.obra || '', address: typeof trip.to === 'string' ? trip.to : (trip.to && trip.to.text ? trip.to.text : ''),
+                obs: trip.obs || '', qty: trip.qty || 1, type: trip.type || 'troca'
+            };
+            if (!State.data.agendamentos) State.data.agendamentos = [];
+            State.data.agendamentos.push(agendaItem);
+        }
         
         State.saveAll();
 
@@ -1242,8 +1244,8 @@ const App = {
     },
 
     autoDistributeAgenda() {
-        const agendados = State.data.agendamentos.filter(a => a.date === State.session.routeDate);
-        if (agendados.length === 0) return UI.toast("Nenhum agendamento para hoje.", "info");
+        const agendados = State.data.agendamentos.filter(a => a.date === State.session.routeDate && !a.distribuido);
+        if (agendados.length === 0) return UI.toast("Nenhum agendamento pendente para hoje.", "info");
 
         if(!confirm("Deseja que o sistema divida os serviços automaticamente?\n\nEle tentará manter a mesma obra com o mesmo motorista e balancear as quantidades.")) return;
 
@@ -1255,7 +1257,6 @@ const App = {
         });
 
         const drivers = State.getDriversByShift();
-        
         const driverLoads = drivers.map(name => {
             const d = State.getDriver(name);
             return { name, count: d && d.trips ? d.trips.length : 0 };
@@ -1269,10 +1270,11 @@ const App = {
 
             group.forEach(a => {
                 State.addTrip(targetDriver.name, {
+                    agendaId: a.id, // VINCULA
                     empresa: a.empresa, obra: a.obra, qty: a.qty, type: a.type,
                     obs: a.obs, to: { text: a.address }, mtr: null, descarteLocal: null, status: 'pendente', completed: false
                 });
-                State.data.agendamentos = State.data.agendamentos.filter(ag => ag.id !== a.id);
+                a.distribuido = true; // MARCA DE AZUL
                 targetDriver.count++;
             });
         });
@@ -1281,6 +1283,7 @@ const App = {
         
         this.renderSpreadsheet();
         this.renderAgendaPanel();
+        this.renderAgendaTab();
         this.renderGrid();
         UI.toast("Serviços distribuídos inteligentemente!");
     },
@@ -1449,8 +1452,8 @@ const App = {
         }
 
         agendados.forEach(item => {
-            const div = document.createElement('div');
-            div.className = "flex justify-between items-start bg-slate-50 p-3 rounded-lg border border-slate-200 shadow-sm animate-fade-in";
+            const isDist = item.distribuido;
+            const bgClass = isDist ? 'bg-blue-50 border-blue-200 opacity-80' : 'bg-slate-50 border-slate-200';
             
             const empresaTag = item.empresa ? `<span class="text-[9px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded uppercase mr-1 border border-purple-200">${item.empresa}</span>` : '';
             const obsTag = item.obs ? `<div class="mt-1 text-[9px] bg-amber-100 text-amber-800 p-1 rounded font-bold">OBS: ${item.obs}</div>` : '';
@@ -1462,25 +1465,35 @@ const App = {
             
             const label = WhatsappService.getPluralLabel(item.type || 'troca', item.qty || 1);
 
-            // 🔥 BOTÕES DE EDIÇÃO INSERIDOS AQUI 🔥
+            const botoesEdit = isDist ? 
+                `<span class="text-[9px] font-black text-blue-600 bg-blue-100 px-2 py-1 rounded border border-blue-200"><i class="fas fa-check-circle"></i> NA ROTA</span>` : 
+                `
+                <button onclick="App.changeAgendaQty(${item.id})" class="text-[10px] font-black bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded hover:bg-slate-300 transition cursor-pointer" title="Mudar Quantidade">${item.qty || 1}</button>
+                <button onclick="App.cycleAgendaType(${item.id})" class="text-[10px] font-black ${typeColor} bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded transition cursor-pointer flex items-center gap-1 border border-slate-200" title="Mudar Tipo">
+                    ${label} <i class="fas fa-sync-alt opacity-40 hover:opacity-100 text-[8px]"></i>
+                </button>
+                `;
+
+            const btnLixo = isDist ? '' : `<button onclick="App.deleteAgenda(${item.id})" class="text-slate-300 hover:text-red-500 transition-colors shrink-0 ml-2 p-1"><i class="fas fa-trash-alt"></i></button>`;
+
+            const div = document.createElement('div');
+            div.className = `flex justify-between items-start p-3 rounded-lg border shadow-sm animate-fade-in ag-item-card ${bgClass}`;
+            
             div.innerHTML = `
                 <div class="pr-2 flex-1 min-w-0">
                     <div class="flex items-center gap-1 mb-1 w-fit">
-                        <button onclick="App.changeAgendaQty(${item.id})" class="text-[10px] font-black bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded hover:bg-slate-300 transition cursor-pointer" title="Mudar Quantidade">${item.qty || 1}</button>
-                        <button onclick="App.cycleAgendaType(${item.id})" class="text-[10px] font-black ${typeColor} bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded transition cursor-pointer flex items-center gap-1 border border-slate-200" title="Mudar Tipo">
-                            ${label} <i class="fas fa-sync-alt opacity-40 hover:opacity-100 text-[8px]"></i>
-                        </button>
+                        ${botoesEdit}
                     </div>
-                    <div class="text-[11px] font-bold text-slate-800 truncate leading-tight">${empresaTag}${item.obra || 'Sem Nome'}</div>
-                    <div class="text-[9px] text-slate-500 mt-1 leading-tight"><i class="fas fa-map-marker-alt text-red-400 mr-1"></i>${item.address || 'Sem endereço'}</div>
+                    <div class="text-[11px] font-bold ${isDist ? 'text-blue-900' : 'text-slate-800'} truncate leading-tight mt-1">${empresaTag}${item.obra || 'Sem Nome'}</div>
+                    <div class="text-[9px] ${isDist ? 'text-blue-600' : 'text-slate-500'} mt-1 leading-tight"><i class="fas fa-map-marker-alt ${isDist ? 'text-blue-500' : 'text-red-400'} mr-1"></i>${item.address || 'Sem endereço'}</div>
                     ${obsTag}
                 </div>
-                <button onclick="App.deleteAgenda(${item.id})" class="text-slate-300 hover:text-red-500 transition-colors shrink-0 ml-2 p-1"><i class="fas fa-trash-alt"></i></button>
+                ${btnLixo}
             `;
             list.appendChild(div);
         });
     },
-
+    
     renderAgendaPanel() {
         const list = document.getElementById('spreadsheet-agenda-list');
         if(!list) return;
@@ -1494,6 +1507,7 @@ const App = {
         }
 
         agendadosHj.forEach(a => {
+            const isDist = a.distribuido;
             let colorClass = 'text-slate-800';
             if(a.type === 'colocacao') colorClass = 'text-red-600';
             if(a.type === 'retirada') colorClass = 'text-purple-600';
@@ -1501,24 +1515,31 @@ const App = {
             
             const label = WhatsappService.getPluralLabel(a.type || 'troca', a.qty || 1);
 
-            // 🔥 BOTÕES DE EDIÇÃO INSERIDOS AQUI TAMBÉM 🔥
+            const dragAttrs = isDist ? '' : `draggable="true" ondragstart="App.handleAgendaDragStart(event, ${a.id})"`;
+            const baseClass = isDist ? 'bg-blue-50 border-blue-200 opacity-60 cursor-not-allowed' : 'bg-white border-purple-200 hover:border-purple-400 hover:shadow-md cursor-grab active:cursor-grabbing';
+
+            const botoesEdit = isDist ? 
+                `<span class="text-[10px] font-black text-blue-700 bg-blue-100 rounded-md py-0.5 px-2 border border-blue-200 shadow-sm"><i class="fas fa-check"></i> JÁ DISTRIBUÍDO</span>` : 
+                `
+                <button onclick="App.changeAgendaQty(${a.id})" class="text-slate-600 hover:text-blue-600 text-[10px] font-black bg-slate-100 rounded-md py-0.5 px-1.5 border border-slate-200 shadow-sm transition cursor-pointer" title="Mudar Quantidade">${a.qty || 1}</button>
+                <button onclick="App.cycleAgendaType(${a.id})" class="${colorClass} text-[10px] font-black bg-slate-50 hover:bg-slate-200 rounded-md py-0.5 px-2 border border-slate-200 shadow-sm transition cursor-pointer flex items-center gap-1" title="Clique para mudar o Tipo de Serviço">
+                    ${label} <i class="fas fa-sync-alt opacity-40 hover:opacity-100 text-[8px]"></i>
+                </button>
+                `;
+
             list.innerHTML += `
-            <div draggable="true" 
-                 ondragstart="App.handleAgendaDragStart(event, ${a.id})"
-                 class="drag-item p-3 border border-purple-200 rounded-xl shadow-sm bg-white flex flex-col relative animate-fade-in cursor-grab active:cursor-grabbing hover:border-purple-400 hover:shadow-md transition">
+            <div ${dragAttrs}
+                 class="drag-item p-3 border rounded-xl shadow-sm flex flex-col relative animate-fade-in transition ag-item-card ${baseClass}">
                 
                 <div class="flex items-center gap-1 w-fit mb-2">
-                    <button onclick="App.changeAgendaQty(${a.id})" class="text-slate-600 hover:text-blue-600 text-[10px] font-black bg-slate-100 rounded-md py-0.5 px-1.5 border border-slate-200 shadow-sm transition cursor-pointer" title="Mudar Quantidade">${a.qty || 1}</button>
-                    <button onclick="App.cycleAgendaType(${a.id})" class="${colorClass} text-[10px] font-black bg-slate-50 hover:bg-slate-200 rounded-md py-0.5 px-2 border border-slate-200 shadow-sm transition cursor-pointer flex items-center gap-1" title="Clique para mudar o Tipo de Serviço">
-                        ${label} <i class="fas fa-sync-alt opacity-40 hover:opacity-100 text-[8px]"></i>
-                    </button>
+                    ${botoesEdit}
                 </div>
                 
-                <div class="font-bold text-[11px] leading-tight tracking-wide text-slate-800 break-words">
+                <div class="font-bold text-[11px] leading-tight tracking-wide ${isDist ? 'text-blue-900' : 'text-slate-800'} break-words">
                     ${a.empresa ? `<span class="text-slate-500 uppercase text-[9px]">${a.empresa}</span><br>` : ''}
                     <span class="text-[13px] font-black">${a.obra || 'Sem Nome'}</span>
                 </div>
-                <div class="text-[9px] text-slate-500 mt-1 leading-tight"><i class="fas fa-map-marker-alt text-red-400 mr-1"></i>${a.address}</div>
+                <div class="text-[9px] ${isDist ? 'text-blue-600' : 'text-slate-500'} mt-1 leading-tight"><i class="fas fa-map-marker-alt ${isDist ? 'text-blue-500' : 'text-red-400'} mr-1"></i>${a.address}</div>
                 ${a.obs ? `<div class="mt-2 text-[10px] bg-amber-100 text-amber-900 font-bold rounded-lg p-1.5 border border-amber-300"><i class="fas fa-exclamation-triangle"></i> OBS: ${a.obs}</div>` : ''}
             </div>`;
         });
