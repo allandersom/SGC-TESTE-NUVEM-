@@ -158,7 +158,10 @@ Posto Ipiranga..."></textarea>
             
             <div id="spreadsheet-agenda-panel" class="w-80 bg-purple-50 border-r border-purple-200 flex flex-col shadow-2xl transition-all duration-300 z-10">
                 <div class="p-3 bg-purple-800 text-white flex justify-between items-center shadow-md cursor-pointer hover:bg-purple-900 transition" onclick="UI.toggleSpreadsheetAgenda()">
-                    <span class="font-bold text-sm flex items-center gap-2"><i class="far fa-calendar-check"></i> <span>Agendamentos do Dia</span></span>
+                    <span class="font-bold text-sm flex items-center gap-2">
+    <i class="far fa-calendar-check"></i> 
+    <span>Agendamentos <span id="agenda-count-badge" class="ml-1 bg-purple-500 text-white px-2 py-0.5 rounded-full text-[10px] shadow-sm border border-purple-400 transition-all">0</span></span>
+</span>
                     <i id="spreadsheet-agenda-icon" class="fas fa-chevron-left"></i>
                 </div>
                 
