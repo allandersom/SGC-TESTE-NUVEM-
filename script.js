@@ -744,6 +744,10 @@ const App = {
         document.getElementById('shift-night').className = `shift-btn ${shift==='night'?'active':''}`;
         document.body.classList.toggle('night-mode', shift === 'night');
         
+        // 🔥 LÓGICA NOVA: Sincronizar o formulário lá de baixo com o turno atual 🔥
+        const shiftRadio = document.querySelector(`input[name="agenda-shift-sel"][value="${shift}"]`);
+        if (shiftRadio) shiftRadio.checked = true;
+        
         // 🔥 LÓGICA NOVA: TROCAR A LOGO E FAVICON 🔥
         const mainLogo = document.getElementById('app-logo');
         if (mainLogo) {
@@ -757,6 +761,8 @@ const App = {
         UI.closeEditor();
         this.renderGrid();
         this.renderSpreadsheet();
+        this.renderAgendaPanel(); // 🔥 GARANTE QUE A PLANILHA ROXA ATUALIZA NA MESMA HORA 🔥
+        this.renderAgendaTab();   // 🔥 GARANTE QUE A ABA LATERAL INFERIOR ATUALIZA TAMBÉM 🔥
     },
 
     updatePlate() {
@@ -1559,14 +1565,14 @@ const App = {
             let botoesAcaoPanel = '';
             if (!isLocked) {
                 botoesAcaoPanel = `
-                    <div class="flex gap-2">
+                    <div class="flex gap-2 items-center">
                         <button onclick="App.openRescheduleModal(${a.id})" class="text-slate-300 hover:text-orange-500 transition-colors p-1" title="Reprogramar"><i class="fas fa-calendar-alt"></i></button>
                         <button onclick="App.deleteAgenda(${a.id})" class="text-slate-300 hover:text-red-500 transition-colors p-1" title="Excluir"><i class="fas fa-trash-alt"></i></button>
                     </div>
                 `;
             } else if (isReprog) {
                 botoesAcaoPanel = `
-                    <div class="flex gap-2">
+                    <div class="flex gap-2 items-center">
                         <button onclick="App.deleteAgenda(${a.id})" class="text-orange-300 hover:text-red-500 transition-colors p-1" title="Excluir Histórico"><i class="fas fa-trash-alt"></i></button>
                     </div>
                 `;
