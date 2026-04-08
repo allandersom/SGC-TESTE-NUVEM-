@@ -745,6 +745,14 @@ const App = {
         document.getElementById('shift-day').className = `shift-btn ${shift==='day'?'active':''}`;
         document.getElementById('shift-night').className = `shift-btn ${shift==='night'?'active':''}`;
         document.body.classList.toggle('night-mode', shift === 'night');
+        
+        // 🔥 LÓGICA NOVA: TROCAR A LOGO PRINCIPAL LÁ DE CIMA 🔥
+        const mainLogo = document.getElementById('app-logo');
+        if (mainLogo) {
+            // Se for noite, usa a images2.png, se for dia, usa a images.png
+            mainLogo.src = shift === 'night' ? 'images2.png' : 'images.png';
+        }
+
         UI.closeEditor();
         this.renderGrid();
         this.renderSpreadsheet();
