@@ -1551,15 +1551,34 @@ const App = {
         });
     },
     
-    renderAgendaPanel() {
+   renderAgendaPanel() {
         const list = document.getElementById('spreadsheet-agenda-list');
         if(!list) return;
 
-        const agendadosHj = State.data.agendamentos.filter(a => a.date === State.session.routeDate);
+        // Pega o texto da nova barra de pesquisa
+        const searchInput = document.getElementById('search-agenda-panel');
+        const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+
+        // Puxa os agendamentos de hoje
+        let agendadosHj = State.data.agendamentos.filter(a => a.date === State.session.routeDate);
+        
+        // 🔥 LÓGICA DO FILTRO: Se digitou algo, ele filtra na hora 🔥
+        if (searchTerm) {
+            agendadosHj = agendadosHj.filter(a => 
+                (a.obra && a.obra.toLowerCase().includes(searchTerm)) ||
+                (a.empresa && a.empresa.toLowerCase().includes(searchTerm)) ||
+                (a.address && a.address.toLowerCase().includes(searchTerm))
+            );
+        }
+
         list.innerHTML = '';
 
         if(agendadosHj.length === 0) {
-            list.innerHTML = '<div class="text-center text-xs text-purple-400 py-4 font-bold mt-10"><i class="far fa-smile text-2xl mb-2"></i><br>Nenhum agendamento pendente.</div>';
+            if (searchTerm) {
+                list.innerHTML = '<div class="text-center text-xs text-purple-400 py-4 font-bold mt-10"><i class="fas fa-search-minus text-2xl mb-2 opacity-50"></i><br>Nenhum serviço encontrado.</div>';
+            } else {
+                list.innerHTML = '<div class="text-center text-xs text-purple-400 py-4 font-bold mt-10"><i class="far fa-smile text-2xl mb-2"></i><br>Nenhum agendamento pendente.</div>';
+            }
             return;
         }
 
@@ -1608,7 +1627,7 @@ const App = {
             </div>`;
         });
     },
-
+    
     deleteAgenda(id) {
         if(confirm("Deseja realmente excluir este agendamento?")) {
             State.removeAgendamento(id);
