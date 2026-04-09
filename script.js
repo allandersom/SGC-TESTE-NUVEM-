@@ -1060,7 +1060,7 @@ const App = {
                 }
 
                 // 🔥 AVISO DE PRIORIDADE NA CÉLULA DO MOTORISTA 🔥
-                const avisoRetorno = isRetorno ? `<div class="mt-2 text-[10px] bg-yellow-200 text-yellow-900 font-black rounded-lg p-1.5 border border-yellow-400 shadow-sm"><i class="fas fa-exclamation-triangle"></i> PRIORIDADE: ADIADO DO DIA ${t.dataOrigem}</div>` : '';
+                const avisoRetorno = isRetorno ? `<div class="mt-2 text-[10px] bg-orange-500 text-white font-black rounded-lg p-1.5 border border-orange-600 shadow-md"><i class="fas fa-exclamation-triangle text-yellow-200"></i> PRIORIDADE: ADIADO DO DIA ${t.dataOrigem}</div>` : '';
 
                 const fotoTag = t.foto ? `<button onclick="UI.showPhoto('${t.foto}')" class="mt-2 w-full flex items-center justify-center gap-1 bg-slate-800 text-white font-bold rounded-lg py-1.5 text-[10px] shadow-sm hover:bg-black transition-colors"><i class="fas fa-camera"></i> VER FOTO COMPROVANTE</button>` : '';
                 const mtrTag = t.mtr ? `<div class="mt-2 text-[10px] bg-indigo-100 text-indigo-900 font-bold rounded-lg p-1 border border-indigo-200 text-center truncate"><i class="fas fa-file-invoice"></i> ${t.mtr}</div>` : '';
@@ -1603,8 +1603,7 @@ const App = {
             }
             
             // 🔥 AVISO DE PRIORIDADE NA PLANILHA ROXA 🔥
-            const avisoRetorno = (isRetorno && !isLocked) ? `<div class="mt-2 text-[10px] bg-yellow-200 text-yellow-900 font-black rounded-lg p-1.5 border border-yellow-400 shadow-sm animate-pulse"><i class="fas fa-exclamation-triangle"></i> PRIORIDADE: ADIADO DO DIA ${a.dataOrigem}</div>` : '';
-
+            const avisoRetorno = (isRetorno && !isLocked) ? `<div class="mt-2 text-[10px] bg-orange-500 text-white font-black rounded-lg p-1.5 border border-orange-600 shadow-md animate-pulse"><i class="fas fa-exclamation-triangle text-yellow-200"></i> PRIORIDADE: ADIADO DO DIA ${a.dataOrigem}</div>` : '';
             list.innerHTML += `
             <div ${dragAttrs} style="${finalStyle}" class="drag-item p-3 border rounded-xl shadow-sm flex flex-col relative animate-fade-in transition ag-item-card ${baseClass}">
                 <div class="flex items-center justify-between gap-1 w-full mb-2">
