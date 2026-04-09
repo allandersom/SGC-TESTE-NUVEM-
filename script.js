@@ -1017,7 +1017,7 @@ const App = {
             
             const column = document.createElement('div');
             // 🔥 AUMENTEI A LARGURA: min-w-[280px] e max-w-[340px] para dar um respiro legal pros botões 🔥
-            column.className = "driver-column min-w-[280px] max-w-[340px] flex flex-col bg-white snap-start border-r border-slate-300 transition-colors h-full";
+            column.className = "driver-column min-w-[340px] max-w-[500px] flex flex-col bg-white snap-start border-r border-slate-300 transition-colors h-full";
 
             let totalServicos = 0;
             trips.forEach(t => {
