@@ -23,6 +23,8 @@
         .custom-scroll::-webkit-scrollbar { width: 4px; }
         .custom-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
         .btn-press:active { transform: scale(0.96); }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body class="text-slate-800 antialiased h-screen flex flex-col overflow-hidden">
@@ -127,6 +129,24 @@
                 } else {
                     this.loadDriversList();
                 }
+            },
+
+            // 🔥 NOVA LÓGICA: VISUALIZADOR DE FOTO ENVIADA PELA LOGÍSTICA 🔥
+            viewPhoto(base64) {
+                let modal = document.getElementById('photo-modal-viewer');
+                if(!modal) {
+                    modal = document.createElement('div');
+                    modal.id = 'photo-modal-viewer';
+                    modal.className = 'fixed inset-0 z-[10009] bg-slate-900/95 flex items-center justify-center p-4 backdrop-blur-sm cursor-pointer animate-fade-in';
+                    modal.onclick = () => modal.remove();
+                    document.body.appendChild(modal);
+                }
+                modal.innerHTML = `
+                    <img src="${base64}" class="max-w-full max-h-[80vh] rounded-xl shadow-2xl border-4 border-white object-contain">
+                    <div class="absolute bottom-10 left-1/2 transform -translate-x-1/2 text-white font-black bg-red-600 px-6 py-3 rounded-full shadow-lg transition">
+                        <i class="fas fa-times mr-2"></i> FECHAR
+                    </div>
+                `;
             },
 
             changeDate(val) {
@@ -385,6 +405,12 @@
                             </div>`;
                     }
 
+                    // 🔥 OBSERVAÇÃO EXTRA (NEGRITO) DA LOGÍSTICA 🔥
+                    const obsExtraHtml = t.obsExtra ? `<div class="bg-red-100 text-red-900 text-xs font-black p-3 rounded-lg mb-2 border border-red-300 shadow-sm animate-pulse"><i class="fas fa-star text-red-600 mr-1"></i> ATENÇÃO: ${t.obsExtra}</div>` : '';
+
+                    // 🔥 FOTO ANEXADA DA LOGÍSTICA 🔥
+                    const fotoObsHtml = t.fotoObs ? `<button onclick="App.viewPhoto('${t.fotoObs}')" class="w-full bg-sky-100 text-sky-800 text-xs font-black p-3 rounded-lg mb-2 border border-sky-300 shadow-sm flex items-center justify-center gap-2 btn-press"><i class="fas fa-image text-lg"></i> VER FOTO DA OBSERVAÇÃO</button>` : '';
+
                     const mtrHtml = t.mtr ? `<div class="bg-indigo-100 text-indigo-900 text-[10px] font-bold p-1.5 rounded mb-2 w-fit border border-indigo-200 shadow-sm"><i class="fas fa-file-invoice mr-1"></i> ${t.mtr}</div>` : '';
                     const descarteHtml = t.descarteLocal ? `<div class="bg-red-100 text-red-900 text-xs font-black p-2 rounded mb-2 border border-red-300 flex items-center gap-2 shadow-sm"><i class="fas fa-recycle text-lg"></i> <span>DESCARTAR EM:<br>${t.descarteLocal}</span></div>` : '';
 
@@ -405,7 +431,7 @@
                                 
                                 ${t.foto ? fotoEnviadaHtml : `
                                 <button onclick="App.takePhoto(${index})" class="w-full mb-3 bg-slate-200 hover:bg-slate-300 text-slate-700 font-black py-3 rounded-xl shadow-sm btn-press flex items-center justify-center gap-2 border border-slate-300">
-                                    <i class="fas fa-camera text-lg text-slate-600"></i> ADICIONAR FOTO
+                                    <i class="fas fa-camera text-lg text-slate-600"></i> ENVIAR FOTO DO SERVIÇO
                                 </button>
                                 `}
 
@@ -451,6 +477,8 @@
                         </div>
 
                         ${obsHtml}
+                        ${obsExtraHtml}
+                        ${fotoObsHtml}
                         ${descarteHtml}
                         ${mtrHtml}
                         ${botoesAcao}
