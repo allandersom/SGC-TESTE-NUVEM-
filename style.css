@@ -571,3 +571,18 @@ body.night-mode .ag-item-card.bg-orange-50 .text-orange-800 {
 body.night-mode .ag-item-card.bg-orange-50 .text-orange-700 {
     color: #fb923c !important;
 }
+
+/* ========================================================================= */
+/* 🔥 ESTILO PARA PRIORIDADE (ADIADOS) NO MODO NOTURNO (AMARELO) 🔥 */
+/* ========================================================================= */
+
+body.night-mode .ag-item-card.bg-yellow-50,
+body.night-mode .drag-item.bg-yellow-50 {
+    background-color: rgba(234, 179, 8, 0.15) !important;
+    border-color: #a16207 !important;
+}
+body.night-mode .bg-yellow-200 {
+    background-color: rgba(234, 179, 8, 0.3) !important;
+    border-color: #a16207 !important;
+    color: #fde047 !important;
+}
