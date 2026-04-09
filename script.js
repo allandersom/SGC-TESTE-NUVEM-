@@ -314,15 +314,12 @@ const WhatsappService = {
 
         for (let i = 0; i < trips.length; i++) {
             const t = trips[i];
+            
+            // 1. Logística / Empresa / Serviço
             if (t.obs) {
                 const logObs = t.obs.replace(/\|? ?MOT:.*$/g, '').trim();
                 if(logObs) msg += `*\`OBS: ${logObs.toUpperCase()}\`*\n`;
             }
-            // 🔥 OBS EXTRA EM NEGRITO 🔥
-            if (t.obsExtra) {
-                msg += `*👉 ATENÇÃO: ${t.obsExtra.toUpperCase()}*\n`;
-            }
-            
             if (t.empresa) msg += `${t.empresa.toUpperCase()}\n`;
 
             let typeHeader = "";
@@ -335,12 +332,20 @@ const WhatsappService = {
             msg += `*${typeHeader}*\n`;
             if (t.obra) msg += `OBRA: ${t.obra.toUpperCase()}\n`;
 
+            // 2. Endereço e Dados Técnicos
             const addressText = typeof t.to === 'string' ? t.to : (t.to && t.to.text ? t.to.text : '');
             const displayEnd = this.formatAddress(addressText).toUpperCase();
             msg += `END: ${displayEnd}\n`;
 
             if (t.descarteLocal) msg += `*DESCARTE: ${t.descarteLocal.toUpperCase()}*\n`;
             if (t.mtr) msg += `\`${t.mtr}\`\n`;
+            
+            // 🔥 3. OBSERVAÇÃO EXTRA (ISOLADA E EM NEGRITO NO FINAL DO SERVIÇO) 🔥
+            if (t.obsExtra) {
+                msg += `\n*👉 ATENÇÃO: ${t.obsExtra.toUpperCase()}*\n`;
+            }
+            
+            // Espaço final para o próximo serviço
             msg += `\n`; 
         }
         return msg;
@@ -372,10 +377,7 @@ const WhatsappService = {
                         const logObs = t.obs.replace(/\|? ?MOT:.*$/g, '').trim();
                         if(logObs) msg += `*\`OBS: ${logObs.toUpperCase()}\`*\n`;
                     }
-                    // 🔥 OBS EXTRA EM NEGRITO NO RESUMO TB 🔥
-                    if (t.obsExtra) {
-                        msg += `*👉 ATENÇÃO: ${t.obsExtra.toUpperCase()}*\n`;
-                    }
+                    
                     if (t.empresa) msg += `${t.empresa.toUpperCase()}\n`;
 
                     let header = "";
@@ -392,6 +394,12 @@ const WhatsappService = {
                     msg += `END: ${this.formatAddress(addressText).toUpperCase()}\n`;
                     if(t.descarteLocal) msg += `*DESCARTE: ${t.descarteLocal.toUpperCase()}*\n`;
                     if (t.mtr) msg += `\`${t.mtr}\`\n`;
+
+                    // 🔥 OBSERVAÇÃO EXTRA TAMBÉM NO RESUMO GERAL 🔥
+                    if (t.obsExtra) {
+                        msg += `\n*👉 ATENÇÃO: ${t.obsExtra.toUpperCase()}*\n`;
+                    }
+
                     msg += `\n`;
                 }
                 msg += `------------------------\n`;
