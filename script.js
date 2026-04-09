@@ -739,8 +739,11 @@ const App = {
 
     setShift(shift) {
         State.session.shift = shift;
-        document.getElementById('shift-day').className = `shift-btn ${shift==='day'?'active':''}`;
-        document.getElementById('shift-night').className = `shift-btn ${shift==='night'?'active':''}`;
+        
+        // 🔥 LÓGICA NOVA: Sincroniza os botões do menu antigo E da planilha nova 🔥
+        document.querySelectorAll('#shift-day, .shift-day-sync').forEach(el => el.className = `shift-btn ${shift==='day'?'active':''} shift-day-sync text-xs px-3 py-1.5`);
+        document.querySelectorAll('#shift-night, .shift-night-sync').forEach(el => el.className = `shift-btn ${shift==='night'?'active':''} shift-night-sync text-xs px-3 py-1.5`);
+        
         document.body.classList.toggle('night-mode', shift === 'night');
         
         const shiftRadio = document.querySelector(`input[name="agenda-shift-sel"][value="${shift}"]`);
@@ -761,7 +764,6 @@ const App = {
         this.renderAgendaPanel(); 
         this.renderAgendaTab();   
     },
-
     updatePlate() {
         if(State.session.currentDriver) State.updatePlate(State.session.currentDriver, document.getElementById('input-plate').value);
     },
