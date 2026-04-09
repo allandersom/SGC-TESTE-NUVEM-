@@ -1734,16 +1734,14 @@ const App = {
             const d = State.getDriver(name);
             if(!d || !d.trips || d.trips.length === 0) return; 
             
-            // Agora mostra tudo, inclusive reprogramados e não feitos
             const activeTrips = d.trips;
             if (activeTrips.length === 0) return;
 
             rotasExistem = true;
             let tripsHtml = '';
             
-            // Fundo do Card Escuro (Conforme image_8.png)
             const bgColorCard = '#1e293b'; // Escuro Slate
-            const borderColorCard = '#1f293a'; // Um pouco mais escuro
+            const borderColorCard = '#1f293a'; 
             
             activeTrips.forEach(t => {
                 const isDone = (t.status === 'concluido' || t.completed);
@@ -1751,56 +1749,71 @@ const App = {
                 const isReprogramado = (t.status === 'reprogramado');
                 const isRetorno = t.veioDeReprogramacao;
                 
-                // 🔥 LÓGICA DE CORES DAS BOLINHAS E ÍCONES NA IMAGEM (MANTIDA) 🔥
-                let statusColor = '#94a3b8'; // Bolinha Cinza (Pendente)
+                let statusColor = '#94a3b8'; // Pendente
                 let iconStr = '';
 
                 if (isDone) {
-                    statusColor = '#10b981'; // Bolinha Verde
+                    statusColor = '#10b981'; 
                     iconStr = '✅ ';
                 } else if (isFailed) {
-                    statusColor = '#ef4444'; // Bolinha Vermelha
+                    statusColor = '#ef4444'; 
                     iconStr = '❌ ';
                 } else if (isReprogramado) {
-                    statusColor = '#f97316'; // Bolinha Laranja
-                    iconStr = ''; // 🔥 SEM EMOJI NO REPROGRAMADO 🔥
+                    statusColor = '#f97316'; 
+                    iconStr = ''; 
                 } else if (isRetorno) {
-                    statusColor = '#eab308'; // Amarelo (Prioridade)
+                    statusColor = '#eab308'; 
                     iconStr = '⚠️ ';
                 }
 
+                // 🔥 LÓGICA DAS CORES EXATAS PARA CADA TIPO DE SERVIÇO 🔥
                 const qty = t.qty || 1;
-                const label = WhatsappService.getPluralLabel(t.type, qty);
-                const displayType = t.type === 'encher' ? 'ENCHER' : label;
-                
-                // 🔥 NOVA LÓGICA DE CORES DAS PÍLULAS DE SERVIÇO (Conforme image_8.png) 🔥
-                let pillBgColor = '#ffffff'; // Pílula Branca (Pendente/Concluído)
-                let pillTextColor = '#1e293b'; // Texto Escuro
-                let pillBorderColor = '#e2e8f0'; // Borda Cinza
+                let displayTypeHtml = '';
+                let pillTextColor = '#1e293b'; // Troca (Cor Padrão)
 
-                if (isFailed) {
-                    pillBgColor = '#ef4444'; // Fundo Vermelho Sólido
-                    pillTextColor = '#ffffff'; // Texto Branco
-                    pillBorderColor = '#fecaca'; // Borda Vermelha
-                } else if (isReprogramado) {
-                    pillBgColor = '#f97316'; // Fundo Laranja Sólido
-                    pillTextColor = '#ffffff'; // Texto Branco
-                    pillBorderColor = '#fed7aa'; // Borda Laranja
+                if (t.type === 'colocacao') pillTextColor = '#dc2626'; // Vermelho
+                if (t.type === 'retirada') pillTextColor = '#9333ea'; // Roxo
+
+                if (t.type === 'encher') {
+                    // Encher na hora (Mistura de cores)
+                    if (isFailed || isReprogramado) {
+                        displayTypeHtml = `${qty} COLOCAÇÃO + ${qty} RETIRADA`;
+                        pillTextColor = '#ffffff'; // Força branco para leitura no fundo vermelho/laranja
+                    } else {
+                        displayTypeHtml = `<span style="color: #dc2626">${qty} COLOCAÇÃO</span> <span style="color: #64748b">+</span> <span style="color: #9333ea">${qty} RETIRADA</span>`;
+                    }
+                } else {
+                    displayTypeHtml = `${qty} ${WhatsappService.getPluralLabel(t.type, qty)}`;
+                    if (isFailed || isReprogramado) {
+                        pillTextColor = '#ffffff'; // Força branco para leitura
+                    }
                 }
                 
-                // 🔥 HORÁRIO SÓ APARECE SE FOI CONCLUÍDO (MANTIDO) 🔥
+                let pillBgColor = '#ffffff'; 
+                let pillBorderColor = '#e2e8f0'; 
+
+                if (isFailed) {
+                    pillBgColor = '#ef4444'; // Vermelho Sólido
+                    pillTextColor = '#ffffff'; 
+                    pillBorderColor = '#fecaca'; 
+                } else if (isReprogramado) {
+                    pillBgColor = '#f97316'; // Laranja Sólido
+                    pillTextColor = '#ffffff'; 
+                    pillBorderColor = '#fed7aa'; 
+                }
+                
                 let timeHtml = '';
                 if (isDone && t.horaConclusao) {
                     timeHtml = `<div style="font-size: 10px; font-weight: 900; color: #a7f3d0; margin-top: 6px; letter-spacing: 0.5px;">🕒 FEITO ÀS ${t.horaConclusao}</div>`;
                 }
                 
-                // 🔥 HTML Blindado com CSS Inline e Visual de Painel Escuro 🔥
                 tripsHtml += `
                     <div style="margin-bottom: 8px; padding: 10px; background-color: ${bgColorCard}; border: 1px solid ${borderColorCard}; border-radius: 8px;">
                         <div style="display: flex; align-items: flex-start; gap: 8px;">
-                            <div style="margin-top: 4px; width: 12px; height: 12px; border-radius: 50%; background-color: ${statusColor}; flex-shrink: 0; box-shadow: 0 1px 2px rgba(0,0,0,0.1);"></div>
-                            <div style="flex: 1; line-height: 1.2;">
-                                <div style="display: inline-block; background-color: ${pillBgColor}; color: ${pillTextColor}; border: 1px solid ${pillBorderColor}; font-size: 10px; font-weight: 900; padding: 2px 6px; border-radius: 4px; letter-spacing: 1px; margin-bottom: 4px;">${qty} ${displayType}</div>
+                            <div style="margin-top: 8px; width: 12px; height: 12px; border-radius: 50%; background-color: ${statusColor}; flex-shrink: 0; box-shadow: 0 1px 2px rgba(0,0,0,0.1);"></div>
+                            <div style="flex: 1; line-height: 1.3;">
+                                <div style="display: inline-block; text-align: center; background-color: ${pillBgColor}; color: ${pillTextColor}; border: 1px solid ${pillBorderColor}; font-size: 11px; font-weight: 900; padding: 4px 10px; border-radius: 6px; letter-spacing: 1px; margin-bottom: 6px;">${displayTypeHtml}</div>
+                                
                                 <div style="font-size: 14px; font-weight: 900; color: #ffffff; word-break: break-word; text-decoration: ${isFailed ? 'line-through' : 'none'};">${iconStr}${t.obra || 'Sem Obra'}</div>
                                 ${t.empresa ? `<div style="font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-top: 2px;">${t.empresa}</div>` : ''}
                                 ${timeHtml}
@@ -1823,11 +1836,10 @@ const App = {
             return UI.toast("Nenhum motorista com rotas para gerar a imagem.", "error");
         }
 
-        // Tira a "Foto" e Baixa
         html2canvas(container, { 
             scale: 2, 
             useCORS: true, 
-            backgroundColor: '#1f293a' // Força o fundo a ser o escuro do painel no arquivo baixado
+            backgroundColor: '#1f293a' 
         }).then(canvas => {
             const link = document.createElement('a');
             link.download = `SGC_Rotas_${date.replace(/\//g, '-')}_${shift}.png`;
