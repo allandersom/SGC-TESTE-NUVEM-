@@ -1716,6 +1716,92 @@ const App = {
         this.renderGrid();
         UI.toast("Serviços distribuídos!");
     },
+    // =========================================================
+    // 🔥 GERADOR DE IMAGEM LIMPA PARA CLIENTES/LEIGOS 🔥
+    // =========================================================
+    downloadPreview() {
+        UI.toast("Gerando imagem de alta qualidade, aguarde...", "info");
+        
+        const container = document.getElementById('export-container');
+        const grid = document.getElementById('export-grid');
+        const date = WhatsappService.getFormattedDate();
+        const shift = State.session.shift === 'day' ? 'DIA' : 'NOITE';
+        
+        document.getElementById('export-title').innerText = `ROTAS DE ${shift} - ${date}`;
+        grid.innerHTML = '';
+        
+        const drivers = State.getDriversByShift();
+        let rotasExistem = false;
+        
+        drivers.forEach(name => {
+            const d = State.getDriver(name);
+            // Só mostra na imagem o motorista que tiver pelo menos 1 serviço
+            if(!d || !d.trips || d.trips.length === 0) return; 
+            
+            const activeTrips = d.trips.filter(t => t.status !== 'cancelado');
+            if (activeTrips.length === 0) return;
+
+            rotasExistem = true;
+            let tripsHtml = '';
+            
+            activeTrips.forEach(t => {
+                const isDone = (t.status === 'concluido' || t.completed);
+                const isFailed = (t.status === 'nao_feito');
+                
+                // Ícones de Status puros e diretos
+                let icon = '<span class="text-slate-300 text-xl" title="Pendente">⏳</span>'; 
+                if (isDone) icon = '<span class="text-emerald-500 text-xl" title="Concluído">✅</span>';
+                if (isFailed) icon = '<span class="text-red-500 text-xl" title="Não Feito">❌</span>';
+
+                const qty = t.qty || 1;
+                const label = WhatsappService.getPluralLabel(t.type, qty);
+                const displayType = t.type === 'encher' ? 'ENCHER' : label;
+                
+                // Design mega clean da rota
+                tripsHtml += `
+                    <div class="mb-4 border-b border-slate-100 pb-3 last:border-0 last:mb-0 last:pb-0">
+                        <div class="flex gap-3 items-center">
+                            <div class="shrink-0">${icon}</div>
+                            <div class="flex-1 leading-tight">
+                                <div class="text-xs font-black text-slate-800 bg-slate-100 w-fit px-2 py-0.5 rounded tracking-widest mb-1">${qty} ${displayType}</div>
+                                <div class="text-sm font-black text-slate-800 leading-tight">${t.obra || 'Sem Obra'}</div>
+                                ${t.empresa ? `<div class="text-[10px] font-bold text-slate-500 uppercase mt-0.5">${t.empresa}</div>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Cria o "Cartão" do Motorista
+            const col = `
+                <div class="bg-white border-2 border-slate-200 rounded-2xl p-5 flex flex-col shadow-sm">
+                    <div class="text-center font-black text-lg uppercase mb-4 pb-3 border-b-2 border-slate-100 tracking-widest" style="color: ${d.color || '#333'}">${name}</div>
+                    <div class="flex-1">${tripsHtml}</div>
+                </div>
+            `;
+            grid.innerHTML += col;
+        });
+
+        if (!rotasExistem) {
+            return UI.toast("Nenhum motorista com rotas para gerar a imagem.", "error");
+        }
+
+        // Tira a "Foto" e Baixa
+        html2canvas(container, { 
+            scale: 2, // Garante alta resolução
+            useCORS: true, 
+            backgroundColor: '#f8fafc' 
+        }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = `SGC_Rotas_${date.replace(/\//g, '-')}_${shift}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            UI.toast("Imagem gerada e baixada com sucesso!");
+        }).catch(err => {
+            console.error(err);
+            UI.toast("Erro ao gerar imagem.", "error");
+        });
+    },
     
     quickDelete(name, index) { if(confirm("Excluir viagem rápida?")) State.removeTrip(name, index); },
     deleteTrip(name, index) { if(confirm("Apagar esta entrega?")) State.removeTrip(name, index); },
