@@ -292,7 +292,6 @@ const WhatsappService = {
         } else if (clean.startsWith('(') && !clean.includes(')')) {
             clean = clean.substring(1).trim();
         }
-        
         clean = clean.replace(/^END:\s*/i, '').replace(/,\s*Brasil$/i, '').trim();
         return clean || text;
     },
@@ -319,6 +318,11 @@ const WhatsappService = {
                 const logObs = t.obs.replace(/\|? ?MOT:.*$/g, '').trim();
                 if(logObs) msg += `*\`OBS: ${logObs.toUpperCase()}\`*\n`;
             }
+            // 🔥 OBS EXTRA EM NEGRITO 🔥
+            if (t.obsExtra) {
+                msg += `*👉 ATENÇÃO: ${t.obsExtra.toUpperCase()}*\n`;
+            }
+            
             if (t.empresa) msg += `${t.empresa.toUpperCase()}\n`;
 
             let typeHeader = "";
@@ -367,6 +371,10 @@ const WhatsappService = {
                     if(t.obs) {
                         const logObs = t.obs.replace(/\|? ?MOT:.*$/g, '').trim();
                         if(logObs) msg += `*\`OBS: ${logObs.toUpperCase()}\`*\n`;
+                    }
+                    // 🔥 OBS EXTRA EM NEGRITO NO RESUMO TB 🔥
+                    if (t.obsExtra) {
+                        msg += `*👉 ATENÇÃO: ${t.obsExtra.toUpperCase()}*\n`;
                     }
                     if (t.empresa) msg += `${t.empresa.toUpperCase()}\n`;
 
@@ -1017,7 +1025,6 @@ const App = {
             const trips = d.trips || [];
             
             const column = document.createElement('div');
-            // 🔥 RESPONSIVO: Fica com 200px em janelas espremidas e estica no PC 🔥
             column.className = "driver-column shrink-0 min-w-[200px] sm:min-w-[230px] max-w-[260px] md:min-w-[280px] md:max-w-[340px] flex flex-col bg-white snap-start border-r border-slate-300 transition-colors h-full";
 
             let totalServicos = 0;
@@ -1047,7 +1054,7 @@ const App = {
                 if (status === 'concluido') { bgClass = 'bg-emerald-50 border-emerald-300'; } 
                 else if (status === 'cancelado') { bgClass = 'bg-slate-100 border-slate-300'; opacityClass = 'opacity-60 grayscale'; } 
                 else if (status === 'nao_feito') { bgClass = 'bg-red-50 border-red-300'; }
-                else if (isRetorno) { bgClass = 'bg-yellow-50 border-yellow-400 shadow-md'; } // 🔥 AMARELO NA PLANILHA 🔥
+                else if (isRetorno) { bgClass = 'bg-yellow-50 border-yellow-400 shadow-md'; }
 
                 const label = customLabel || WhatsappService.getPluralLabel(t.type || 'troca', t.qty || 1);
                 
@@ -1061,29 +1068,43 @@ const App = {
                     if (motObs) obsHtml += `<div class="mt-1 text-[10px] bg-blue-100 text-blue-900 font-bold rounded-lg p-1.5 border border-blue-300 break-words leading-tight"><i class="fas fa-comment-dots"></i> MOT: ${motObs}</div>`;
                 }
 
-                // 🔥 AVISO DE PRIORIDADE NA CÉLULA DO MOTORISTA 🔥
+                // 🔥 OBSERVAÇÃO EXTRA (NEGRITO) E FOTO ANEXADA 🔥
+                const obsExtraHtml = t.obsExtra ? `<div class="mt-1 text-[10px] bg-red-100 text-red-900 font-bold rounded-lg p-1.5 border border-red-300 break-words leading-tight shadow-sm"><i class="fas fa-star text-red-600"></i> EXTRA: ${t.obsExtra}</div>` : '';
+                const fotoObsHtml = t.fotoObs ? `<div class="mt-1 flex gap-1"><button onclick="UI.showPhoto('${t.fotoObs}')" class="flex-1 bg-sky-100 text-sky-800 font-bold rounded-lg py-1 text-[10px] shadow-sm border border-sky-300 hover:bg-sky-200 transition-colors"><i class="fas fa-image"></i> VER FOTO ANEXADA</button><button onclick="App.removePhotoObs('${name}', ${i})" class="bg-red-100 text-red-700 px-2 rounded-lg border border-red-200 hover:bg-red-200" title="Apagar foto da OBS"><i class="fas fa-trash"></i></button></div>` : '';
+
                 const avisoRetorno = isRetorno ? `<div class="mt-2 text-[10px] bg-orange-500 text-white font-black rounded-lg p-1.5 border border-orange-600 shadow-md"><i class="fas fa-exclamation-triangle text-yellow-200"></i> PRIORIDADE: ADIADO DO DIA ${t.dataOrigem}</div>` : '';
 
-                const fotoTag = t.foto ? `<button onclick="UI.showPhoto('${t.foto}')" class="mt-2 w-full flex items-center justify-center gap-1 bg-slate-800 text-white font-bold rounded-lg py-1.5 text-[10px] shadow-sm hover:bg-black transition-colors"><i class="fas fa-camera"></i> VER FOTO COMPROVANTE</button>` : '';
+                const fotoTag = t.foto ? `<button onclick="UI.showPhoto('${t.foto}')" class="mt-2 w-full flex items-center justify-center gap-1 bg-slate-800 text-white font-bold rounded-lg py-1.5 text-[10px] shadow-sm hover:bg-black transition-colors"><i class="fas fa-camera"></i> VER FOTO (MOTORISTA)</button>` : '';
                 const mtrTag = t.mtr ? `<div class="mt-2 text-[10px] bg-indigo-100 text-indigo-900 font-bold rounded-lg p-1 border border-indigo-200 text-center truncate"><i class="fas fa-file-invoice"></i> ${t.mtr}</div>` : '';
                 const descTag = t.descarteLocal ? `<div class="mt-1 text-[10px] bg-red-100 text-red-900 font-bold rounded-lg p-1 border border-red-200 text-center truncate">DESC: ${t.descarteLocal}</div>` : '';
                 const timeTag = ((status === 'concluido' || status === 'nao_feito') && t.horaConclusao) ? `<div class="mt-2 text-[9px] font-black ${status==='concluido'?'text-emerald-700':'text-red-700'} text-center"><i class="far fa-clock"></i> ${status==='concluido'?'FEITO':'NÃO FEITO'} ÀS ${t.horaConclusao}</div>` : '';
 
+                // 🔥 BOTÕES ATUALIZADOS COM O "+" E A "FOTO" 🔥
                 const barraAcoesHtml = `
                     <div class="mt-2 pt-2 border-t border-slate-200 flex gap-1 justify-between flex-wrap">
-                        <div class="flex gap-1">
-                            <button onclick="App.returnToAgenda('${name}', ${i})" class="text-[9px] bg-purple-50 hover:bg-purple-100 text-purple-700 px-2 py-1 rounded flex items-center gap-1 transition shadow-sm border border-purple-200 font-bold" title="Devolver p/ Agenda">
-                                <i class="fas fa-undo"></i> <span class="hidden sm:inline">Agenda</span>
-                            </button>
-                            <button onclick="App.openDriverRescheduleModal('${name}', ${i})" class="text-[9px] bg-orange-50 hover:bg-orange-100 text-orange-700 px-2 py-1 rounded flex items-center gap-1 transition shadow-sm border border-orange-200 font-bold" title="Adiar / Reprogramar">
-                                <i class="fas fa-calendar-alt"></i> <span class="hidden sm:inline">Adiar</span>
-                            </button>
+                        <div class="flex gap-1 w-full justify-between">
+                            <div class="flex gap-1">
+                                <button onclick="App.returnToAgenda('${name}', ${i})" class="text-[9px] bg-purple-50 hover:bg-purple-100 text-purple-700 px-2 py-1 rounded flex items-center gap-1 transition shadow-sm border border-purple-200 font-bold" title="Devolver p/ Agenda">
+                                    <i class="fas fa-undo"></i> <span class="hidden xl:inline">Agenda</span>
+                                </button>
+                                <button onclick="App.openDriverRescheduleModal('${name}', ${i})" class="text-[9px] bg-orange-50 hover:bg-orange-100 text-orange-700 px-2 py-1 rounded flex items-center gap-1 transition shadow-sm border border-orange-200 font-bold" title="Adiar / Reprogramar">
+                                    <i class="fas fa-calendar-alt"></i> <span class="hidden xl:inline">Adiar</span>
+                                </button>
+                            </div>
+                            <div class="flex gap-1">
+                                <button onclick="App.attachPhotoObs('${name}', ${i})" class="text-[9px] bg-sky-50 hover:bg-sky-100 text-sky-700 px-1.5 py-1 rounded flex items-center gap-1 transition shadow-sm border border-sky-200 font-bold" title="Anexar Foto de Observação">
+                                    <i class="fas fa-camera"></i>
+                                </button>
+                                <button onclick="App.addExtraObs('${name}', ${i})" class="text-[10px] bg-red-50 hover:bg-red-100 text-red-700 px-1.5 py-1 rounded flex items-center justify-center transition shadow-sm border border-red-200 font-black" title="Adicionar OBS Extra (Sai em Negrito)">
+                                    +
+                                </button>
+                            </div>
                         </div>
-                        <div class="flex gap-1">
-                            <button onclick="App.editObs('${name}', ${i})" class="text-[9px] bg-amber-50 hover:bg-amber-100 text-amber-700 px-2 py-1 rounded flex items-center gap-1 transition shadow-sm border border-amber-200 font-bold" title="Editar Observação">
+                        <div class="flex gap-1 w-full justify-between mt-1">
+                            <button onclick="App.editObs('${name}', ${i})" class="flex-1 text-[9px] bg-amber-50 hover:bg-amber-100 text-amber-700 px-2 py-1 rounded flex justify-center items-center gap-1 transition shadow-sm border border-amber-200 font-bold" title="Editar Observação Comum">
                                 <i class="fas fa-comment-dots"></i> OBS
                             </button>
-                            <button onclick="App.openMtrModal(${i}, '${name}')" class="text-[9px] bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-2 py-1 rounded flex items-center gap-1 transition shadow-sm border border-indigo-200 font-bold" title="Definir MTR">
+                            <button onclick="App.openMtrModal(${i}, '${name}')" class="flex-1 text-[9px] bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-2 py-1 rounded flex justify-center items-center gap-1 transition shadow-sm border border-indigo-200 font-bold" title="Definir MTR">
                                 <i class="fas fa-file-invoice"></i> MTR
                             </button>
                         </div>
@@ -1115,8 +1136,10 @@ const App = {
                         ${t.obra ? `<span class="text-[13px] font-black">${t.obra}</span>` : ''}
                     </div>
                     
-                    ${obsHtml}
                     ${avisoRetorno}
+                    ${obsHtml}
+                    ${obsExtraHtml}
+                    ${fotoObsHtml}
                     ${mtrTag}
                     ${descTag}
                     ${fotoTag}
@@ -1730,6 +1753,75 @@ const App = {
             State.saveFleet();
             App.renderSpreadsheet(); 
             App.renderGrid();
+        }
+    },
+    // 🔥 NOVA: OBSERVAÇÃO EXTRA (NEGRITO NO WPP) 🔥
+    addExtraObs(name, index) {
+        const d = State.getCurrentFleet()[name];
+        if(!d || !d.trips[index]) return;
+        const current = d.trips[index].obsExtra || '';
+        const newObs = prompt("OBSERVAÇÃO EXTRA (Sairá em negrito no WhatsApp):", current);
+        if (newObs !== null) {
+            d.trips[index].obsExtra = newObs.trim();
+            State.saveFleet();
+            App.renderSpreadsheet();
+            UI.toast("OBS Extra adicionada!");
+        }
+    },
+
+    // 🔥 NOVA: ANEXAR FOTO DE OBSERVAÇÃO 🔥
+    attachPhotoObs(name, index) {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            UI.toast("Comprimindo e anexando foto...", "info");
+            
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (ev) => {
+                const img = new Image();
+                img.src = ev.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 800; // Trava o tamanho pra não estourar o banco
+                    let width = img.width;
+                    let height = img.height;
+                    
+                    if (width > MAX_WIDTH) {
+                        height = Math.round((height * MAX_WIDTH) / width);
+                        width = MAX_WIDTH;
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    const base64 = canvas.toDataURL('image/jpeg', 0.5); // Comprime a foto
+                    
+                    const d = State.getCurrentFleet()[name];
+                    if(d && d.trips[index]) {
+                        d.trips[index].fotoObs = base64;
+                        State.saveFleet();
+                        App.renderSpreadsheet();
+                        UI.toast("Foto da observação anexada!");
+                    }
+                };
+            };
+        };
+        input.click();
+    },
+
+    removePhotoObs(name, index) {
+        if(confirm("Apagar a foto de observação anexada?")) {
+            const d = State.getCurrentFleet()[name];
+            if(d && d.trips[index]) {
+                d.trips[index].fotoObs = null;
+                State.saveFleet();
+                App.renderSpreadsheet();
+            }
         }
     },
 
