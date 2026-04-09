@@ -581,8 +581,3 @@ body.night-mode .drag-item.bg-yellow-50 {
     background-color: rgba(234, 179, 8, 0.15) !important;
     border-color: #a16207 !important;
 }
-body.night-mode .bg-yellow-200 {
-    background-color: rgba(234, 179, 8, 0.3) !important;
-    border-color: #a16207 !important;
-    color: #fde047 !important;
-}
