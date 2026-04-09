@@ -342,10 +342,11 @@ const WhatsappService = {
             
             // 🔥 3. OBSERVAÇÃO EXTRA (ISOLADA E EM NEGRITO NO FINAL DO SERVIÇO) 🔥
             if (t.obsExtra) {
+                // \n pula uma linha, \n\n pula duas linhas.
                 msg += `\n*👉 ATENÇÃO: ${t.obsExtra.toUpperCase()}*\n`;
             }
             
-            // Espaço final para o próximo serviço
+            // Espaço final para separar do próximo serviço
             msg += `\n`; 
         }
         return msg;
@@ -373,11 +374,12 @@ const WhatsappService = {
                 
                 for (let i = 0; i < activeTrips.length; i++) {
                     const t = activeTrips[i];
+                    
+                    // 1. Logística / Empresa / Serviço (No resumo também)
                     if(t.obs) {
                         const logObs = t.obs.replace(/\|? ?MOT:.*$/g, '').trim();
                         if(logObs) msg += `*\`OBS: ${logObs.toUpperCase()}\`*\n`;
                     }
-                    
                     if (t.empresa) msg += `${t.empresa.toUpperCase()}\n`;
 
                     let header = "";
@@ -390,16 +392,18 @@ const WhatsappService = {
                     msg += `${header}\n`;
                     if (t.obra) msg += `OBRA: ${t.obra.toUpperCase()}\n`;
                     
+                    // 2. Endereço e Dados Técnicos (No resumo também)
                     const addressText = typeof t.to === 'string' ? t.to : (t.to && t.to.text ? t.to.text : '');
                     msg += `END: ${this.formatAddress(addressText).toUpperCase()}\n`;
                     if(t.descarteLocal) msg += `*DESCARTE: ${t.descarteLocal.toUpperCase()}*\n`;
                     if (t.mtr) msg += `\`${t.mtr}\`\n`;
 
-                    // 🔥 OBSERVAÇÃO EXTRA TAMBÉM NO RESUMO GERAL 🔥
+                    // 🔥 3. OBSERVAÇÃO EXTRA TAMBÉM NO RESUMO GERAL (ISOLADA) 🔥
                     if (t.obsExtra) {
                         msg += `\n*👉 ATENÇÃO: ${t.obsExtra.toUpperCase()}*\n`;
                     }
 
+                    // Espaço final para separar do próximo serviço
                     msg += `\n`;
                 }
                 msg += `------------------------\n`;
