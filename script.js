@@ -1732,10 +1732,10 @@ const App = {
         
         drivers.forEach(name => {
             const d = State.getDriver(name);
+            // Só mostra na imagem o motorista que tiver pelo menos 1 serviço
             if(!d || !d.trips || d.trips.length === 0) return; 
             
-            // Agora mostra tudo, inclusive reprogramados e não feitos
-            const activeTrips = d.trips;
+            const activeTrips = d.trips.filter(t => t.status !== 'cancelado');
             if (activeTrips.length === 0) return;
 
             rotasExistem = true;
@@ -1743,47 +1743,49 @@ const App = {
             
             activeTrips.forEach(t => {
                 const isDone = (t.status === 'concluido' || t.completed);
-                const isFailed = (t.status === 'nao_feito' || t.status === 'cancelado');
+                const isFailed = (t.status === 'nao_feito');
                 const isReprogramado = (t.status === 'reprogramado');
                 const isRetorno = t.veioDeReprogramacao;
                 
-                let bgColor = '#ffffff'; 
-                let borderColor = '#e2e8f0'; 
-                let statusColor = '#94a3b8'; 
+                // 🔥 NOVA LÓGICA DE CORES DOS CARDS E EMOJIS NA IMAGEM 🔥
+                let bgColor = '#ffffff'; // Pendente normal (Branco)
+                let borderColor = '#e2e8f0'; // Borda cinza
+                let statusColor = '#94a3b8'; // Bolinha Cinza (Pendente)
                 let iconStr = '';
 
                 if (isDone) {
-                    bgColor = '#ecfdf5'; 
-                    borderColor = '#a7f3d0'; 
-                    statusColor = '#10b981'; 
+                    bgColor = '#ecfdf5'; // Fundo Verde Claro
+                    borderColor = '#a7f3d0'; // Borda Verde
+                    statusColor = '#10b981'; // Bolinha Verde
                     iconStr = '✅ ';
                 } else if (isFailed) {
-                    bgColor = '#fef2f2'; 
-                    borderColor = '#fecaca'; 
-                    statusColor = '#ef4444'; 
+                    bgColor = '#fef2f2'; // Fundo Vermelho Claro
+                    borderColor = '#fecaca'; // Borda Vermelha
+                    statusColor = '#ef4444'; // Bolinha Vermelha
                     iconStr = '❌ ';
                 } else if (isReprogramado) {
-                    bgColor = '#fff7ed'; 
-                    borderColor = '#fed7aa'; 
-                    statusColor = '#f97316'; 
-                    iconStr = ''; // 🔥 SEM EMOJI AQUI, SÓ A COR LARANJA 🔥
+                    bgColor = '#fff7ed'; // Fundo Laranja Claro
+                    borderColor = '#fed7aa'; // Borda Laranja
+                    statusColor = '#f97316'; // Bolinha Laranja
+                    iconStr = ''; // 🔥 SEM EMOJI NO REPROGRAMADO 🔥
                 } else if (isRetorno) {
-                    bgColor = '#fefce8'; 
-                    borderColor = '#fde047'; 
-                    statusColor = '#eab308'; 
-                    iconStr = '⚠️ '; // Aviso de prioridade mantido
+                    bgColor = '#fefce8'; // Fundo Amarelo Claro (Prioridade)
+                    borderColor = '#fde047'; // Borda Amarela
+                    statusColor = '#eab308'; // Bolinha Amarela
+                    iconStr = '⚠️ ';
                 }
 
                 const qty = t.qty || 1;
                 const label = WhatsappService.getPluralLabel(t.type, qty);
                 const displayType = t.type === 'encher' ? 'ENCHER' : label;
                 
-                // 🔥 HORÁRIO SÓ APARECE SE FOI CONCLUÍDO 🔥
+                // 🔥 HORÁRIO SÓ APARECE SE FOI FEITO (CONCLUÍDO) 🔥
                 let timeHtml = '';
                 if (isDone && t.horaConclusao) {
                     timeHtml = `<div style="font-size: 10px; font-weight: 900; color: #059669; margin-top: 6px; letter-spacing: 0.5px;">🕒 FEITO ÀS ${t.horaConclusao}</div>`;
                 }
                 
+                // 🔥 HTML Blindado com CSS Inline para garantir cores perfeitas na foto 🔥
                 tripsHtml += `
                     <div style="margin-bottom: 8px; padding: 10px; background-color: ${bgColor}; border: 1px solid ${borderColor}; border-radius: 8px;">
                         <div style="display: flex; align-items: flex-start; gap: 8px;">
@@ -1799,6 +1801,7 @@ const App = {
                 `;
             });
 
+            // 🔥 Caixa do Motorista Blindada 🔥
             const col = `
                 <div style="background-color: #ffffff; border: 2px solid #e2e8f0; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
                     <div style="text-align: center; font-weight: 900; font-size: 18px; text-transform: uppercase; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid #f1f5f9; letter-spacing: 2px; color: ${d.color || '#333'}">${name}</div>
@@ -1812,6 +1815,7 @@ const App = {
             return UI.toast("Nenhum motorista com rotas para gerar a imagem.", "error");
         }
 
+        // 🔥 Força o fundo a ser branco no arquivo baixado e escala alta para qualidade 🔥
         html2canvas(container, { 
             scale: 2, 
             useCORS: true, 
