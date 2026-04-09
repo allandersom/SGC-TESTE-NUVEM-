@@ -1058,10 +1058,16 @@ const App = {
                 let opacityClass = '';
                 const isRetorno = t.veioDeReprogramacao;
                 
-                if (status === 'concluido') { bgClass = 'bg-emerald-50/70 border-emerald-300'; } 
-                else if (status === 'cancelado' || status === 'nao_feito') { bgClass = 'bg-red-50/70 border-red-300'; } 
-                else if (status === 'reprogramado') { bgClass = 'bg-orange-50/70 border-orange-300'; } 
-                else if (isRetorno) { bgClass = 'bg-amber-50/40 border-amber-300'; }
+                // 🔥 CORES DE FUNDO SÓLIDAS E CLARAS PARA STATUS 🔥
+                if (status === 'concluido') { 
+                    bgClass = 'bg-emerald-100 border-emerald-400'; 
+                } else if (status === 'cancelado' || status === 'nao_feito') { 
+                    bgClass = 'bg-red-100 border-red-400'; 
+                } else if (status === 'reprogramado') { 
+                    bgClass = 'bg-orange-100 border-orange-400'; 
+                } else if (isRetorno) { 
+                    bgClass = 'bg-yellow-50 border-yellow-400'; 
+                }
 
                 const label = customLabel || WhatsappService.getPluralLabel(t.type || 'troca', t.qty || 1);
                 
@@ -1071,16 +1077,16 @@ const App = {
                     const logObs = parts[0].trim();
                     const motObs = parts[1] ? parts[1].trim() : '';
 
-                    if (logObs) obsHtml += `<div class="mt-1.5 text-[9px] text-slate-700 bg-amber-50/60 border-l-2 border-amber-400 px-1.5 py-0.5 font-medium leading-tight shadow-sm">${logObs}</div>`;
-                    if (motObs) obsHtml += `<div class="mt-1.5 text-[9px] text-slate-700 bg-blue-50/60 border-l-2 border-blue-400 px-1.5 py-0.5 font-medium leading-tight shadow-sm"><i class="fas fa-reply text-blue-400 text-[8px] mr-0.5"></i> ${motObs}</div>`;
+                    if (logObs) obsHtml += `<div class="mt-1.5 text-[9px] text-amber-900 bg-amber-50/80 border-l-2 border-amber-400 px-1.5 py-0.5 font-bold leading-tight shadow-sm">${logObs}</div>`;
+                    if (motObs) obsHtml += `<div class="mt-1.5 text-[9px] text-blue-900 bg-blue-50/80 border-l-2 border-blue-400 px-1.5 py-0.5 font-bold leading-tight shadow-sm"><i class="fas fa-reply text-blue-500 text-[8px] mr-0.5"></i> ${motObs}</div>`;
                 }
-                const obsExtraHtml = t.obsExtra ? `<div class="mt-1.5 text-[10px] text-red-800 bg-red-50 border-l-2 border-red-500 px-1.5 py-1 font-bold shadow-sm leading-tight uppercase">ATENÇÃO: ${t.obsExtra}</div>` : '';
+                const obsExtraHtml = t.obsExtra ? `<div class="mt-1.5 text-[10px] text-red-900 bg-red-50/90 border-l-2 border-red-500 px-1.5 py-1 font-black shadow-sm leading-tight uppercase">ATENÇÃO: ${t.obsExtra}</div>` : '';
 
                 let tagsHtml = '';
                 if (t.mtr || t.descarteLocal) {
                     tagsHtml += `<div class="flex flex-wrap gap-1 mt-1.5">`;
-                    if (t.mtr) tagsHtml += `<span class="bg-indigo-50 text-indigo-700 border border-indigo-200 px-1.5 py-0.5 rounded text-[8px] font-bold"><i class="fas fa-file-invoice mr-0.5"></i> MTR: ${t.mtr}</span>`;
-                    if (t.descarteLocal) tagsHtml += `<span class="bg-red-50 text-red-700 border border-red-200 px-1.5 py-0.5 rounded text-[8px] font-bold"><i class="fas fa-recycle mr-0.5"></i> DESC: ${t.descarteLocal}</span>`;
+                    if (t.mtr) tagsHtml += `<span class="bg-indigo-50 text-indigo-700 border border-indigo-200 px-1.5 py-0.5 rounded text-[8px] font-bold shadow-sm"><i class="fas fa-file-invoice mr-0.5"></i> MTR: ${t.mtr}</span>`;
+                    if (t.descarteLocal) tagsHtml += `<span class="bg-rose-50 text-rose-700 border border-rose-200 px-1.5 py-0.5 rounded text-[8px] font-bold shadow-sm"><i class="fas fa-recycle mr-0.5"></i> DESC: ${t.descarteLocal}</span>`;
                     tagsHtml += `</div>`;
                 }
 
@@ -1096,46 +1102,46 @@ const App = {
                     fotosHtml += `</div>`;
                 }
 
-                const avisoRetorno = isRetorno ? `<div class="mt-1.5 text-[9px] text-orange-800 bg-orange-100 font-bold px-1.5 py-0.5 rounded inline-block shadow-sm"><i class="fas fa-exclamation-triangle text-orange-500 mr-0.5"></i> PRIORIDADE: ${t.dataOrigem}</div>` : '';
-                const avisoReprogramado = (status === 'reprogramado') ? `<div class="mt-1.5 text-[9px] text-orange-800 bg-orange-100 font-bold px-1.5 py-0.5 rounded inline-block shadow-sm border border-orange-300"><i class="fas fa-forward text-orange-500 mr-0.5"></i> REPROGRAMADO PARA: ${t.dataReprogramada}</div>` : '';
-                const timeTag = ((status === 'concluido' || status === 'nao_feito' || status === 'cancelado') && t.horaConclusao) ? `<div class="mt-2 text-[8px] font-black ${status==='concluido'?'text-emerald-600':'text-red-600'} flex items-center gap-1"><i class="far fa-clock"></i> ${status==='concluido'?'FEITO':'NÃO FEITO'} ÀS ${t.horaConclusao}</div>` : '';
+                const avisoRetorno = isRetorno ? `<div class="mt-1.5 text-[9px] text-orange-900 bg-orange-100/80 font-bold px-1.5 py-0.5 rounded inline-block shadow-sm"><i class="fas fa-exclamation-triangle text-orange-500 mr-0.5"></i> PRIORIDADE: ${t.dataOrigem}</div>` : '';
+                const avisoReprogramado = (status === 'reprogramado') ? `<div class="mt-1.5 text-[9px] text-orange-900 bg-orange-100/80 font-bold px-1.5 py-0.5 rounded inline-block shadow-sm border border-orange-300"><i class="fas fa-forward text-orange-500 mr-0.5"></i> REPROGRAMADO PARA: ${t.dataReprogramada}</div>` : '';
+                const timeTag = ((status === 'concluido' || status === 'nao_feito' || status === 'cancelado') && t.horaConclusao) ? `<div class="mt-2 text-[9px] font-black ${status==='concluido'?'text-emerald-700':'text-red-700'} flex items-center gap-1 bg-white/50 px-2 py-0.5 rounded w-fit"><i class="far fa-clock"></i> ${status==='concluido'?'FEITO':'NÃO FEITO'} ÀS ${t.horaConclusao}</div>` : '';
 
+                // 🔥 BARRINHA DE AÇÕES (COM FUNDO BRANCO SEMI-TRANSPARENTE PARA MESCLAR COM A COR DE FUNDO) 🔥
                 const barraAcoesHtml = `
-                    <div class="mt-2 pt-1.5 border-t border-slate-100 flex gap-1 justify-between items-center bg-slate-50/50 -mx-1 -mb-1 px-1 pb-1 rounded-b">
+                    <div class="mt-2 pt-1.5 border-t border-black/10 flex gap-1 justify-between items-center bg-white/60 -mx-1 -mb-1 px-1 pb-1 rounded-b">
                         <div class="flex gap-1">
-                            <button onclick="App.returnToAgenda('${name}', ${i})" class="w-6 h-6 rounded bg-white border border-slate-200 text-slate-400 hover:text-purple-600 hover:border-purple-200 hover:bg-purple-50 flex items-center justify-center transition shadow-sm" title="Devolver p/ Agenda">
+                            <button onclick="App.returnToAgenda('${name}', ${i})" class="w-6 h-6 rounded bg-white border border-slate-200 text-slate-500 hover:text-purple-600 hover:border-purple-300 hover:bg-purple-50 flex items-center justify-center transition shadow-sm" title="Devolver p/ Agenda">
                                 <i class="fas fa-undo text-[9px]"></i>
                             </button>
-                            <button onclick="App.openDriverRescheduleModal('${name}', ${i})" class="w-6 h-6 rounded bg-white border border-slate-200 text-slate-400 hover:text-orange-600 hover:border-orange-200 hover:bg-orange-50 flex items-center justify-center transition shadow-sm" title="Adiar / Reprogramar">
+                            <button onclick="App.openDriverRescheduleModal('${name}', ${i})" class="w-6 h-6 rounded bg-white border border-slate-200 text-slate-500 hover:text-orange-600 hover:border-orange-300 hover:bg-orange-50 flex items-center justify-center transition shadow-sm" title="Adiar / Reprogramar">
                                 <i class="fas fa-calendar-alt text-[9px]"></i>
                             </button>
                         </div>
                         <div class="flex gap-1">
-                            <button onclick="App.editObs('${name}', ${i})" class="h-6 px-1.5 rounded bg-white border border-slate-200 text-slate-500 hover:text-amber-600 hover:border-amber-200 hover:bg-amber-50 flex items-center justify-center gap-1 transition shadow-sm text-[9px] font-bold" title="Editar OBS">
+                            <button onclick="App.editObs('${name}', ${i})" class="h-6 px-1.5 rounded bg-white border border-slate-200 text-slate-600 hover:text-amber-600 hover:border-amber-300 hover:bg-amber-50 flex items-center justify-center gap-1 transition shadow-sm text-[9px] font-bold" title="Editar OBS">
                                 <i class="fas fa-comment-dots text-[9px]"></i><span class="hidden xl:inline">OBS</span>
                             </button>
-                            <button onclick="App.openMtrModal(${i}, '${name}')" class="h-6 px-1.5 rounded bg-white border border-slate-200 text-slate-500 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 flex items-center justify-center gap-1 transition shadow-sm text-[9px] font-bold" title="Definir MTR">
+                            <button onclick="App.openMtrModal(${i}, '${name}')" class="h-6 px-1.5 rounded bg-white border border-slate-200 text-slate-600 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50 flex items-center justify-center gap-1 transition shadow-sm text-[9px] font-bold" title="Definir MTR">
                                 <i class="fas fa-file-invoice text-[9px]"></i><span class="hidden xl:inline">MTR</span>
                             </button>
-                            <button onclick="App.attachPhotoObs('${name}', ${i})" class="w-6 h-6 rounded bg-white border border-slate-200 text-slate-400 hover:text-sky-600 hover:border-sky-200 hover:bg-sky-50 flex items-center justify-center transition shadow-sm" title="Anexar Foto (Logística)">
+                            <button onclick="App.attachPhotoObs('${name}', ${i})" class="w-6 h-6 rounded bg-white border border-slate-200 text-slate-500 hover:text-sky-600 hover:border-sky-300 hover:bg-sky-50 flex items-center justify-center transition shadow-sm" title="Anexar Foto (Logística)">
                                 <i class="fas fa-camera text-[9px]"></i>
                             </button>
-                            <button onclick="App.addExtraObs('${name}', ${i})" class="w-6 h-6 rounded bg-white border border-slate-200 text-slate-400 hover:text-red-600 hover:border-red-200 hover:bg-red-50 flex items-center justify-center transition shadow-sm font-black" title="Adicionar OBS Extra (Negrito)">
+                            <button onclick="App.addExtraObs('${name}', ${i})" class="w-6 h-6 rounded bg-white border border-slate-200 text-slate-500 hover:text-red-600 hover:border-red-300 hover:bg-red-50 flex items-center justify-center transition shadow-sm font-black" title="Adicionar OBS Extra (Negrito)">
                                 +
                             </button>
                         </div>
                     </div>
                 `;
 
-                // 🔥 LÓGICA VISUAL INVERTIDA: EMPRESA MAIOR, OBRA MENOR. NADA DE "SEM OBRA" 🔥
-                const textEmpresa = t.empresa ? `<div class="text-[12px] font-black text-slate-800 break-words mb-0.5">${t.empresa}</div>` : '';
-                const textObra = t.obra ? `<div class="${t.empresa ? 'text-[9px] font-bold text-slate-500 uppercase tracking-widest' : 'text-[12px] font-black text-slate-800 break-words'}">${t.obra}</div>` : '';
+                const textEmpresa = t.empresa ? `<div class="text-[12px] font-black text-slate-900 break-words mb-0.5 leading-tight">${t.empresa}</div>` : '';
+                const textObra = t.obra ? `<div class="${t.empresa ? 'text-[9px] font-bold text-slate-600 uppercase tracking-widest' : 'text-[12px] font-black text-slate-900 break-words'} leading-tight">${t.obra}</div>` : '';
 
                 return `
                 <div draggable="true" 
                      ondragstart="App.handleDriverDragStart(event, '${name}', ${i})"
                      ondrop="App.handleDrop(event, '${name}', ${i})"
-                     class="drag-item p-2.5 border rounded-lg shadow-md relative flex flex-col cursor-grab active:cursor-grabbing transition-all hover:border-blue-400 ${bgClass} ${opacityClass}">
+                     class="drag-item p-2.5 border rounded-lg shadow-md relative flex flex-col cursor-grab active:cursor-grabbing transition-all hover:border-blue-500 ${bgClass} ${opacityClass}">
                     
                     <div class="absolute top-2 right-2 flex gap-1 z-10">
                         <button onclick="App.setTripStatus('${name}', ${i}, 'concluido')" class="w-5 h-5 rounded bg-white hover:bg-emerald-50 text-slate-300 hover:text-emerald-500 flex items-center justify-center border border-slate-200 transition shadow-sm" title="Marcar Concluído"><i class="fas fa-check text-[9px]"></i></button>
@@ -1143,15 +1149,15 @@ const App = {
                     </div>
 
                     <div class="flex items-center gap-1 w-fit mb-1.5">
-                        <button onclick="App.changeQty('${name}', ${i})" class="text-slate-600 hover:text-blue-600 hover:bg-blue-50 text-[10px] font-black bg-white rounded px-1.5 py-0.5 border border-slate-200 shadow-sm transition cursor-pointer" title="Mudar Quantidade">
+                        <button onclick="App.changeQty('${name}', ${i})" class="text-slate-700 hover:text-blue-700 hover:bg-blue-50 text-[10px] font-black bg-white rounded px-1.5 py-0.5 border border-slate-300 shadow-sm transition cursor-pointer" title="Mudar Quantidade">
                             ${t.qty || 1}
                         </button>
-                        <button onclick="App.cycleType('${name}', ${i})" class="${colorClass} text-[9px] font-black bg-white hover:bg-slate-50 rounded px-1.5 py-0.5 border border-slate-200 shadow-sm transition cursor-pointer flex items-center gap-1" title="Mudar Tipo">
+                        <button onclick="App.cycleType('${name}', ${i})" class="${colorClass} text-[9px] font-black bg-white hover:bg-slate-50 rounded px-1.5 py-0.5 border border-slate-300 shadow-sm transition cursor-pointer flex items-center gap-1" title="Mudar Tipo">
                             ${label} <i class="fas fa-sync-alt opacity-30 text-[7px]"></i>
                         </button>
                     </div>
 
-                    <div class="pr-12 leading-tight">
+                    <div class="pr-12">
                         ${textEmpresa}
                         ${textObra}
                     </div>
@@ -1159,9 +1165,9 @@ const App = {
                     ${avisoRetorno}
                     ${avisoReprogramado}
 
-                    <div class="flex items-start gap-1 mt-1.5">
-                        <i class="fas fa-map-marker-alt text-red-400 text-[9px] mt-0.5"></i>
-                        <div class="text-[9px] font-semibold text-slate-500 leading-tight flex-1 break-words">${WhatsappService.formatAddress(typeof t.to === 'string' ? t.to : (t.to && t.to.text ? t.to.text : ''))}</div>
+                    <div class="flex items-start gap-1 mt-2">
+                        <i class="fas fa-map-marker-alt text-red-500 text-[10px] mt-0.5"></i>
+                        <div class="text-[9px] font-semibold text-slate-700 leading-tight flex-1 break-words">${WhatsappService.formatAddress(typeof t.to === 'string' ? t.to : (t.to && t.to.text ? t.to.text : ''))}</div>
                     </div>
 
                     ${tagsHtml}
