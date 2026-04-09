@@ -1716,7 +1716,7 @@ const App = {
         this.renderGrid();
         UI.toast("Serviços distribuídos!");
     },
-    // =========================================================
+   // =========================================================
     // 🔥 GERADOR DE IMAGEM LIMPA PARA CLIENTES/LEIGOS 🔥
     // =========================================================
     downloadPreview() {
@@ -1735,7 +1735,6 @@ const App = {
         
         drivers.forEach(name => {
             const d = State.getDriver(name);
-            // Só mostra na imagem o motorista que tiver pelo menos 1 serviço
             if(!d || !d.trips || d.trips.length === 0) return; 
             
             const activeTrips = d.trips.filter(t => t.status !== 'cancelado');
@@ -1748,35 +1747,35 @@ const App = {
                 const isDone = (t.status === 'concluido' || t.completed);
                 const isFailed = (t.status === 'nao_feito');
                 
-                // Ícones de Status puros e diretos
-                let icon = '<span class="text-slate-300 text-xl" title="Pendente">⏳</span>'; 
-                if (isDone) icon = '<span class="text-emerald-500 text-xl" title="Concluído">✅</span>';
-                if (isFailed) icon = '<span class="text-red-500 text-xl" title="Não Feito">❌</span>';
+                // 🔥 Bolinhas de Status Sólidas e Elegantes (Ignora Modo Noturno) 🔥
+                let statusColor = '#94a3b8'; // Cinza (Pendente)
+                if (isDone) statusColor = '#10b981'; // Verde (Feito)
+                if (isFailed) statusColor = '#ef4444'; // Vermelho (Não Feito)
 
                 const qty = t.qty || 1;
                 const label = WhatsappService.getPluralLabel(t.type, qty);
                 const displayType = t.type === 'encher' ? 'ENCHER' : label;
                 
-                // Design mega clean da rota
+                // 🔥 HTML Blindado com CSS Inline para garantir que nada borre a foto 🔥
                 tripsHtml += `
-                    <div class="mb-4 border-b border-slate-100 pb-3 last:border-0 last:mb-0 last:pb-0">
-                        <div class="flex gap-3 items-center">
-                            <div class="shrink-0">${icon}</div>
-                            <div class="flex-1 leading-tight">
-                                <div class="text-xs font-black text-slate-800 bg-slate-100 w-fit px-2 py-0.5 rounded tracking-widest mb-1">${qty} ${displayType}</div>
-                                <div class="text-sm font-black text-slate-800 leading-tight">${t.obra || 'Sem Obra'}</div>
-                                ${t.empresa ? `<div class="text-[10px] font-bold text-slate-500 uppercase mt-0.5">${t.empresa}</div>` : ''}
+                    <div style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;">
+                        <div style="display: flex; align-items: flex-start; gap: 8px;">
+                            <div style="margin-top: 4px; width: 12px; height: 12px; border-radius: 50%; background-color: ${statusColor}; flex-shrink: 0; box-shadow: 0 1px 2px rgba(0,0,0,0.1);"></div>
+                            <div style="flex: 1; line-height: 1.2;">
+                                <div style="display: inline-block; background-color: #f1f5f9; color: #1e293b; font-size: 11px; font-weight: 900; padding: 2px 6px; border-radius: 4px; letter-spacing: 1px; margin-bottom: 4px;">${qty} ${displayType}</div>
+                                <div style="font-size: 14px; font-weight: 900; color: #0f172a; word-break: break-word;">${t.obra || 'Sem Obra'}</div>
+                                ${t.empresa ? `<div style="font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-top: 2px;">${t.empresa}</div>` : ''}
                             </div>
                         </div>
                     </div>
                 `;
             });
 
-            // Cria o "Cartão" do Motorista
+            // 🔥 Caixa do Motorista Blindada 🔥
             const col = `
-                <div class="bg-white border-2 border-slate-200 rounded-2xl p-5 flex flex-col shadow-sm">
-                    <div class="text-center font-black text-lg uppercase mb-4 pb-3 border-b-2 border-slate-100 tracking-widest" style="color: ${d.color || '#333'}">${name}</div>
-                    <div class="flex-1">${tripsHtml}</div>
+                <div style="background-color: #ffffff; border: 2px solid #e2e8f0; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                    <div style="text-align: center; font-weight: 900; font-size: 18px; text-transform: uppercase; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid #f1f5f9; letter-spacing: 2px; color: ${d.color || '#333'}">${name}</div>
+                    <div>${tripsHtml}</div>
                 </div>
             `;
             grid.innerHTML += col;
@@ -1786,11 +1785,10 @@ const App = {
             return UI.toast("Nenhum motorista com rotas para gerar a imagem.", "error");
         }
 
-        // Tira a "Foto" e Baixa
         html2canvas(container, { 
-            scale: 2, // Garante alta resolução
+            scale: 2, 
             useCORS: true, 
-            backgroundColor: '#f8fafc' 
+            backgroundColor: '#ffffff' // Força o fundo a ser branco no arquivo baixado
         }).then(canvas => {
             const link = document.createElement('a');
             link.download = `SGC_Rotas_${date.replace(/\//g, '-')}_${shift}.png`;
