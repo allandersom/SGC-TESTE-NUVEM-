@@ -405,9 +405,6 @@
                             </div>`;
                     }
 
-                    // 🔥 OBSERVAÇÃO EXTRA (NEGRITO) DA LOGÍSTICA 🔥
-                    const obsExtraHtml = t.obsExtra ? `<div class="bg-red-100 text-red-900 text-xs font-black p-3 rounded-lg mb-2 border border-red-300 shadow-sm animate-pulse"><i class="fas fa-star text-red-600 mr-1"></i> ATENÇÃO: ${t.obsExtra}</div>` : '';
-
                     // 🔥 FOTO ANEXADA DA LOGÍSTICA 🔥
                     const fotoObsHtml = t.fotoObs ? `<button onclick="App.viewPhoto('${t.fotoObs}')" class="w-full bg-sky-100 text-sky-800 text-xs font-black p-3 rounded-lg mb-2 border border-sky-300 shadow-sm flex items-center justify-center gap-2 btn-press"><i class="fas fa-image text-lg"></i> VER FOTO DA OBSERVAÇÃO</button>` : '';
 
@@ -456,7 +453,8 @@
                         `;
                     }
 
-                    const html = `
+                    // 🔥 O CARTÃO DO SERVIÇO EM SI (FECHADO SEM A OBS EXTRA DENTRO) 🔥
+                    const cardHtml = `
                     <div class="rounded-2xl border p-4 ${cardClass} transition-all">
                         <div class="flex justify-between items-start mb-3">
                             <div><span class="bg-slate-800 text-white text-[10px] font-black px-2 py-1 rounded tracking-widest">${qty} ${label}</span></div>
@@ -477,17 +475,23 @@
                         </div>
 
                         ${obsHtml}
-                        ${obsExtraHtml}
                         ${fotoObsHtml}
                         ${descarteHtml}
                         ${mtrHtml}
                         ${botoesAcao}
                     </div>`;
-                    container.innerHTML += html;
+
+                    // 🔥 BLOCO DA OBSERVAÇÃO EXTRA (SEPARADOR DE ROTAS) 🔥
+                    const extraBlockHtml = t.obsExtra ? `
+                    <div class="bg-red-100 border-2 border-dashed border-red-500 text-red-900 text-xs font-black py-2 px-3 rounded-xl shadow-sm uppercase text-center break-words my-2 mx-auto w-[90%] animate-pulse">
+                        ATENÇÃO: ${t.obsExtra}
+                    </div>` : '<div class="mb-2"></div>';
+
+                    // Concatena o Card com a OBS Extra em baixo!
+                    container.innerHTML += cardHtml + extraBlockHtml;
                 });
             }
-        };
-
+            
         window.onload = () => App.init();
     </script>
 </body>
