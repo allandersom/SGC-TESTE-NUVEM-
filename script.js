@@ -1058,9 +1058,10 @@ const App = {
                 let opacityClass = '';
                 const isRetorno = t.veioDeReprogramacao;
                 
+                // 🔥 CORES ATUALIZADAS (CANCELADO/NÃO FEITO AGORA SÃO VERMELHOS) 🔥
                 if (status === 'concluido') { bgClass = 'bg-emerald-50/70 border-emerald-300'; } 
-                else if (status === 'cancelado') { bgClass = 'bg-slate-50 border-slate-200'; opacityClass = 'opacity-60 grayscale'; } 
-                else if (status === 'nao_feito') { bgClass = 'bg-red-50/70 border-red-300'; }
+                else if (status === 'cancelado' || status === 'nao_feito') { bgClass = 'bg-red-50/70 border-red-300'; } 
+                else if (status === 'reprogramado') { bgClass = 'bg-orange-50/70 border-orange-300'; } 
                 else if (isRetorno) { bgClass = 'bg-amber-50/40 border-amber-300'; }
 
                 const label = customLabel || WhatsappService.getPluralLabel(t.type || 'troca', t.qty || 1);
@@ -1074,6 +1075,7 @@ const App = {
                     if (logObs) obsHtml += `<div class="mt-1.5 text-[9px] text-slate-700 bg-amber-50/60 border-l-2 border-amber-400 px-1.5 py-0.5 font-medium leading-tight shadow-sm">${logObs}</div>`;
                     if (motObs) obsHtml += `<div class="mt-1.5 text-[9px] text-slate-700 bg-blue-50/60 border-l-2 border-blue-400 px-1.5 py-0.5 font-medium leading-tight shadow-sm"><i class="fas fa-reply text-blue-400 text-[8px] mr-0.5"></i> ${motObs}</div>`;
                 }
+                const obsExtraHtml = t.obsExtra ? `<div class="mt-1.5 text-[10px] text-red-800 bg-red-50 border-l-2 border-red-500 px-1.5 py-1 font-bold shadow-sm leading-tight uppercase">ATENÇÃO: ${t.obsExtra}</div>` : '';
 
                 let tagsHtml = '';
                 if (t.mtr || t.descarteLocal) {
@@ -1095,8 +1097,9 @@ const App = {
                     fotosHtml += `</div>`;
                 }
 
-                const avisoRetorno = isRetorno ? `<div class="mt-1.5 text-[9px] text-orange-800 bg-orange-100 font-bold px-1.5 py-0.5 rounded inline-block shadow-sm"><i class="fas fa-exclamation-triangle text-orange-500 mr-0.5"></i> ADIADO: ${t.dataOrigem}</div>` : '';
-                const timeTag = ((status === 'concluido' || status === 'nao_feito') && t.horaConclusao) ? `<div class="mt-2 text-[8px] font-black ${status==='concluido'?'text-emerald-600':'text-red-600'} flex items-center gap-1"><i class="far fa-clock"></i> ${status==='concluido'?'FEITO':'NÃO FEITO'} ÀS ${t.horaConclusao}</div>` : '';
+                const avisoRetorno = isRetorno ? `<div class="mt-1.5 text-[9px] text-orange-800 bg-orange-100 font-bold px-1.5 py-0.5 rounded inline-block shadow-sm"><i class="fas fa-exclamation-triangle text-orange-500 mr-0.5"></i> PRIORIDADE: ${t.dataOrigem}</div>` : '';
+                const avisoReprogramado = (status === 'reprogramado') ? `<div class="mt-1.5 text-[9px] text-orange-800 bg-orange-100 font-bold px-1.5 py-0.5 rounded inline-block shadow-sm border border-orange-300"><i class="fas fa-forward text-orange-500 mr-0.5"></i> REPROGRAMADO PARA: ${t.dataReprogramada}</div>` : '';
+                const timeTag = ((status === 'concluido' || status === 'nao_feito' || status === 'cancelado') && t.horaConclusao) ? `<div class="mt-2 text-[8px] font-black ${status==='concluido'?'text-emerald-600':'text-red-600'} flex items-center gap-1"><i class="far fa-clock"></i> ${status==='concluido'?'FEITO':'NÃO FEITO'} ÀS ${t.horaConclusao}</div>` : '';
 
                 const barraAcoesHtml = `
                     <div class="mt-2 pt-1.5 border-t border-slate-100 flex gap-1 justify-between items-center bg-slate-50/50 -mx-1 -mb-1 px-1 pb-1 rounded-b">
@@ -1118,15 +1121,14 @@ const App = {
                             <button onclick="App.attachPhotoObs('${name}', ${i})" class="w-6 h-6 rounded bg-white border border-slate-200 text-slate-400 hover:text-sky-600 hover:border-sky-200 hover:bg-sky-50 flex items-center justify-center transition shadow-sm" title="Anexar Foto (Logística)">
                                 <i class="fas fa-camera text-[9px]"></i>
                             </button>
-                            <button onclick="App.addExtraObs('${name}', ${i})" class="w-6 h-6 rounded bg-white border border-slate-200 text-slate-400 hover:text-red-600 hover:border-red-200 hover:bg-red-50 flex items-center justify-center transition shadow-sm font-black" title="Adicionar OBS Extra (Aviso de Rota)">
+                            <button onclick="App.addExtraObs('${name}', ${i})" class="w-6 h-6 rounded bg-white border border-slate-200 text-slate-400 hover:text-red-600 hover:border-red-200 hover:bg-red-50 flex items-center justify-center transition shadow-sm font-black" title="Adicionar OBS Extra (Negrito)">
                                 +
                             </button>
                         </div>
                     </div>
                 `;
 
-                // 🔥 O CARD DO SERVIÇO EM SI 🔥
-                const cardHtml = `
+                return `
                 <div draggable="true" 
                      ondragstart="App.handleDriverDragStart(event, '${name}', ${i})"
                      ondrop="App.handleDrop(event, '${name}', ${i})"
@@ -1134,7 +1136,7 @@ const App = {
                     
                     <div class="absolute top-2 right-2 flex gap-1 z-10">
                         <button onclick="App.setTripStatus('${name}', ${i}, 'concluido')" class="w-5 h-5 rounded bg-white hover:bg-emerald-50 text-slate-300 hover:text-emerald-500 flex items-center justify-center border border-slate-200 transition shadow-sm" title="Marcar Concluído"><i class="fas fa-check text-[9px]"></i></button>
-                        <button onclick="App.setTripStatus('${name}', ${i}, 'cancelado')" class="w-5 h-5 rounded bg-white hover:bg-red-50 text-slate-300 hover:text-red-500 flex items-center justify-center border border-slate-200 transition shadow-sm" title="Marcar Cancelado"><i class="fas fa-times text-[9px]"></i></button>
+                        <button onclick="App.setTripStatus('${name}', ${i}, 'nao_feito')" class="w-5 h-5 rounded bg-white hover:bg-red-50 text-slate-300 hover:text-red-500 flex items-center justify-center border border-slate-200 transition shadow-sm" title="Marcar Não Feito"><i class="fas fa-times text-[9px]"></i></button>
                     </div>
 
                     <div class="flex items-center gap-1 w-fit mb-1.5">
@@ -1152,6 +1154,7 @@ const App = {
                     </div>
                     
                     ${avisoRetorno}
+                    ${avisoReprogramado}
 
                     <div class="flex items-start gap-1 mt-1.5">
                         <i class="fas fa-map-marker-alt text-red-400 text-[9px] mt-0.5"></i>
@@ -1161,18 +1164,10 @@ const App = {
                     ${tagsHtml}
                     ${fotosHtml}
                     ${obsHtml}
+                    ${obsExtraHtml}
                     ${timeTag}
                     ${barraAcoesHtml}
                 </div>`;
-
-                // 🔥 O BLOCO DA OBSERVAÇÃO EXTRA (FICA SEPARADO DO CARD, LOGO ABAIXO DELE) 🔥
-                const extraBlockHtml = t.obsExtra ? `
-                <div class="bg-red-100 border-2 border-dashed border-red-400 text-red-900 text-[10px] font-black py-1.5 px-2 rounded-lg shadow-sm uppercase text-center break-words z-10 w-[95%] self-center cursor-pointer hover:bg-red-200 transition" onclick="App.addExtraObs('${name}', ${i})" title="Clique para editar">
-                    ATENÇÃO: ${t.obsExtra}
-                </div>` : '';
-
-                // Retorna o Card + O Bloco (O Tailwind "gap-2" cuida do espaçamento perfeito entre eles)
-                return cardHtml + extraBlockHtml;
             };
 
             let tripsHtml = '';
@@ -1381,7 +1376,7 @@ const App = {
                 const originalDateBr = original.date.split('-').reverse().join('/');
                 const novoItem = {
                     ...original, id: Date.now() + Math.random(), date: newDate, shift: newShift, distribuido: false, reprogramado: false,
-                    veioDeReprogramacao: true, dataOrigem: originalDateBr // 🔥 MARCA QUE É HERANÇA E SALVA A DATA 🔥
+                    veioDeReprogramacao: true, dataOrigem: originalDateBr 
                 };
                 original.reprogramado = true;
                 original.obs = (original.obs ? original.obs + ' | ' : '') + appendObs;
@@ -1410,7 +1405,7 @@ const App = {
                         const originalDateAgendaBr = originalAgenda.date.split('-').reverse().join('/');
                         const novoItem = {
                             ...originalAgenda, id: Date.now() + Math.random(), date: newDate, shift: newShift, distribuido: false, reprogramado: false,
-                            veioDeReprogramacao: true, dataOrigem: originalDateAgendaBr // 🔥 MARCA QUE É HERANÇA E SALVA A DATA 🔥
+                            veioDeReprogramacao: true, dataOrigem: originalDateAgendaBr 
                         };
                         originalAgenda.reprogramado = true;
                         originalAgenda.obs = (originalAgenda.obs ? originalAgenda.obs + ' | ' : '') + appendObs;
@@ -1421,12 +1416,14 @@ const App = {
                         id: Date.now() + Math.random(), date: newDate, shift: newShift, empresa: trip.empresa || '',
                         obra: trip.obra || '', address: typeof trip.to === 'string' ? trip.to : (trip.to && trip.to.text ? trip.to.text : ''),
                         obs: trip.obs || '', qty: trip.qty || 1, type: trip.type || 'troca', distribuido: false, reprogramado: false,
-                        veioDeReprogramacao: true, dataOrigem: originalDateBr // 🔥 MARCA QUE É HERANÇA E SALVA A DATA 🔥
+                        veioDeReprogramacao: true, dataOrigem: originalDateBr 
                     };
                     State.data.agendamentos.push(novoItem);
                 }
 
-                driver.trips.splice(tripIndex, 1);
+                // 🔥 A MÁGICA AQUI: O SERVIÇO NÃO É MAIS EXCLUÍDO DA ROTA, ELE FICA LARANJA 🔥
+                trip.status = 'reprogramado';
+                trip.dataReprogramada = dataBr;
                 
                 State.saveAll();
                 UI.toggleModal('reschedule-modal');
@@ -1434,7 +1431,7 @@ const App = {
                 App.renderAgendaTab();
                 App.renderAgendaPanel();
                 App.renderGrid();
-                UI.toast("Retirado da rota e Reprogramado!");
+                UI.toast("Marcado como Reprogramado!");
             }
         }
     },
@@ -1737,7 +1734,8 @@ const App = {
             const d = State.getDriver(name);
             if(!d || !d.trips || d.trips.length === 0) return; 
             
-            const activeTrips = d.trips.filter(t => t.status !== 'cancelado');
+            // 🔥 AGORA MOSTRA TUDO NA IMAGEM, INCLUSIVE REPROGRAMADOS E NÃO FEITOS 🔥
+            const activeTrips = d.trips;
             if (activeTrips.length === 0) return;
 
             rotasExistem = true;
@@ -1745,7 +1743,8 @@ const App = {
             
             activeTrips.forEach(t => {
                 const isDone = (t.status === 'concluido' || t.completed);
-                const isFailed = (t.status === 'nao_feito');
+                const isFailed = (t.status === 'nao_feito' || t.status === 'cancelado');
+                const isReprogramado = (t.status === 'reprogramado');
                 const isRetorno = t.veioDeReprogramacao;
                 
                 let bgColor = '#ffffff'; 
@@ -1763,26 +1762,21 @@ const App = {
                     borderColor = '#fecaca'; 
                     statusColor = '#ef4444'; 
                     iconStr = '❌ ';
-                } else if (isRetorno) {
+                } else if (isReprogramado) {
                     bgColor = '#fff7ed'; 
                     borderColor = '#fed7aa'; 
                     statusColor = '#f97316'; 
+                    iconStr = '⏭️ ';
+                } else if (isRetorno) {
+                    bgColor = '#fefce8'; 
+                    borderColor = '#fde047'; 
+                    statusColor = '#eab308'; 
                     iconStr = '⚠️ ';
                 }
 
                 const qty = t.qty || 1;
                 const label = WhatsappService.getPluralLabel(t.type, qty);
                 const displayType = t.type === 'encher' ? 'ENCHER' : label;
-                
-                // 🔥 NOVA LÓGICA: MOSTRAR HORÁRIOS E DATAS NA IMAGEM 🔥
-                let timeHtml = '';
-                if (isDone && t.horaConclusao) {
-                    timeHtml = `<div style="font-size: 10px; font-weight: 900; color: #059669; margin-top: 6px; letter-spacing: 0.5px;">🕒 FEITO ÀS ${t.horaConclusao}</div>`;
-                } else if (isFailed && t.horaConclusao) {
-                    timeHtml = `<div style="font-size: 10px; font-weight: 900; color: #dc2626; margin-top: 6px; letter-spacing: 0.5px;">🕒 NÃO FEITO ÀS ${t.horaConclusao}</div>`;
-                } else if (isRetorno && t.dataOrigem) {
-                    timeHtml = `<div style="font-size: 10px; font-weight: 900; color: #d97706; margin-top: 6px; letter-spacing: 0.5px;">⚠️ ADIADO DO DIA ${t.dataOrigem}</div>`;
-                }
                 
                 tripsHtml += `
                     <div style="margin-bottom: 8px; padding: 10px; background-color: ${bgColor}; border: 1px solid ${borderColor}; border-radius: 8px;">
@@ -1792,7 +1786,6 @@ const App = {
                                 <div style="display: inline-block; background-color: #ffffff; border: 1px solid ${borderColor}; color: #1e293b; font-size: 10px; font-weight: 900; padding: 2px 6px; border-radius: 4px; letter-spacing: 1px; margin-bottom: 4px;">${qty} ${displayType}</div>
                                 <div style="font-size: 14px; font-weight: 900; color: #0f172a; word-break: break-word;">${iconStr}${t.obra || 'Sem Obra'}</div>
                                 ${t.empresa ? `<div style="font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-top: 2px;">${t.empresa}</div>` : ''}
-                                ${timeHtml}
                             </div>
                         </div>
                     </div>
