@@ -1054,19 +1054,19 @@ const App = {
             
             const buildCell = (t, i, colorClass, customLabel = null) => {
                 let status = t.status || (t.completed ? 'concluido' : 'pendente');
-                let bgClass = 'bg-white border-slate-200'; 
+                let bgClass = 'bg-white border-slate-300'; 
                 let opacityClass = '';
                 const isRetorno = t.veioDeReprogramacao;
                 
-                // 🔥 CORES DE FUNDO SÓLIDAS E CLARAS PARA STATUS 🔥
+                // 🔥 CORES DE FUNDO MAIS ESCURAS (TOM -200) E SEMI-TRANSPARENTES (/80) 🔥
                 if (status === 'concluido') { 
-                    bgClass = 'bg-emerald-100 border-emerald-400'; 
+                    bgClass = 'bg-emerald-200/80 border-emerald-500'; 
                 } else if (status === 'cancelado' || status === 'nao_feito') { 
-                    bgClass = 'bg-red-100 border-red-400'; 
+                    bgClass = 'bg-red-200/80 border-red-500'; 
                 } else if (status === 'reprogramado') { 
-                    bgClass = 'bg-orange-100 border-orange-400'; 
+                    bgClass = 'bg-orange-200/80 border-orange-500'; 
                 } else if (isRetorno) { 
-                    bgClass = 'bg-yellow-50 border-yellow-400'; 
+                    bgClass = 'bg-yellow-100/80 border-yellow-500'; 
                 }
 
                 const label = customLabel || WhatsappService.getPluralLabel(t.type || 'troca', t.qty || 1);
@@ -1077,16 +1077,16 @@ const App = {
                     const logObs = parts[0].trim();
                     const motObs = parts[1] ? parts[1].trim() : '';
 
-                    if (logObs) obsHtml += `<div class="mt-1.5 text-[9px] text-amber-900 bg-amber-50/80 border-l-2 border-amber-400 px-1.5 py-0.5 font-bold leading-tight shadow-sm">${logObs}</div>`;
-                    if (motObs) obsHtml += `<div class="mt-1.5 text-[9px] text-blue-900 bg-blue-50/80 border-l-2 border-blue-400 px-1.5 py-0.5 font-bold leading-tight shadow-sm"><i class="fas fa-reply text-blue-500 text-[8px] mr-0.5"></i> ${motObs}</div>`;
+                    if (logObs) obsHtml += `<div class="mt-1.5 text-[9px] text-amber-950 bg-amber-100/70 border-l-2 border-amber-500 px-1.5 py-0.5 font-black leading-tight shadow-sm">${logObs}</div>`;
+                    if (motObs) obsHtml += `<div class="mt-1.5 text-[9px] text-blue-950 bg-blue-100/70 border-l-2 border-blue-500 px-1.5 py-0.5 font-black leading-tight shadow-sm"><i class="fas fa-reply text-blue-600 text-[8px] mr-0.5"></i> ${motObs}</div>`;
                 }
-                const obsExtraHtml = t.obsExtra ? `<div class="mt-1.5 text-[10px] text-red-900 bg-red-50/90 border-l-2 border-red-500 px-1.5 py-1 font-black shadow-sm leading-tight uppercase">ATENÇÃO: ${t.obsExtra}</div>` : '';
+                const obsExtraHtml = t.obsExtra ? `<div class="mt-1.5 text-[10px] text-red-950 bg-red-100/90 border-l-2 border-red-600 px-1.5 py-1 font-black shadow-sm leading-tight uppercase">ATENÇÃO: ${t.obsExtra}</div>` : '';
 
                 let tagsHtml = '';
                 if (t.mtr || t.descarteLocal) {
                     tagsHtml += `<div class="flex flex-wrap gap-1 mt-1.5">`;
-                    if (t.mtr) tagsHtml += `<span class="bg-indigo-50 text-indigo-700 border border-indigo-200 px-1.5 py-0.5 rounded text-[8px] font-bold shadow-sm"><i class="fas fa-file-invoice mr-0.5"></i> MTR: ${t.mtr}</span>`;
-                    if (t.descarteLocal) tagsHtml += `<span class="bg-rose-50 text-rose-700 border border-rose-200 px-1.5 py-0.5 rounded text-[8px] font-bold shadow-sm"><i class="fas fa-recycle mr-0.5"></i> DESC: ${t.descarteLocal}</span>`;
+                    if (t.mtr) tagsHtml += `<span class="bg-indigo-100 text-indigo-950 border border-indigo-300 px-1.5 py-0.5 rounded text-[8px] font-black shadow-sm"><i class="fas fa-file-invoice mr-0.5"></i> MTR: ${t.mtr}</span>`;
+                    if (t.descarteLocal) tagsHtml += `<span class="bg-rose-100 text-rose-950 border border-rose-300 px-1.5 py-0.5 rounded text-[8px] font-black shadow-sm"><i class="fas fa-recycle mr-0.5"></i> DESC: ${t.descarteLocal}</span>`;
                     tagsHtml += `</div>`;
                 }
 
@@ -1095,47 +1095,47 @@ const App = {
                     fotosHtml += `<div class="flex flex-wrap gap-1 mt-1.5">`;
                     if (t.fotoObs) fotosHtml += `
                         <div class="flex shadow-sm">
-                            <button onclick="UI.showPhoto('${t.fotoObs}')" class="bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 border-r-0 px-1.5 py-0.5 rounded-l text-[8px] font-bold transition"><i class="fas fa-image mr-1"></i>FOTO LOG</button>
-                            <button onclick="App.removePhotoObs('${name}', ${i})" class="bg-sky-50 hover:bg-red-100 text-slate-400 hover:text-red-600 border border-sky-200 px-1.5 py-0.5 rounded-r transition"><i class="fas fa-times text-[8px]"></i></button>
+                            <button onclick="UI.showPhoto('${t.fotoObs}')" class="bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-300 border-r-0 px-1.5 py-0.5 rounded-l text-[8px] font-black transition"><i class="fas fa-image mr-1"></i>FOTO LOG</button>
+                            <button onclick="App.removePhotoObs('${name}', ${i})" class="bg-sky-50 hover:bg-red-100 text-slate-500 hover:text-red-700 border border-sky-300 px-1.5 py-0.5 rounded-r transition"><i class="fas fa-times text-[8px]"></i></button>
                         </div>`;
-                    if (t.foto) fotosHtml += `<button onclick="UI.showPhoto('${t.foto}')" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-1.5 py-0.5 rounded text-[8px] font-bold transition shadow-sm"><i class="fas fa-camera mr-1"></i>FOTO MOT</button>`;
+                    if (t.foto) fotosHtml += `<button onclick="UI.showPhoto('${t.foto}')" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 px-1.5 py-0.5 rounded text-[8px] font-black transition shadow-sm"><i class="fas fa-camera mr-1"></i>FOTO MOT</button>`;
                     fotosHtml += `</div>`;
                 }
 
-                const avisoRetorno = isRetorno ? `<div class="mt-1.5 text-[9px] text-orange-900 bg-orange-100/80 font-bold px-1.5 py-0.5 rounded inline-block shadow-sm"><i class="fas fa-exclamation-triangle text-orange-500 mr-0.5"></i> PRIORIDADE: ${t.dataOrigem}</div>` : '';
-                const avisoReprogramado = (status === 'reprogramado') ? `<div class="mt-1.5 text-[9px] text-orange-900 bg-orange-100/80 font-bold px-1.5 py-0.5 rounded inline-block shadow-sm border border-orange-300"><i class="fas fa-forward text-orange-500 mr-0.5"></i> REPROGRAMADO PARA: ${t.dataReprogramada}</div>` : '';
-                const timeTag = ((status === 'concluido' || status === 'nao_feito' || status === 'cancelado') && t.horaConclusao) ? `<div class="mt-2 text-[9px] font-black ${status==='concluido'?'text-emerald-700':'text-red-700'} flex items-center gap-1 bg-white/50 px-2 py-0.5 rounded w-fit"><i class="far fa-clock"></i> ${status==='concluido'?'FEITO':'NÃO FEITO'} ÀS ${t.horaConclusao}</div>` : '';
+                const avisoRetorno = isRetorno ? `<div class="mt-1.5 text-[9px] text-orange-950 bg-orange-100/90 font-black px-1.5 py-0.5 rounded inline-block shadow-sm"><i class="fas fa-exclamation-triangle text-orange-600 mr-0.5"></i> PRIORIDADE: ${t.dataOrigem}</div>` : '';
+                const avisoReprogramado = (status === 'reprogramado') ? `<div class="mt-1.5 text-[9px] text-orange-950 bg-orange-100/90 font-black px-1.5 py-0.5 rounded inline-block shadow-sm border border-orange-400"><i class="fas fa-forward text-orange-600 mr-0.5"></i> REPROGRAMADO PARA: ${t.dataReprogramada}</div>` : '';
+                const timeTag = ((status === 'concluido' || status === 'nao_feito' || status === 'cancelado') && t.horaConclusao) ? `<div class="mt-2 text-[9px] font-black ${status==='concluido'?'text-emerald-900':'text-red-900'} flex items-center gap-1 bg-white/70 px-2 py-0.5 rounded-full w-fit shadow"><i class="far fa-clock"></i> ${status==='concluido'?'FEITO':'NÃO FEITO'} ÀS ${t.horaConclusao}</div>` : '';
 
-                // 🔥 BARRINHA DE AÇÕES (COM FUNDO BRANCO SEMI-TRANSPARENTE PARA MESCLAR COM A COR DE FUNDO) 🔥
+                // BARRINHA DE AÇÕES (OPACIDADE AJUSTADA PARA FICAR MAIS VISÍVEL NO BRANCO)
                 const barraAcoesHtml = `
-                    <div class="mt-2 pt-1.5 border-t border-black/10 flex gap-1 justify-between items-center bg-white/60 -mx-1 -mb-1 px-1 pb-1 rounded-b">
+                    <div class="mt-2 pt-1.5 border-t border-black/10 flex gap-1 justify-between items-center ${status === 'pendente' ? 'bg-white/95' : 'bg-white/70'} -mx-1 -mb-1 px-1 pb-1 rounded-b">
                         <div class="flex gap-1">
-                            <button onclick="App.returnToAgenda('${name}', ${i})" class="w-6 h-6 rounded bg-white border border-slate-200 text-slate-500 hover:text-purple-600 hover:border-purple-300 hover:bg-purple-50 flex items-center justify-center transition shadow-sm" title="Devolver p/ Agenda">
+                            <button onclick="App.returnToAgenda('${name}', ${i})" class="w-6 h-6 rounded bg-white border border-slate-300 text-slate-500 hover:text-purple-600 hover:border-purple-400 hover:bg-purple-50 flex items-center justify-center transition shadow-sm" title="Devolver p/ Agenda">
                                 <i class="fas fa-undo text-[9px]"></i>
                             </button>
-                            <button onclick="App.openDriverRescheduleModal('${name}', ${i})" class="w-6 h-6 rounded bg-white border border-slate-200 text-slate-500 hover:text-orange-600 hover:border-orange-300 hover:bg-orange-50 flex items-center justify-center transition shadow-sm" title="Adiar / Reprogramar">
+                            <button onclick="App.openDriverRescheduleModal('${name}', ${i})" class="w-6 h-6 rounded bg-white border border-slate-300 text-slate-500 hover:text-orange-600 hover:border-orange-400 hover:bg-orange-50 flex items-center justify-center transition shadow-sm" title="Adiar / Reprogramar">
                                 <i class="fas fa-calendar-alt text-[9px]"></i>
                             </button>
                         </div>
                         <div class="flex gap-1">
-                            <button onclick="App.editObs('${name}', ${i})" class="h-6 px-1.5 rounded bg-white border border-slate-200 text-slate-600 hover:text-amber-600 hover:border-amber-300 hover:bg-amber-50 flex items-center justify-center gap-1 transition shadow-sm text-[9px] font-bold" title="Editar OBS">
+                            <button onclick="App.editObs('${name}', ${i})" class="h-6 px-1.5 rounded bg-white border border-slate-300 text-slate-700 hover:text-amber-700 hover:border-amber-400 hover:bg-amber-50 flex items-center justify-center gap-1 transition shadow-sm text-[9px] font-bold" title="Editar OBS">
                                 <i class="fas fa-comment-dots text-[9px]"></i><span class="hidden xl:inline">OBS</span>
                             </button>
-                            <button onclick="App.openMtrModal(${i}, '${name}')" class="h-6 px-1.5 rounded bg-white border border-slate-200 text-slate-600 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50 flex items-center justify-center gap-1 transition shadow-sm text-[9px] font-bold" title="Definir MTR">
+                            <button onclick="App.openMtrModal(${i}, '${name}')" class="h-6 px-1.5 rounded bg-white border border-slate-300 text-slate-700 hover:text-indigo-700 hover:border-indigo-400 hover:bg-indigo-50 flex items-center justify-center gap-1 transition shadow-sm text-[9px] font-bold" title="Definir MTR">
                                 <i class="fas fa-file-invoice text-[9px]"></i><span class="hidden xl:inline">MTR</span>
                             </button>
-                            <button onclick="App.attachPhotoObs('${name}', ${i})" class="w-6 h-6 rounded bg-white border border-slate-200 text-slate-500 hover:text-sky-600 hover:border-sky-300 hover:bg-sky-50 flex items-center justify-center transition shadow-sm" title="Anexar Foto (Logística)">
+                            <button onclick="App.attachPhotoObs('${name}', ${i})" class="w-6 h-6 rounded bg-white border border-slate-300 text-slate-500 hover:text-sky-600 hover:border-sky-400 hover:bg-sky-50 flex items-center justify-center transition shadow-sm" title="Anexar Foto (Logística)">
                                 <i class="fas fa-camera text-[9px]"></i>
                             </button>
-                            <button onclick="App.addExtraObs('${name}', ${i})" class="w-6 h-6 rounded bg-white border border-slate-200 text-slate-500 hover:text-red-600 hover:border-red-300 hover:bg-red-50 flex items-center justify-center transition shadow-sm font-black" title="Adicionar OBS Extra (Negrito)">
+                            <button onclick="App.addExtraObs('${name}', ${i})" class="w-6 h-6 rounded bg-white border border-slate-300 text-slate-500 hover:text-red-700 hover:border-red-400 hover:bg-red-50 flex items-center justify-center transition shadow-sm font-black" title="Adicionar OBS Extra (Negrito)">
                                 +
                             </button>
                         </div>
                     </div>
                 `;
 
-                const textEmpresa = t.empresa ? `<div class="text-[12px] font-black text-slate-900 break-words mb-0.5 leading-tight">${t.empresa}</div>` : '';
-                const textObra = t.obra ? `<div class="${t.empresa ? 'text-[9px] font-bold text-slate-600 uppercase tracking-widest' : 'text-[12px] font-black text-slate-900 break-words'} leading-tight">${t.obra}</div>` : '';
+                const textEmpresa = t.empresa ? `<div class="text-[12px] font-black text-slate-950 break-words mb-0.5 leading-tight">${t.empresa}</div>` : '';
+                const textObra = t.obra ? `<div class="${t.empresa ? 'text-[9px] font-bold text-slate-700 uppercase tracking-widest' : 'text-[12px] font-black text-slate-950 break-words'} leading-tight">${t.obra}</div>` : '';
 
                 return `
                 <div draggable="true" 
@@ -1144,12 +1144,12 @@ const App = {
                      class="drag-item p-2.5 border rounded-lg shadow-md relative flex flex-col cursor-grab active:cursor-grabbing transition-all hover:border-blue-500 ${bgClass} ${opacityClass}">
                     
                     <div class="absolute top-2 right-2 flex gap-1 z-10">
-                        <button onclick="App.setTripStatus('${name}', ${i}, 'concluido')" class="w-5 h-5 rounded bg-white hover:bg-emerald-50 text-slate-300 hover:text-emerald-500 flex items-center justify-center border border-slate-200 transition shadow-sm" title="Marcar Concluído"><i class="fas fa-check text-[9px]"></i></button>
-                        <button onclick="App.setTripStatus('${name}', ${i}, 'nao_feito')" class="w-5 h-5 rounded bg-white hover:bg-red-50 text-slate-300 hover:text-red-500 flex items-center justify-center border border-slate-200 transition shadow-sm" title="Marcar Não Feito"><i class="fas fa-times text-[9px]"></i></button>
+                        <button onclick="App.setTripStatus('${name}', ${i}, 'concluido')" class="w-5 h-5 rounded bg-white hover:bg-emerald-50 text-slate-400 hover:text-emerald-500 flex items-center justify-center border border-slate-300 transition shadow-sm" title="Marcar Concluído"><i class="fas fa-check text-[9px]"></i></button>
+                        <button onclick="App.setTripStatus('${name}', ${i}, 'nao_feito')" class="w-5 h-5 rounded bg-white hover:bg-red-50 text-slate-400 hover:text-red-500 flex items-center justify-center border border-slate-300 transition shadow-sm" title="Marcar Não Feito"><i class="fas fa-times text-[9px]"></i></button>
                     </div>
 
                     <div class="flex items-center gap-1 w-fit mb-1.5">
-                        <button onclick="App.changeQty('${name}', ${i})" class="text-slate-700 hover:text-blue-700 hover:bg-blue-50 text-[10px] font-black bg-white rounded px-1.5 py-0.5 border border-slate-300 shadow-sm transition cursor-pointer" title="Mudar Quantidade">
+                        <button onclick="App.changeQty('${name}', ${i})" class="text-slate-950 hover:text-blue-700 hover:bg-blue-50 text-[10px] font-black bg-white rounded px-1.5 py-0.5 border border-slate-300 shadow-sm transition cursor-pointer" title="Mudar Quantidade">
                             ${t.qty || 1}
                         </button>
                         <button onclick="App.cycleType('${name}', ${i})" class="${colorClass} text-[9px] font-black bg-white hover:bg-slate-50 rounded px-1.5 py-0.5 border border-slate-300 shadow-sm transition cursor-pointer flex items-center gap-1" title="Mudar Tipo">
@@ -1166,8 +1166,8 @@ const App = {
                     ${avisoReprogramado}
 
                     <div class="flex items-start gap-1 mt-2">
-                        <i class="fas fa-map-marker-alt text-red-500 text-[10px] mt-0.5"></i>
-                        <div class="text-[9px] font-semibold text-slate-700 leading-tight flex-1 break-words">${WhatsappService.formatAddress(typeof t.to === 'string' ? t.to : (t.to && t.to.text ? t.to.text : ''))}</div>
+                        <i class="fas fa-map-marker-alt text-red-600 text-[10px] mt-0.5"></i>
+                        <div class="text-[9px] font-semibold text-slate-800 leading-tight flex-1 break-words">${WhatsappService.formatAddress(typeof t.to === 'string' ? t.to : (t.to && t.to.text ? t.to.text : ''))}</div>
                     </div>
 
                     ${tagsHtml}
@@ -1190,12 +1190,13 @@ const App = {
                 `;
             } else {
                 trips.forEach((t, i) => {
-                    if (t.type === 'troca') tripsHtml += buildCell(t, i, 'text-slate-800'); 
-                    else if (t.type === 'colocacao') tripsHtml += buildCell(t, i, 'text-red-600'); 
-                    else if (t.type === 'retirada') tripsHtml += buildCell(t, i, 'text-purple-600'); 
+                    // 🔥 CORES DOS TEXTOS DE TIPO DENTRO DA CÉLULA 🔥
+                    if (t.type === 'troca') tripsHtml += buildCell(t, i, 'text-slate-950'); 
+                    else if (t.type === 'colocacao') tripsHtml += buildCell(t, i, 'text-red-700'); 
+                    else if (t.type === 'retirada') tripsHtml += buildCell(t, i, 'text-purple-700'); 
                     else if (t.type === 'encher') {
-                        tripsHtml += buildCell(t, i, 'text-red-600', 'COLOCAÇÕES (ENCHER)');
-                        tripsHtml += buildCell(t, i, 'text-purple-600', 'RETIRADAS (ENCHER)');
+                        tripsHtml += buildCell(t, i, 'text-red-700', 'COLOCAÇÕES (ENCHER)');
+                        tripsHtml += buildCell(t, i, 'text-purple-700', 'RETIRADAS (ENCHER)');
                     }
                 });
             }
