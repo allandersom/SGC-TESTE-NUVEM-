@@ -146,15 +146,21 @@ Posto Ipiranga..."></textarea>
     </div>
 
     <div id="spreadsheet-modal" class="hidden fixed inset-0 z-[10005] bg-slate-100 flex flex-col animate-fade-in">
-        <div class="bg-white px-4 py-3 flex justify-between items-center shadow-md z-20 shrink-0 border-b-4 border-green-500">
-            <h2 class="font-black text-xl text-slate-800 flex items-center gap-2"><i class="fas fa-table text-green-600"></i> Planilha de Monitoramento (Tempo Real)</h2>
-            <div class="flex gap-3">
-                <button onclick="WhatsappService.shareGeneralSummary()" class="bg-emerald-500 text-white font-bold py-2 px-4 rounded hover:bg-emerald-600 text-sm flex items-center gap-2"><i class="fab fa-whatsapp"></i> RESUMO GERAL</button>
-                <button onclick="UI.toggleModal('spreadsheet-modal')" class="bg-red-500 text-white w-9 h-9 rounded-lg hover:bg-red-600 flex items-center justify-center"><i class="fas fa-times"></i></button>
+        <div class="bg-white px-4 py-3 flex justify-between items-center shadow-md z-20 shrink-0 border-b-4 border-green-500 flex-wrap gap-3">
+            <h2 class="font-black text-xl text-slate-800 flex items-center gap-2"><i class="fas fa-table text-green-600"></i> Planilha de Monitoramento</h2>
+            
+            <div class="flex items-center gap-3">
+                <div class="bg-blue-50 p-2 rounded-lg flex shadow-inner items-center px-3 border border-blue-200 cursor-pointer hover:bg-blue-100 transition">
+                    <i class="far fa-calendar-alt text-blue-600 mr-2 text-lg"></i>
+                    <input type="date" id="route-date" class="bg-transparent border-none text-sm font-black text-blue-900 outline-none cursor-pointer" onchange="App.setRouteDate(this.value)" title="Mudar Data da Planilha">
+                </div>
+
+                <button onclick="WhatsappService.shareGeneralSummary()" class="bg-emerald-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-emerald-600 text-sm flex items-center gap-2 shadow-sm"><i class="fab fa-whatsapp"></i> RESUMO</button>
+                <button onclick="UI.toggleModal('spreadsheet-modal')" class="bg-red-500 text-white w-10 h-10 rounded-lg hover:bg-red-600 flex items-center justify-center shadow-sm"><i class="fas fa-times text-lg"></i></button>
             </div>
         </div>
         
-        <div class="flex-1 flex overflow-hidden bg-slate-200 relative">
+        <div class="flex-1 flex overflow-hidden bg-slate-200 relative">    
             
             <div id="spreadsheet-agenda-panel" class="w-80 bg-purple-50 border-r border-purple-200 flex flex-col shadow-2xl transition-all duration-300 z-10">
                 <div class="p-3 bg-purple-800 text-white flex justify-between items-center shadow-md cursor-pointer hover:bg-purple-900 transition" onclick="UI.toggleSpreadsheetAgenda()">
@@ -213,13 +219,9 @@ Posto Ipiranga..."></textarea>
                             </div>
 
                             <div class="flex flex-col sm:flex-row gap-2">
-                                <div class="bg-slate-100 p-1 rounded-lg flex shadow-inner flex-1">
-                                    <button onclick="App.setShift('day')" id="shift-day" class="shift-btn active">🌞 Dia</button>
-                                    <button onclick="App.setShift('night')" id="shift-night" class="shift-btn">🌙 Noite</button>
-                                </div>
-                                <div class="bg-slate-100 p-1 rounded-lg flex shadow-inner items-center px-3 flex-1 sm:flex-none">
-                                    <i class="far fa-calendar-alt text-slate-400 mr-2"></i>
-                                    <input type="date" id="route-date" class="bg-transparent border-none text-xs font-bold text-slate-700 outline-none w-full cursor-pointer" onchange="App.setRouteDate(this.value)" title="Data da Rota">
+                                <div class="bg-slate-100 p-1 rounded-lg flex shadow-inner w-full">
+                                    <button onclick="App.setShift('day')" id="shift-day" class="shift-btn active w-1/2">🌞 Dia</button>
+                                    <button onclick="App.setShift('night')" id="shift-night" class="shift-btn w-1/2">🌙 Noite</button>
                                 </div>
                             </div>
                             
