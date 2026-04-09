@@ -1734,7 +1734,7 @@ const App = {
             const d = State.getDriver(name);
             if(!d || !d.trips || d.trips.length === 0) return; 
             
-            // 🔥 AGORA MOSTRA TUDO NA IMAGEM, INCLUSIVE REPROGRAMADOS E NÃO FEITOS 🔥
+            // Agora mostra tudo, inclusive reprogramados e não feitos
             const activeTrips = d.trips;
             if (activeTrips.length === 0) return;
 
@@ -1766,17 +1766,23 @@ const App = {
                     bgColor = '#fff7ed'; 
                     borderColor = '#fed7aa'; 
                     statusColor = '#f97316'; 
-                    iconStr = '⏭️ ';
+                    iconStr = ''; // 🔥 SEM EMOJI AQUI, SÓ A COR LARANJA 🔥
                 } else if (isRetorno) {
                     bgColor = '#fefce8'; 
                     borderColor = '#fde047'; 
                     statusColor = '#eab308'; 
-                    iconStr = '⚠️ ';
+                    iconStr = '⚠️ '; // Aviso de prioridade mantido
                 }
 
                 const qty = t.qty || 1;
                 const label = WhatsappService.getPluralLabel(t.type, qty);
                 const displayType = t.type === 'encher' ? 'ENCHER' : label;
+                
+                // 🔥 HORÁRIO SÓ APARECE SE FOI CONCLUÍDO 🔥
+                let timeHtml = '';
+                if (isDone && t.horaConclusao) {
+                    timeHtml = `<div style="font-size: 10px; font-weight: 900; color: #059669; margin-top: 6px; letter-spacing: 0.5px;">🕒 FEITO ÀS ${t.horaConclusao}</div>`;
+                }
                 
                 tripsHtml += `
                     <div style="margin-bottom: 8px; padding: 10px; background-color: ${bgColor}; border: 1px solid ${borderColor}; border-radius: 8px;">
@@ -1786,6 +1792,7 @@ const App = {
                                 <div style="display: inline-block; background-color: #ffffff; border: 1px solid ${borderColor}; color: #1e293b; font-size: 10px; font-weight: 900; padding: 2px 6px; border-radius: 4px; letter-spacing: 1px; margin-bottom: 4px;">${qty} ${displayType}</div>
                                 <div style="font-size: 14px; font-weight: 900; color: #0f172a; word-break: break-word;">${iconStr}${t.obra || 'Sem Obra'}</div>
                                 ${t.empresa ? `<div style="font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-top: 2px;">${t.empresa}</div>` : ''}
+                                ${timeHtml}
                             </div>
                         </div>
                     </div>
