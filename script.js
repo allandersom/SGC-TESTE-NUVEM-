@@ -1058,7 +1058,7 @@ const App = {
                 let opacityClass = '';
                 const isRetorno = t.veioDeReprogramacao;
                 
-                // 🔥 CORES DE FUNDO MAIS ESCURAS (TOM -200) E SEMI-TRANSPARENTES (/80) 🔥
+                // 🔥 CORES DE FUNDO SÓLIDAS E VIBRANTES COM BORDAS DEFINIDAS 🔥
                 if (status === 'concluido') { 
                     bgClass = 'bg-emerald-200/80 border-emerald-500'; 
                 } else if (status === 'cancelado' || status === 'nao_feito') { 
