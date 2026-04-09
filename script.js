@@ -1052,22 +1052,29 @@ const App = {
             bodyDiv.setAttribute('ondragover', 'App.handleDragOver(event)');
             bodyDiv.setAttribute('ondrop', `App.handleDrop(event, '${name}', -1)`);
             
-            const buildCell = (t, i, colorClass, customLabel = null) => {
+            const buildCell = (t, i, customLabel = null) => {
                 let status = t.status || (t.completed ? 'concluido' : 'pendente');
                 let bgClass = 'bg-white border-slate-300'; 
                 let opacityClass = '';
                 const isRetorno = t.veioDeReprogramacao;
                 
-                // 🔥 CORES DE FUNDO SÓLIDAS E VIBRANTES COM BORDAS DEFINIDAS 🔥
+                // 🔥 CORES EXATAS DO PRINT: VERDE PURO E VERMELHO PURO (COM TRANSPARÊNCIA) 🔥
                 if (status === 'concluido') { 
-                    bgClass = 'bg-emerald-200/80 border-emerald-500'; 
+                    bgClass = 'bg-[#00ff00]/20 border-[#00cc00]'; 
                 } else if (status === 'cancelado' || status === 'nao_feito') { 
-                    bgClass = 'bg-red-200/80 border-red-500'; 
+                    bgClass = 'bg-[#ff0000]/15 border-[#ff0000]'; 
                 } else if (status === 'reprogramado') { 
                     bgClass = 'bg-orange-200/80 border-orange-500'; 
                 } else if (isRetorno) { 
                     bgClass = 'bg-yellow-100/80 border-yellow-500'; 
                 }
+
+                // 🔥 CORES DOS TEXTOS DOS BOTÕES DE SERVIÇO 🔥
+                let typeColorClass = 'text-slate-800'; // Troca
+                if (t.type === 'colocacao') typeColorClass = 'text-red-600';
+                if (t.type === 'retirada') typeColorClass = 'text-purple-600';
+                if (t.type === 'encher' && customLabel && customLabel.includes('COLOCAÇÕES')) typeColorClass = 'text-red-600';
+                if (t.type === 'encher' && customLabel && customLabel.includes('RETIRADAS')) typeColorClass = 'text-purple-600';
 
                 const label = customLabel || WhatsappService.getPluralLabel(t.type || 'troca', t.qty || 1);
                 
@@ -1106,7 +1113,6 @@ const App = {
                 const avisoReprogramado = (status === 'reprogramado') ? `<div class="mt-1.5 text-[9px] text-orange-950 bg-orange-100/90 font-black px-1.5 py-0.5 rounded inline-block shadow-sm border border-orange-400"><i class="fas fa-forward text-orange-600 mr-0.5"></i> REPROGRAMADO PARA: ${t.dataReprogramada}</div>` : '';
                 const timeTag = ((status === 'concluido' || status === 'nao_feito' || status === 'cancelado') && t.horaConclusao) ? `<div class="mt-2 text-[9px] font-black ${status==='concluido'?'text-emerald-900':'text-red-900'} flex items-center gap-1 bg-white/70 px-2 py-0.5 rounded-full w-fit shadow"><i class="far fa-clock"></i> ${status==='concluido'?'FEITO':'NÃO FEITO'} ÀS ${t.horaConclusao}</div>` : '';
 
-                // BARRINHA DE AÇÕES (OPACIDADE AJUSTADA PARA FICAR MAIS VISÍVEL NO BRANCO)
                 const barraAcoesHtml = `
                     <div class="mt-2 pt-1.5 border-t border-black/10 flex gap-1 justify-between items-center ${status === 'pendente' ? 'bg-white/95' : 'bg-white/70'} -mx-1 -mb-1 px-1 pb-1 rounded-b">
                         <div class="flex gap-1">
@@ -1149,10 +1155,10 @@ const App = {
                     </div>
 
                     <div class="flex items-center gap-1 w-fit mb-1.5">
-                        <button onclick="App.changeQty('${name}', ${i})" class="text-slate-950 hover:text-blue-700 hover:bg-blue-50 text-[10px] font-black bg-white rounded px-1.5 py-0.5 border border-slate-300 shadow-sm transition cursor-pointer" title="Mudar Quantidade">
+                        <button onclick="App.changeQty('${name}', ${i})" class="${typeColorClass} hover:bg-slate-100 text-[11px] font-black bg-white rounded px-2 py-0.5 border border-slate-300 shadow-sm transition cursor-pointer" title="Mudar Quantidade">
                             ${t.qty || 1}
                         </button>
-                        <button onclick="App.cycleType('${name}', ${i})" class="${colorClass} text-[9px] font-black bg-white hover:bg-slate-50 rounded px-1.5 py-0.5 border border-slate-300 shadow-sm transition cursor-pointer flex items-center gap-1" title="Mudar Tipo">
+                        <button onclick="App.cycleType('${name}', ${i})" class="${typeColorClass} text-[10px] font-black bg-white hover:bg-slate-100 rounded px-2 py-0.5 border border-slate-300 shadow-sm transition cursor-pointer flex items-center gap-1" title="Mudar Tipo">
                             ${label} <i class="fas fa-sync-alt opacity-30 text-[7px]"></i>
                         </button>
                     </div>
@@ -1190,13 +1196,11 @@ const App = {
                 `;
             } else {
                 trips.forEach((t, i) => {
-                    // 🔥 CORES DOS TEXTOS DE TIPO DENTRO DA CÉLULA 🔥
-                    if (t.type === 'troca') tripsHtml += buildCell(t, i, 'text-slate-950'); 
-                    else if (t.type === 'colocacao') tripsHtml += buildCell(t, i, 'text-red-700'); 
-                    else if (t.type === 'retirada') tripsHtml += buildCell(t, i, 'text-purple-700'); 
-                    else if (t.type === 'encher') {
-                        tripsHtml += buildCell(t, i, 'text-red-700', 'COLOCAÇÕES (ENCHER)');
-                        tripsHtml += buildCell(t, i, 'text-purple-700', 'RETIRADAS (ENCHER)');
+                    if (t.type === 'encher') {
+                        tripsHtml += buildCell(t, i, 'COLOCAÇÕES (ENCHER)');
+                        tripsHtml += buildCell(t, i, 'RETIRADAS (ENCHER)');
+                    } else {
+                        tripsHtml += buildCell(t, i);
                     }
                 });
             }
@@ -1218,6 +1222,7 @@ const App = {
             container.appendChild(column);
         });
     },
+    
     handleAgendaDragStart(e, id) {
         const agendaItem = State.data.agendamentos.find(a => a.id === id);
         if (agendaItem && (agendaItem.distribuido || agendaItem.reprogramado)) {
@@ -1722,8 +1727,8 @@ const App = {
         this.renderGrid();
         UI.toast("Serviços distribuídos!");
     },
-   // =========================================================
-    // 🔥 GERADOR DE IMAGEM LIMPA PARA CLIENTES/LEIGOS (CORREÇÃO DE LAYOUT) 🔥
+  // =========================================================
+    // 🔥 GERADOR DE IMAGEM LIMPA PARA CLIENTES/LEIGOS (RENDERIZAÇÃO CORRIGIDA) 🔥
     // =========================================================
     downloadPreview() {
         UI.toast("Gerando imagem de alta qualidade, aguarde...", "info");
@@ -1761,11 +1766,12 @@ const App = {
                 let statusColor = '#94a3b8'; 
                 let iconStr = '';
 
+                // 🔥 CORES EXATAS PRO EXPORTADOR TB 🔥
                 if (isDone) {
-                    statusColor = '#10b981'; 
+                    statusColor = '#00ff00'; 
                     iconStr = '✅ ';
                 } else if (isFailed) {
-                    statusColor = '#ef4444'; 
+                    statusColor = '#ff0000'; 
                     iconStr = '❌ ';
                 } else if (isReprogramado) {
                     statusColor = '#f97316'; 
@@ -1775,7 +1781,6 @@ const App = {
                     iconStr = '⚠️ ';
                 }
 
-                // 🔥 LÓGICA DE PLURAIS (INCLUSIVE NO ENCHER) 🔥
                 const qty = parseInt(t.qty) || 1;
                 let displayTypeHtml = '';
                 let pillTextColor = '#1e293b'; 
@@ -1803,52 +1808,47 @@ const App = {
                 let pillBorderColor = '#e2e8f0'; 
 
                 if (isFailed) {
-                    pillBgColor = '#ef4444'; 
+                    pillBgColor = '#ff0000'; 
                     pillTextColor = '#ffffff'; 
-                    pillBorderColor = '#fecaca'; 
+                    pillBorderColor = '#ff0000'; 
                 } else if (isReprogramado) {
                     pillBgColor = '#f97316'; 
                     pillTextColor = '#ffffff'; 
                     pillBorderColor = '#fed7aa'; 
                 }
                 
-                // 🔥 LÓGICA VISUAL INVERTIDA NA IMAGEM (EMPRESA > OBRA, SEM "SEM OBRA") 🔥
                 let titleHtml = '';
                 if (t.empresa) {
-                    // Se tem empresa, ela fica grande e branca.
                     titleHtml += `<div style="font-size: 14px; font-weight: 900; color: #ffffff; word-break: break-word; text-decoration: ${isFailed ? 'line-through' : 'none'};">${iconStr}${t.empresa}</div>`;
                     if (t.obra) {
-                        // A obra fica cinza e menorzinha embaixo
                         titleHtml += `<div style="font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-top: 2px; text-decoration: ${isFailed ? 'line-through' : 'none'};">${t.obra}</div>`;
                     }
                 } else if (t.obra) {
-                    // Se não tem empresa, a obra herda o tamanho gigante branco.
                     titleHtml += `<div style="font-size: 14px; font-weight: 900; color: #ffffff; word-break: break-word; text-decoration: ${isFailed ? 'line-through' : 'none'};">${iconStr}${t.obra}</div>`;
                 }
                 
                 let timeHtml = '';
                 if (isDone && t.horaConclusao) {
-                    timeHtml = `<div style="font-size: 10px; font-weight: 900; color: #a7f3d0; margin-top: 6px; letter-spacing: 0.5px;">🕒 FEITO ÀS ${t.horaConclusao}</div>`;
+                    timeHtml = `<div style="font-size: 10px; font-weight: 900; color: #00ff00; margin-top: 6px; letter-spacing: 0.5px;">🕒 FEITO ÀS ${t.horaConclusao}</div>`;
                 }
                 
+                // 🔥 CORRIGIDO ESTRUTURA PARA O HTML2CANVAS NÃO BBUGAR OS QUADRADOS 🔥
                 tripsHtml += `
-                    <div style="margin-bottom: 8px; padding: 10px; background-color: ${bgColorCard}; border: 1px solid ${borderColorCard}; border-radius: 8px;">
-                        <div style="display: flex; align-items: flex-start; gap: 8px;">
-                            <div style="margin-top: 8px; width: 12px; height: 12px; border-radius: 50%; background-color: ${statusColor}; flex-shrink: 0; box-shadow: 0 1px 2px rgba(0,0,0,0.1);"></div>
-                            <div style="flex: 1; line-height: 1.3;">
-                                <div style="display: inline-block; text-align: center; background-color: ${pillBgColor}; color: ${pillTextColor}; border: 1px solid ${pillBorderColor}; font-size: 11px; font-weight: 900; padding: 4px 10px; border-radius: 6px; letter-spacing: 1px; margin-bottom: 6px;">${displayTypeHtml}</div>
-                                
-                                ${titleHtml}
-                                
-                                ${timeHtml}
+                    <div style="margin-bottom: 8px; padding: 10px; background-color: ${bgColorCard}; border: 1px solid ${borderColorCard}; border-radius: 8px; display: flex; align-items: flex-start; gap: 8px;">
+                        <div style="margin-top: 6px; width: 12px; height: 12px; border-radius: 50%; background-color: ${statusColor}; flex-shrink: 0;"></div>
+                        <div style="flex: 1;">
+                            <div style="margin-bottom: 6px;">
+                                <span style="background-color: ${pillBgColor}; color: ${pillTextColor}; border: 1px solid ${pillBorderColor}; font-size: 11px; font-weight: 900; padding: 3px 8px; border-radius: 6px;">${displayTypeHtml}</span>
                             </div>
+                            ${titleHtml}
+                            ${timeHtml}
                         </div>
                     </div>
                 `;
             });
 
             const col = `
-                <div style="background-color: #111827; border: 2px solid #1f2937; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);">
+                <div style="background-color: #111827; border: 2px solid #1f2937; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);">
                     <div style="text-align: center; font-weight: 900; font-size: 18px; text-transform: uppercase; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid #374151; letter-spacing: 2px; color: ${d.color || '#ccc'}">${name}</div>
                     <div>${tripsHtml}</div>
                 </div>
