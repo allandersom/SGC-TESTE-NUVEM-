@@ -283,7 +283,6 @@ const WhatsappService = {
         if (t.includes('encher')) label = 'ENCHER';
         return label;
     },
-    // 🔥 LÓGICA DE LIMPEZA DE ENDEREÇO 🔥
     formatAddress(text) {
         if (!text) return "Endereço não informado";
         let clean = text.replace(/^-?\d{1,3}\.\d+,\s*-?\d{1,3}\.\d+\s*/g, '').trim();
@@ -744,11 +743,9 @@ const App = {
         document.getElementById('shift-night').className = `shift-btn ${shift==='night'?'active':''}`;
         document.body.classList.toggle('night-mode', shift === 'night');
         
-        // 🔥 LÓGICA NOVA: Sincronizar o formulário lá de baixo com o turno atual 🔥
         const shiftRadio = document.querySelector(`input[name="agenda-shift-sel"][value="${shift}"]`);
         if (shiftRadio) shiftRadio.checked = true;
         
-        // 🔥 LÓGICA NOVA: TROCAR A LOGO E FAVICON 🔥
         const mainLogo = document.getElementById('app-logo');
         if (mainLogo) {
             mainLogo.src = shift === 'night' ? 'images2.png' : 'images.png';
@@ -761,8 +758,8 @@ const App = {
         UI.closeEditor();
         this.renderGrid();
         this.renderSpreadsheet();
-        this.renderAgendaPanel(); // 🔥 GARANTE QUE A PLANILHA ROXA ATUALIZA NA MESMA HORA 🔥
-        this.renderAgendaTab();   // 🔥 GARANTE QUE A ABA LATERAL INFERIOR ATUALIZA TAMBÉM 🔥
+        this.renderAgendaPanel(); 
+        this.renderAgendaTab();   
     },
 
     updatePlate() {
@@ -1017,7 +1014,7 @@ const App = {
             
             const column = document.createElement('div');
             // 🔥 AUMENTEI A LARGURA: min-w-[280px] e max-w-[340px] para dar um respiro legal pros botões 🔥
-            column.className = "driver-column min-w-[340px] max-w-[500px] flex flex-col bg-white snap-start border-r border-slate-300 transition-colors h-full";
+            column.className = "driver-column min-w-[280px] max-w-[340px] flex flex-col bg-white snap-start border-r border-slate-300 transition-colors h-full";
 
             let totalServicos = 0;
             trips.forEach(t => {
@@ -1041,10 +1038,12 @@ const App = {
                 let status = t.status || (t.completed ? 'concluido' : 'pendente');
                 let bgClass = 'bg-white border-slate-200'; 
                 let opacityClass = '';
+                const isRetorno = t.veioDeReprogramacao;
                 
                 if (status === 'concluido') { bgClass = 'bg-emerald-50 border-emerald-300'; } 
                 else if (status === 'cancelado') { bgClass = 'bg-slate-100 border-slate-300'; opacityClass = 'opacity-60 grayscale'; } 
                 else if (status === 'nao_feito') { bgClass = 'bg-red-50 border-red-300'; }
+                else if (isRetorno) { bgClass = 'bg-yellow-50 border-yellow-400 shadow-md'; } // 🔥 AMARELO NA PLANILHA 🔥
 
                 const label = customLabel || WhatsappService.getPluralLabel(t.type || 'troca', t.qty || 1);
                 
@@ -1057,6 +1056,9 @@ const App = {
                     if (logObs) obsHtml += `<div class="mt-2 text-[10px] bg-amber-100 text-amber-900 font-bold rounded-lg p-1.5 border border-amber-300 break-words leading-tight"><i class="fas fa-exclamation-triangle"></i> LOG: ${logObs}</div>`;
                     if (motObs) obsHtml += `<div class="mt-1 text-[10px] bg-blue-100 text-blue-900 font-bold rounded-lg p-1.5 border border-blue-300 break-words leading-tight"><i class="fas fa-comment-dots"></i> MOT: ${motObs}</div>`;
                 }
+
+                // 🔥 AVISO DE PRIORIDADE NA CÉLULA DO MOTORISTA 🔥
+                const avisoRetorno = isRetorno ? `<div class="mt-2 text-[10px] bg-yellow-200 text-yellow-900 font-black rounded-lg p-1.5 border border-yellow-400 shadow-sm"><i class="fas fa-exclamation-triangle"></i> PRIORIDADE: ADIADO DO DIA ${t.dataOrigem}</div>` : '';
 
                 const fotoTag = t.foto ? `<button onclick="UI.showPhoto('${t.foto}')" class="mt-2 w-full flex items-center justify-center gap-1 bg-slate-800 text-white font-bold rounded-lg py-1.5 text-[10px] shadow-sm hover:bg-black transition-colors"><i class="fas fa-camera"></i> VER FOTO COMPROVANTE</button>` : '';
                 const mtrTag = t.mtr ? `<div class="mt-2 text-[10px] bg-indigo-100 text-indigo-900 font-bold rounded-lg p-1 border border-indigo-200 text-center truncate"><i class="fas fa-file-invoice"></i> ${t.mtr}</div>` : '';
@@ -1110,6 +1112,7 @@ const App = {
                     </div>
                     
                     ${obsHtml}
+                    ${avisoRetorno}
                     ${mtrTag}
                     ${descTag}
                     ${fotoTag}
@@ -1159,7 +1162,6 @@ const App = {
 
     handleAgendaDragStart(e, id) {
         const agendaItem = State.data.agendamentos.find(a => a.id === id);
-        // 🔥 TRAVA ABSOLUTA: Bloqueia serviços distribuídos ou reprogramados
         if (agendaItem && (agendaItem.distribuido || agendaItem.reprogramado)) {
             e.preventDefault(); 
             return false;
@@ -1204,7 +1206,6 @@ const App = {
         if (source.type === 'agenda') {
             const agendaItem = State.data.agendamentos.find(a => a.id === source.id);
             if(agendaItem) {
-                // 🔥 TRAVA 2: Expulsa se houver delay na nuvem
                 if(agendaItem.distribuido || agendaItem.reprogramado) {
                     UI.toast("Este serviço já está bloqueado!", "error");
                     return false;
@@ -1222,7 +1223,9 @@ const App = {
                     obs: agendaItem.obs, 
                     to: { text: agendaItem.address }, 
                     mtr: null, 
-                    descarteLocal: null
+                    descarteLocal: null,
+                    veioDeReprogramacao: agendaItem.veioDeReprogramacao || false, // 🔥 HERDA A PRIORIDADE 🔥
+                    dataOrigem: agendaItem.dataOrigem || ''
                 };
                 
                 if (targetIndex === -1) {
@@ -1231,8 +1234,8 @@ const App = {
                     targetDriver.trips.splice(targetIndex, 0, newTrip);
                 }
                 
-                agendaItem.distribuido = true; // MARCA COMO DISTRIBUÍDO
-                State.saveAll(); // 🔥 SALVA TUDO NUM BLOCO SÓ
+                agendaItem.distribuido = true;
+                State.saveAll();
                 
                 App.renderSpreadsheet();
                 App.renderAgendaPanel();
@@ -1273,7 +1276,8 @@ const App = {
             const agendaItem = {
                 id: Date.now(), date: State.session.routeDate, shift: State.session.shift, empresa: trip.empresa || '',
                 obra: trip.obra || '', address: typeof trip.to === 'string' ? trip.to : (trip.to && trip.to.text ? trip.to.text : ''),
-                obs: trip.obs || '', qty: trip.qty || 1, type: trip.type || 'troca'
+                obs: trip.obs || '', qty: trip.qty || 1, type: trip.type || 'troca',
+                veioDeReprogramacao: trip.veioDeReprogramacao || false, dataOrigem: trip.dataOrigem || ''
             };
             if (!State.data.agendamentos) State.data.agendamentos = [];
             State.data.agendamentos.push(agendaItem);
@@ -1295,14 +1299,14 @@ const App = {
     
     openRescheduleModal(id) {
         UI.tempAgendaId = id;
-        UI.rescheduleSource = 'agenda'; // Marca que veio da aba de Agendamentos
+        UI.rescheduleSource = 'agenda';
         UI.toggleModal('reschedule-modal');
     },
 
     openDriverRescheduleModal(driverName, tripIndex) {
         UI.tempDriverName = driverName;
         UI.tempTripIndex = tripIndex;
-        UI.rescheduleSource = 'driver'; // Marca que veio da Planilha do Motorista
+        UI.rescheduleSource = 'driver';
         UI.toggleModal('reschedule-modal');
     },
 
@@ -1320,8 +1324,10 @@ const App = {
             const id = UI.tempAgendaId;
             const original = State.data.agendamentos.find(a => a.id === id);
             if (original) {
+                const originalDateBr = original.date.split('-').reverse().join('/');
                 const novoItem = {
-                    ...original, id: Date.now() + Math.random(), date: newDate, shift: newShift, distribuido: false, reprogramado: false
+                    ...original, id: Date.now() + Math.random(), date: newDate, shift: newShift, distribuido: false, reprogramado: false,
+                    veioDeReprogramacao: true, dataOrigem: originalDateBr // 🔥 MARCA QUE É HERANÇA E SALVA A DATA 🔥
                 };
                 original.reprogramado = true;
                 original.obs = (original.obs ? original.obs + ' | ' : '') + appendObs;
@@ -1342,12 +1348,15 @@ const App = {
             
             if (driver && driver.trips[tripIndex]) {
                 const trip = driver.trips[tripIndex];
+                const originalDateBr = State.session.routeDate.split('-').reverse().join('/');
                 
                 if (trip.agendaId) {
                     const originalAgenda = State.data.agendamentos.find(a => a.id === trip.agendaId);
                     if (originalAgenda) {
+                        const originalDateAgendaBr = originalAgenda.date.split('-').reverse().join('/');
                         const novoItem = {
-                            ...originalAgenda, id: Date.now() + Math.random(), date: newDate, shift: newShift, distribuido: false, reprogramado: false
+                            ...originalAgenda, id: Date.now() + Math.random(), date: newDate, shift: newShift, distribuido: false, reprogramado: false,
+                            veioDeReprogramacao: true, dataOrigem: originalDateAgendaBr // 🔥 MARCA QUE É HERANÇA E SALVA A DATA 🔥
                         };
                         originalAgenda.reprogramado = true;
                         originalAgenda.obs = (originalAgenda.obs ? originalAgenda.obs + ' | ' : '') + appendObs;
@@ -1357,7 +1366,8 @@ const App = {
                     const novoItem = {
                         id: Date.now() + Math.random(), date: newDate, shift: newShift, empresa: trip.empresa || '',
                         obra: trip.obra || '', address: typeof trip.to === 'string' ? trip.to : (trip.to && trip.to.text ? trip.to.text : ''),
-                        obs: trip.obs || '', qty: trip.qty || 1, type: trip.type || 'troca', distribuido: false, reprogramado: false
+                        obs: trip.obs || '', qty: trip.qty || 1, type: trip.type || 'troca', distribuido: false, reprogramado: false,
+                        veioDeReprogramacao: true, dataOrigem: originalDateBr // 🔥 MARCA QUE É HERANÇA E SALVA A DATA 🔥
                     };
                     State.data.agendamentos.push(novoItem);
                 }
@@ -1389,7 +1399,7 @@ const App = {
         if (!date) return UI.toast("Selecione a data do calendário acima!", "error");
         if (!addr && !obra) return UI.toast("Preencha a obra ou endereço", "error");
 
-        State.addAgendamento({ id: Date.now(), date, shift, empresa, obra, address: addr, obs, qty, type, distribuido: false, reprogramado: false });
+        State.addAgendamento({ id: Date.now(), date, shift, empresa, obra, address: addr, obs, qty, type, distribuido: false, reprogramado: false, veioDeReprogramacao: false });
 
         if (empresa || obra) State.addToAddressBook(empresa, obra, addr);
 
@@ -1440,6 +1450,7 @@ const App = {
             const isDist = item.distribuido;
             const isReprog = item.reprogramado;
             const isLocked = isDist || isReprog;
+            const isRetorno = item.veioDeReprogramacao; // 🔥 VERIFICA SE É PRIORIDADE 🔥
             const isNight = document.body.classList.contains('night-mode');
             
             let baseClass = 'bg-slate-50 border-slate-200';
@@ -1451,11 +1462,18 @@ const App = {
             } else if (isDist) {
                 baseClass = 'opacity-80';
                 finalStyle = isNight ? 'background-color: rgba(30,58,138,0.4) !important; border-color: #1e3a8a !important;' : 'background-color: #eff6ff !important; border-color: #bfdbfe !important;';
+            } else if (isRetorno) {
+                // 🔥 SE FOR PRIORIDADE E NÃO TIVER SIDO FEITO AINDA, FICA AMARELO 🔥
+                baseClass = 'bg-yellow-50 border-yellow-400 shadow-md';
+                finalStyle = isNight ? 'background-color: rgba(234, 179, 8, 0.15) !important; border-color: #a16207 !important;' : 'background-color: #fefce8 !important; border-color: #facc15 !important;';
             }
 
             const empresaTag = item.empresa ? `<span class="text-[9px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded uppercase mr-1 border border-purple-200">${item.empresa}</span>` : '';
             const shiftBadge = (item.shift === 'night') ? `<span class="bg-slate-800 text-white px-1.5 py-0.5 rounded text-[8px] uppercase border border-slate-600 shadow-sm ml-1">🌙 Noite</span>` : `<span class="bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded text-[8px] uppercase border border-yellow-300 shadow-sm ml-1">🌞 Dia</span>`;
             const obsTag = item.obs ? `<div class="mt-1 text-[9px] bg-amber-100 text-amber-800 p-1 rounded font-bold">OBS: ${item.obs}</div>` : '';
+            
+            // 🔥 AVISO DE PRIORIDADE NA TELA 🔥
+            const avisoRetorno = (isRetorno && !isLocked) ? `<div class="mt-2 text-[10px] bg-yellow-200 text-yellow-900 font-black rounded-lg p-1.5 border border-yellow-400 shadow-sm animate-pulse"><i class="fas fa-exclamation-triangle"></i> PRIORIDADE: ADIADO DO DIA ${item.dataOrigem}</div>` : '';
 
             let typeColor = 'text-slate-800';
             if(item.type === 'colocacao') typeColor = 'text-red-600';
@@ -1472,7 +1490,6 @@ const App = {
                 botoesEdit = `<button onclick="App.changeAgendaQty(${item.id})" class="text-[10px] font-black bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded hover:bg-slate-300 transition cursor-pointer">${item.qty || 1}</button><button onclick="App.cycleAgendaType(${item.id})" class="text-[10px] font-black ${typeColor} bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded transition cursor-pointer flex items-center gap-1 border border-slate-200">${label} <i class="fas fa-sync-alt opacity-40 hover:opacity-100 text-[8px]"></i></button>`;
             }
 
-            // 🔥 SE FOR REPROGRAMADO, O BOTÃO DE LIXEIRA APARECE PRA LIMPAR O HISTÓRICO 🔥
             let acoesDireita = '';
             if (!isLocked) {
                 acoesDireita = `
@@ -1498,6 +1515,7 @@ const App = {
                     <div class="flex items-center gap-1 mb-1 w-fit">${botoesEdit}</div>
                     <div class="text-[11px] font-bold ${isDist ? 'text-blue-900' : (isReprog ? 'text-orange-900' : 'text-slate-800')} truncate leading-tight mt-1">${empresaTag}${item.obra || 'Sem Nome'} ${shiftBadge}</div>
                     <div class="text-[9px] ${isDist ? 'text-blue-600' : (isReprog ? 'text-orange-700' : 'text-slate-500')} mt-1 leading-tight"><i class="fas fa-map-marker-alt ${isDist ? 'text-blue-500' : (isReprog ? 'text-orange-400' : 'text-red-400')} mr-1"></i>${WhatsappService.formatAddress(item.address)}</div>
+                    ${avisoRetorno}
                     ${obsTag}
                 </div>
                 ${acoesDireita}
@@ -1513,7 +1531,6 @@ const App = {
         const searchInput = document.getElementById('search-agenda-panel');
         const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
 
-        // 🔥 FILTRA SÓ O TURNO SELECIONADO NA PLANILHA (Dia ou Noite) 🔥
         let agendadosHj = State.data.agendamentos.filter(a => a.date === State.session.routeDate && (a.shift || 'day') === State.session.shift);
         
         const badge = document.getElementById('agenda-count-badge');
@@ -1536,6 +1553,7 @@ const App = {
             const isDist = a.distribuido;
             const isReprog = a.reprogramado;
             const isLocked = isDist || isReprog;
+            const isRetorno = a.veioDeReprogramacao; // 🔥 VERIFICA PRIORIDADE 🔥
 
             let colorClass = 'text-slate-800';
             if(a.type === 'colocacao') colorClass = 'text-red-600';
@@ -1551,6 +1569,10 @@ const App = {
                 finalStyle = isNight ? 'background-color: rgba(194,65,12,0.2) !important; border-color: #9a3412 !important;' : 'background-color: #fff7ed !important; border-color: #fed7aa !important;';
             } else if (isDist) {
                 finalStyle = isNight ? 'background-color: rgba(30,58,138,0.4) !important; border-color: #1e3a8a !important;' : 'background-color: #eff6ff !important; border-color: #bfdbfe !important;';
+            } else if (isRetorno) {
+                // 🔥 SE FOR PRIORIDADE NA PLANILHA TAMBÉM FICA AMARELO 🔥
+                baseClass = 'bg-yellow-50 border-yellow-400 shadow-md cursor-grab active:cursor-grabbing';
+                finalStyle = isNight ? 'background-color: rgba(234, 179, 8, 0.15) !important; border-color: #a16207 !important;' : 'background-color: #fefce8 !important; border-color: #facc15 !important;';
             }
 
             let botoesEdit = '';
@@ -1562,7 +1584,6 @@ const App = {
                 botoesEdit = `<button onclick="App.changeAgendaQty(${a.id})" class="text-slate-600 hover:text-blue-600 text-[10px] font-black bg-slate-100 rounded-md py-0.5 px-1.5 border border-slate-200 shadow-sm transition">${a.qty || 1}</button><button onclick="App.cycleAgendaType(${a.id})" class="${colorClass} text-[10px] font-black bg-slate-50 hover:bg-slate-200 rounded-md py-0.5 px-2 border border-slate-200 shadow-sm transition flex items-center gap-1">${label} <i class="fas fa-sync-alt opacity-40 hover:opacity-100 text-[8px]"></i></button>`;
             }
 
-            // 🔥 SE FOR REPROGRAMADO, O BOTÃO DE LIXEIRA APARECE PRA LIMPAR O HISTÓRICO 🔥
             let botoesAcaoPanel = '';
             if (!isLocked) {
                 botoesAcaoPanel = `
@@ -1578,6 +1599,9 @@ const App = {
                     </div>
                 `;
             }
+            
+            // 🔥 AVISO DE PRIORIDADE NA PLANILHA ROXA 🔥
+            const avisoRetorno = (isRetorno && !isLocked) ? `<div class="mt-2 text-[10px] bg-yellow-200 text-yellow-900 font-black rounded-lg p-1.5 border border-yellow-400 shadow-sm animate-pulse"><i class="fas fa-exclamation-triangle"></i> PRIORIDADE: ADIADO DO DIA ${a.dataOrigem}</div>` : '';
 
             list.innerHTML += `
             <div ${dragAttrs} style="${finalStyle}" class="drag-item p-3 border rounded-xl shadow-sm flex flex-col relative animate-fade-in transition ag-item-card ${baseClass}">
@@ -1590,6 +1614,7 @@ const App = {
                     <span class="text-[13px] font-black">${a.obra || 'Sem Nome'}</span>
                 </div>
                 <div class="text-[9px] ${isDist ? 'text-blue-600' : (isReprog ? 'text-orange-700' : 'text-slate-500')} mt-1 leading-tight"><i class="fas fa-map-marker-alt ${isDist ? 'text-blue-500' : (isReprog ? 'text-orange-400' : 'text-red-400')} mr-1"></i>${WhatsappService.formatAddress(a.address)}</div>
+                ${avisoRetorno}
                 ${a.obs ? `<div class="mt-2 text-[10px] bg-amber-100 text-amber-900 font-bold rounded-lg p-1.5 border border-amber-300"><i class="fas fa-exclamation-triangle"></i> OBS: ${a.obs}</div>` : ''}
             </div>`;
         });
@@ -1623,7 +1648,8 @@ const App = {
             group.forEach(a => {
                 targetDriverObj.trips.push({
                     id: Date.now() + Math.random(), status: 'pendente', completed: false, agendaId: a.id,
-                    empresa: a.empresa, obra: a.obra, qty: a.qty, type: a.type, obs: a.obs, to: { text: a.address }, mtr: null, descarteLocal: null
+                    empresa: a.empresa, obra: a.obra, qty: a.qty, type: a.type, obs: a.obs, to: { text: a.address }, mtr: null, descarteLocal: null,
+                    veioDeReprogramacao: a.veioDeReprogramacao || false, dataOrigem: a.dataOrigem || '' // 🔥 COPIA A PRIORIDADE PRO MOTORISTA 🔥
                 });
                 a.distribuido = true;
                 targetDriver.count++;
