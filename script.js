@@ -1058,7 +1058,6 @@ const App = {
                 let opacityClass = '';
                 const isRetorno = t.veioDeReprogramacao;
                 
-                // 🔥 CORES ATUALIZADAS (CANCELADO/NÃO FEITO AGORA SÃO VERMELHOS) 🔥
                 if (status === 'concluido') { bgClass = 'bg-emerald-50/70 border-emerald-300'; } 
                 else if (status === 'cancelado' || status === 'nao_feito') { bgClass = 'bg-red-50/70 border-red-300'; } 
                 else if (status === 'reprogramado') { bgClass = 'bg-orange-50/70 border-orange-300'; } 
@@ -1128,6 +1127,10 @@ const App = {
                     </div>
                 `;
 
+                // 🔥 LÓGICA VISUAL INVERTIDA: EMPRESA MAIOR, OBRA MENOR. NADA DE "SEM OBRA" 🔥
+                const textEmpresa = t.empresa ? `<div class="text-[12px] font-black text-slate-800 break-words mb-0.5">${t.empresa}</div>` : '';
+                const textObra = t.obra ? `<div class="${t.empresa ? 'text-[9px] font-bold text-slate-500 uppercase tracking-widest' : 'text-[12px] font-black text-slate-800 break-words'}">${t.obra}</div>` : '';
+
                 return `
                 <div draggable="true" 
                      ondragstart="App.handleDriverDragStart(event, '${name}', ${i})"
@@ -1149,8 +1152,8 @@ const App = {
                     </div>
 
                     <div class="pr-12 leading-tight">
-                        ${t.empresa ? `<div class="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">${t.empresa}</div>` : ''}
-                        <div class="text-[12px] font-black text-slate-800 break-words">${t.obra || 'Sem Nome'}</div>
+                        ${textEmpresa}
+                        ${textObra}
                     </div>
                     
                     ${avisoRetorno}
@@ -1208,7 +1211,6 @@ const App = {
             container.appendChild(column);
         });
     },
-
     handleAgendaDragStart(e, id) {
         const agendaItem = State.data.agendamentos.find(a => a.id === id);
         if (agendaItem && (agendaItem.distribuido || agendaItem.reprogramado)) {
@@ -1740,7 +1742,7 @@ const App = {
             rotasExistem = true;
             let tripsHtml = '';
             
-            const bgColorCard = '#1e293b'; // Escuro Slate
+            const bgColorCard = '#1e293b'; 
             const borderColorCard = '#1f293a'; 
             
             activeTrips.forEach(t => {
@@ -1749,7 +1751,7 @@ const App = {
                 const isReprogramado = (t.status === 'reprogramado');
                 const isRetorno = t.veioDeReprogramacao;
                 
-                let statusColor = '#94a3b8'; // Pendente
+                let statusColor = '#94a3b8'; 
                 let iconStr = '';
 
                 if (isDone) {
@@ -1766,26 +1768,27 @@ const App = {
                     iconStr = '⚠️ ';
                 }
 
-                // 🔥 LÓGICA DAS CORES EXATAS PARA CADA TIPO DE SERVIÇO 🔥
-                const qty = t.qty || 1;
+                // 🔥 LÓGICA DE PLURAIS (INCLUSIVE NO ENCHER) 🔥
+                const qty = parseInt(t.qty) || 1;
                 let displayTypeHtml = '';
-                let pillTextColor = '#1e293b'; // Troca (Cor Padrão)
+                let pillTextColor = '#1e293b'; 
 
-                if (t.type === 'colocacao') pillTextColor = '#dc2626'; // Vermelho
-                if (t.type === 'retirada') pillTextColor = '#9333ea'; // Roxo
+                if (t.type === 'colocacao') pillTextColor = '#dc2626'; 
+                if (t.type === 'retirada') pillTextColor = '#9333ea'; 
 
                 if (t.type === 'encher') {
-                    // Encher na hora (Mistura de cores)
+                    const colTxt = qty > 1 ? 'COLOCAÇÕES' : 'COLOCAÇÃO';
+                    const retTxt = qty > 1 ? 'RETIRADAS' : 'RETIRADA';
                     if (isFailed || isReprogramado) {
-                        displayTypeHtml = `${qty} COLOCAÇÃO + ${qty} RETIRADA`;
-                        pillTextColor = '#ffffff'; // Força branco para leitura no fundo vermelho/laranja
+                        displayTypeHtml = `${qty} ${colTxt} + ${qty} ${retTxt}`;
+                        pillTextColor = '#ffffff'; 
                     } else {
-                        displayTypeHtml = `<span style="color: #dc2626">${qty} COLOCAÇÃO</span> <span style="color: #64748b">+</span> <span style="color: #9333ea">${qty} RETIRADA</span>`;
+                        displayTypeHtml = `<span style="color: #dc2626">${qty} ${colTxt}</span> <span style="color: #64748b">+</span> <span style="color: #9333ea">${qty} ${retTxt}</span>`;
                     }
                 } else {
                     displayTypeHtml = `${qty} ${WhatsappService.getPluralLabel(t.type, qty)}`;
                     if (isFailed || isReprogramado) {
-                        pillTextColor = '#ffffff'; // Força branco para leitura
+                        pillTextColor = '#ffffff'; 
                     }
                 }
                 
@@ -1793,13 +1796,27 @@ const App = {
                 let pillBorderColor = '#e2e8f0'; 
 
                 if (isFailed) {
-                    pillBgColor = '#ef4444'; // Vermelho Sólido
+                    pillBgColor = '#ef4444'; 
                     pillTextColor = '#ffffff'; 
                     pillBorderColor = '#fecaca'; 
                 } else if (isReprogramado) {
-                    pillBgColor = '#f97316'; // Laranja Sólido
+                    pillBgColor = '#f97316'; 
                     pillTextColor = '#ffffff'; 
                     pillBorderColor = '#fed7aa'; 
+                }
+                
+                // 🔥 LÓGICA VISUAL INVERTIDA NA IMAGEM (EMPRESA > OBRA, SEM "SEM OBRA") 🔥
+                let titleHtml = '';
+                if (t.empresa) {
+                    // Se tem empresa, ela fica grande e branca.
+                    titleHtml += `<div style="font-size: 14px; font-weight: 900; color: #ffffff; word-break: break-word; text-decoration: ${isFailed ? 'line-through' : 'none'};">${iconStr}${t.empresa}</div>`;
+                    if (t.obra) {
+                        // A obra fica cinza e menorzinha embaixo
+                        titleHtml += `<div style="font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-top: 2px; text-decoration: ${isFailed ? 'line-through' : 'none'};">${t.obra}</div>`;
+                    }
+                } else if (t.obra) {
+                    // Se não tem empresa, a obra herda o tamanho gigante branco.
+                    titleHtml += `<div style="font-size: 14px; font-weight: 900; color: #ffffff; word-break: break-word; text-decoration: ${isFailed ? 'line-through' : 'none'};">${iconStr}${t.obra}</div>`;
                 }
                 
                 let timeHtml = '';
@@ -1814,8 +1831,8 @@ const App = {
                             <div style="flex: 1; line-height: 1.3;">
                                 <div style="display: inline-block; text-align: center; background-color: ${pillBgColor}; color: ${pillTextColor}; border: 1px solid ${pillBorderColor}; font-size: 11px; font-weight: 900; padding: 4px 10px; border-radius: 6px; letter-spacing: 1px; margin-bottom: 6px;">${displayTypeHtml}</div>
                                 
-                                <div style="font-size: 14px; font-weight: 900; color: #ffffff; word-break: break-word; text-decoration: ${isFailed ? 'line-through' : 'none'};">${iconStr}${t.obra || 'Sem Obra'}</div>
-                                ${t.empresa ? `<div style="font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-top: 2px;">${t.empresa}</div>` : ''}
+                                ${titleHtml}
+                                
                                 ${timeHtml}
                             </div>
                         </div>
