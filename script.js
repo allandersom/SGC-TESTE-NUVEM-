@@ -470,13 +470,15 @@ const UI = {
         const content = document.getElementById('spreadsheet-agenda-content');
         const icon = document.getElementById('spreadsheet-agenda-icon');
         
-        if (panel.classList.contains('w-80')) {
-            panel.classList.replace('w-80', 'w-12');
+        if (panel.classList.contains('panel-open')) {
+            panel.classList.remove('panel-open', 'w-[45%]', 'md:w-80');
+            panel.classList.add('w-12');
             content.classList.add('hidden');
             icon.classList.replace('fa-chevron-left', 'fa-calendar-check');
             panel.querySelector('span > span').classList.add('hidden');
         } else {
-            panel.classList.replace('w-12', 'w-80');
+            panel.classList.remove('w-12');
+            panel.classList.add('panel-open', 'w-[45%]', 'md:w-80');
             content.classList.remove('hidden');
             icon.classList.replace('fa-calendar-check', 'fa-chevron-left');
             panel.querySelector('span > span').classList.remove('hidden');
@@ -1015,8 +1017,8 @@ const App = {
             const trips = d.trips || [];
             
             const column = document.createElement('div');
-            // 🔥 RESPONSIVO: Fica com 230px no celular e estica pra 280px+ no PC 🔥
-            column.className = "driver-column shrink-0 min-w-[230px] max-w-[260px] md:min-w-[280px] md:max-w-[340px] flex flex-col bg-white snap-start border-r border-slate-300 transition-colors h-full";
+            // 🔥 RESPONSIVO: Fica com 200px em janelas espremidas e estica no PC 🔥
+            column.className = "driver-column shrink-0 min-w-[200px] sm:min-w-[230px] max-w-[260px] md:min-w-[280px] md:max-w-[340px] flex flex-col bg-white snap-start border-r border-slate-300 transition-colors h-full";
 
             let totalServicos = 0;
             trips.forEach(t => {
