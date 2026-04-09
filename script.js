@@ -1746,32 +1746,59 @@ const App = {
             activeTrips.forEach(t => {
                 const isDone = (t.status === 'concluido' || t.completed);
                 const isFailed = (t.status === 'nao_feito');
+                const isRetorno = t.veioDeReprogramacao;
                 
-                // 🔥 Bolinhas de Status Sólidas e Elegantes (Ignora Modo Noturno) 🔥
-                let statusColor = '#94a3b8'; // Cinza (Pendente)
-                if (isDone) statusColor = '#10b981'; // Verde (Feito)
-                if (isFailed) statusColor = '#ef4444'; // Vermelho (Não Feito)
+                let bgColor = '#ffffff'; 
+                let borderColor = '#e2e8f0'; 
+                let statusColor = '#94a3b8'; 
+                let iconStr = '';
+
+                if (isDone) {
+                    bgColor = '#ecfdf5'; 
+                    borderColor = '#a7f3d0'; 
+                    statusColor = '#10b981'; 
+                    iconStr = '✅ ';
+                } else if (isFailed) {
+                    bgColor = '#fef2f2'; 
+                    borderColor = '#fecaca'; 
+                    statusColor = '#ef4444'; 
+                    iconStr = '❌ ';
+                } else if (isRetorno) {
+                    bgColor = '#fff7ed'; 
+                    borderColor = '#fed7aa'; 
+                    statusColor = '#f97316'; 
+                    iconStr = '⚠️ ';
+                }
 
                 const qty = t.qty || 1;
                 const label = WhatsappService.getPluralLabel(t.type, qty);
                 const displayType = t.type === 'encher' ? 'ENCHER' : label;
                 
-                // 🔥 HTML Blindado com CSS Inline para garantir que nada borre a foto 🔥
+                // 🔥 NOVA LÓGICA: MOSTRAR HORÁRIOS E DATAS NA IMAGEM 🔥
+                let timeHtml = '';
+                if (isDone && t.horaConclusao) {
+                    timeHtml = `<div style="font-size: 10px; font-weight: 900; color: #059669; margin-top: 6px; letter-spacing: 0.5px;">🕒 FEITO ÀS ${t.horaConclusao}</div>`;
+                } else if (isFailed && t.horaConclusao) {
+                    timeHtml = `<div style="font-size: 10px; font-weight: 900; color: #dc2626; margin-top: 6px; letter-spacing: 0.5px;">🕒 NÃO FEITO ÀS ${t.horaConclusao}</div>`;
+                } else if (isRetorno && t.dataOrigem) {
+                    timeHtml = `<div style="font-size: 10px; font-weight: 900; color: #d97706; margin-top: 6px; letter-spacing: 0.5px;">⚠️ ADIADO DO DIA ${t.dataOrigem}</div>`;
+                }
+                
                 tripsHtml += `
-                    <div style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;">
+                    <div style="margin-bottom: 8px; padding: 10px; background-color: ${bgColor}; border: 1px solid ${borderColor}; border-radius: 8px;">
                         <div style="display: flex; align-items: flex-start; gap: 8px;">
                             <div style="margin-top: 4px; width: 12px; height: 12px; border-radius: 50%; background-color: ${statusColor}; flex-shrink: 0; box-shadow: 0 1px 2px rgba(0,0,0,0.1);"></div>
                             <div style="flex: 1; line-height: 1.2;">
-                                <div style="display: inline-block; background-color: #f1f5f9; color: #1e293b; font-size: 11px; font-weight: 900; padding: 2px 6px; border-radius: 4px; letter-spacing: 1px; margin-bottom: 4px;">${qty} ${displayType}</div>
-                                <div style="font-size: 14px; font-weight: 900; color: #0f172a; word-break: break-word;">${t.obra || 'Sem Obra'}</div>
+                                <div style="display: inline-block; background-color: #ffffff; border: 1px solid ${borderColor}; color: #1e293b; font-size: 10px; font-weight: 900; padding: 2px 6px; border-radius: 4px; letter-spacing: 1px; margin-bottom: 4px;">${qty} ${displayType}</div>
+                                <div style="font-size: 14px; font-weight: 900; color: #0f172a; word-break: break-word;">${iconStr}${t.obra || 'Sem Obra'}</div>
                                 ${t.empresa ? `<div style="font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-top: 2px;">${t.empresa}</div>` : ''}
+                                ${timeHtml}
                             </div>
                         </div>
                     </div>
                 `;
             });
 
-            // 🔥 Caixa do Motorista Blindada 🔥
             const col = `
                 <div style="background-color: #ffffff; border: 2px solid #e2e8f0; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
                     <div style="text-align: center; font-weight: 900; font-size: 18px; text-transform: uppercase; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid #f1f5f9; letter-spacing: 2px; color: ${d.color || '#333'}">${name}</div>
@@ -1788,7 +1815,7 @@ const App = {
         html2canvas(container, { 
             scale: 2, 
             useCORS: true, 
-            backgroundColor: '#ffffff' // Força o fundo a ser branco no arquivo baixado
+            backgroundColor: '#ffffff' 
         }).then(canvas => {
             const link = document.createElement('a');
             link.download = `SGC_Rotas_${date.replace(/\//g, '-')}_${shift}.png`;
