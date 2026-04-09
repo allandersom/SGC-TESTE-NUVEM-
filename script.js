@@ -1015,8 +1015,8 @@ const App = {
             const trips = d.trips || [];
             
             const column = document.createElement('div');
-            // 🔥 AUMENTEI A LARGURA: min-w-[280px] e max-w-[340px] para dar um respiro legal pros botões 🔥
-            column.className = "driver-column min-w-[280px] max-w-[340px] flex flex-col bg-white snap-start border-r border-slate-300 transition-colors h-full";
+            // 🔥 RESPONSIVO: Fica com 230px no celular e estica pra 280px+ no PC 🔥
+            column.className = "driver-column shrink-0 min-w-[230px] max-w-[260px] md:min-w-[280px] md:max-w-[340px] flex flex-col bg-white snap-start border-r border-slate-300 transition-colors h-full";
 
             let totalServicos = 0;
             trips.forEach(t => {
