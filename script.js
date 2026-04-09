@@ -1714,7 +1714,7 @@ const App = {
         UI.toast("Serviços distribuídos!");
     },
    // =========================================================
-    // 🔥 GERADOR DE IMAGEM LIMPA PARA CLIENTES/LEIGOS 🔥
+    // 🔥 GERADOR DE IMAGEM LIMPA PARA CLIENTES/LEIGOS (CORREÇÃO DE LAYOUT) 🔥
     // =========================================================
     downloadPreview() {
         UI.toast("Gerando imagem de alta qualidade, aguarde...", "info");
@@ -1732,46 +1732,40 @@ const App = {
         
         drivers.forEach(name => {
             const d = State.getDriver(name);
-            // Só mostra na imagem o motorista que tiver pelo menos 1 serviço
             if(!d || !d.trips || d.trips.length === 0) return; 
             
-            const activeTrips = d.trips.filter(t => t.status !== 'cancelado');
+            // Agora mostra tudo, inclusive reprogramados e não feitos
+            const activeTrips = d.trips;
             if (activeTrips.length === 0) return;
 
             rotasExistem = true;
             let tripsHtml = '';
             
+            // Fundo do Card Escuro (Conforme image_8.png)
+            const bgColorCard = '#1e293b'; // Escuro Slate
+            const borderColorCard = '#1f293a'; // Um pouco mais escuro
+            
             activeTrips.forEach(t => {
                 const isDone = (t.status === 'concluido' || t.completed);
-                const isFailed = (t.status === 'nao_feito');
+                const isFailed = (t.status === 'nao_feito' || t.status === 'cancelado');
                 const isReprogramado = (t.status === 'reprogramado');
                 const isRetorno = t.veioDeReprogramacao;
                 
-                // 🔥 NOVA LÓGICA DE CORES DOS CARDS E EMOJIS NA IMAGEM 🔥
-                let bgColor = '#ffffff'; // Pendente normal (Branco)
-                let borderColor = '#e2e8f0'; // Borda cinza
+                // 🔥 LÓGICA DE CORES DAS BOLINHAS E ÍCONES NA IMAGEM (MANTIDA) 🔥
                 let statusColor = '#94a3b8'; // Bolinha Cinza (Pendente)
                 let iconStr = '';
 
                 if (isDone) {
-                    bgColor = '#ecfdf5'; // Fundo Verde Claro
-                    borderColor = '#a7f3d0'; // Borda Verde
                     statusColor = '#10b981'; // Bolinha Verde
                     iconStr = '✅ ';
                 } else if (isFailed) {
-                    bgColor = '#fef2f2'; // Fundo Vermelho Claro
-                    borderColor = '#fecaca'; // Borda Vermelha
                     statusColor = '#ef4444'; // Bolinha Vermelha
                     iconStr = '❌ ';
                 } else if (isReprogramado) {
-                    bgColor = '#fff7ed'; // Fundo Laranja Claro
-                    borderColor = '#fed7aa'; // Borda Laranja
                     statusColor = '#f97316'; // Bolinha Laranja
                     iconStr = ''; // 🔥 SEM EMOJI NO REPROGRAMADO 🔥
                 } else if (isRetorno) {
-                    bgColor = '#fefce8'; // Fundo Amarelo Claro (Prioridade)
-                    borderColor = '#fde047'; // Borda Amarela
-                    statusColor = '#eab308'; // Bolinha Amarela
+                    statusColor = '#eab308'; // Amarelo (Prioridade)
                     iconStr = '⚠️ ';
                 }
 
@@ -1779,21 +1773,36 @@ const App = {
                 const label = WhatsappService.getPluralLabel(t.type, qty);
                 const displayType = t.type === 'encher' ? 'ENCHER' : label;
                 
-                // 🔥 HORÁRIO SÓ APARECE SE FOI FEITO (CONCLUÍDO) 🔥
-                let timeHtml = '';
-                if (isDone && t.horaConclusao) {
-                    timeHtml = `<div style="font-size: 10px; font-weight: 900; color: #059669; margin-top: 6px; letter-spacing: 0.5px;">🕒 FEITO ÀS ${t.horaConclusao}</div>`;
+                // 🔥 NOVA LÓGICA DE CORES DAS PÍLULAS DE SERVIÇO (Conforme image_8.png) 🔥
+                let pillBgColor = '#ffffff'; // Pílula Branca (Pendente/Concluído)
+                let pillTextColor = '#1e293b'; // Texto Escuro
+                let pillBorderColor = '#e2e8f0'; // Borda Cinza
+
+                if (isFailed) {
+                    pillBgColor = '#ef4444'; // Fundo Vermelho Sólido
+                    pillTextColor = '#ffffff'; // Texto Branco
+                    pillBorderColor = '#fecaca'; // Borda Vermelha
+                } else if (isReprogramado) {
+                    pillBgColor = '#f97316'; // Fundo Laranja Sólido
+                    pillTextColor = '#ffffff'; // Texto Branco
+                    pillBorderColor = '#fed7aa'; // Borda Laranja
                 }
                 
-                // 🔥 HTML Blindado com CSS Inline para garantir cores perfeitas na foto 🔥
+                // 🔥 HORÁRIO SÓ APARECE SE FOI CONCLUÍDO (MANTIDO) 🔥
+                let timeHtml = '';
+                if (isDone && t.horaConclusao) {
+                    timeHtml = `<div style="font-size: 10px; font-weight: 900; color: #a7f3d0; margin-top: 6px; letter-spacing: 0.5px;">🕒 FEITO ÀS ${t.horaConclusao}</div>`;
+                }
+                
+                // 🔥 HTML Blindado com CSS Inline e Visual de Painel Escuro 🔥
                 tripsHtml += `
-                    <div style="margin-bottom: 8px; padding: 10px; background-color: ${bgColor}; border: 1px solid ${borderColor}; border-radius: 8px;">
+                    <div style="margin-bottom: 8px; padding: 10px; background-color: ${bgColorCard}; border: 1px solid ${borderColorCard}; border-radius: 8px;">
                         <div style="display: flex; align-items: flex-start; gap: 8px;">
                             <div style="margin-top: 4px; width: 12px; height: 12px; border-radius: 50%; background-color: ${statusColor}; flex-shrink: 0; box-shadow: 0 1px 2px rgba(0,0,0,0.1);"></div>
                             <div style="flex: 1; line-height: 1.2;">
-                                <div style="display: inline-block; background-color: #ffffff; border: 1px solid ${borderColor}; color: #1e293b; font-size: 10px; font-weight: 900; padding: 2px 6px; border-radius: 4px; letter-spacing: 1px; margin-bottom: 4px;">${qty} ${displayType}</div>
-                                <div style="font-size: 14px; font-weight: 900; color: #0f172a; word-break: break-word;">${iconStr}${t.obra || 'Sem Obra'}</div>
-                                ${t.empresa ? `<div style="font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-top: 2px;">${t.empresa}</div>` : ''}
+                                <div style="display: inline-block; background-color: ${pillBgColor}; color: ${pillTextColor}; border: 1px solid ${pillBorderColor}; font-size: 10px; font-weight: 900; padding: 2px 6px; border-radius: 4px; letter-spacing: 1px; margin-bottom: 4px;">${qty} ${displayType}</div>
+                                <div style="font-size: 14px; font-weight: 900; color: #ffffff; word-break: break-word; text-decoration: ${isFailed ? 'line-through' : 'none'};">${iconStr}${t.obra || 'Sem Obra'}</div>
+                                ${t.empresa ? `<div style="font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-top: 2px;">${t.empresa}</div>` : ''}
                                 ${timeHtml}
                             </div>
                         </div>
@@ -1801,10 +1810,9 @@ const App = {
                 `;
             });
 
-            // 🔥 Caixa do Motorista Blindada 🔥
             const col = `
-                <div style="background-color: #ffffff; border: 2px solid #e2e8f0; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-                    <div style="text-align: center; font-weight: 900; font-size: 18px; text-transform: uppercase; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid #f1f5f9; letter-spacing: 2px; color: ${d.color || '#333'}">${name}</div>
+                <div style="background-color: #111827; border: 2px solid #1f2937; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);">
+                    <div style="text-align: center; font-weight: 900; font-size: 18px; text-transform: uppercase; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid #374151; letter-spacing: 2px; color: ${d.color || '#ccc'}">${name}</div>
                     <div>${tripsHtml}</div>
                 </div>
             `;
@@ -1815,11 +1823,11 @@ const App = {
             return UI.toast("Nenhum motorista com rotas para gerar a imagem.", "error");
         }
 
-        // 🔥 Força o fundo a ser branco no arquivo baixado e escala alta para qualidade 🔥
+        // Tira a "Foto" e Baixa
         html2canvas(container, { 
             scale: 2, 
             useCORS: true, 
-            backgroundColor: '#ffffff' 
+            backgroundColor: '#1f293a' // Força o fundo a ser o escuro do painel no arquivo baixado
         }).then(canvas => {
             const link = document.createElement('a');
             link.download = `SGC_Rotas_${date.replace(/\//g, '-')}_${shift}.png`;
