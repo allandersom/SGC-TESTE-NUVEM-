@@ -120,7 +120,7 @@
                 const dateInput = document.getElementById('driver-date');
                 if(dateInput) {
                     dateInput.value = this.currentDate;
-                    dateInput.min = this.currentDate; // Trava o calendário visualmente
+                    dateInput.min = this.currentDate; 
                 }
                 
                 if (this.myName) {
@@ -131,7 +131,6 @@
                 }
             },
 
-            // 🔥 NOVA LÓGICA: VISUALIZADOR DE FOTO ENVIADA PELA LOGÍSTICA 🔥
             viewPhoto(base64) {
                 let modal = document.getElementById('photo-modal-viewer');
                 if(!modal) {
@@ -154,7 +153,6 @@
                 
                 const today = this.getTodayDate();
                 
-                // Trava de segurança contra dias passados
                 if (val < today) {
                     alert("Acesso bloqueado: Você não pode visualizar rotas de dias anteriores.");
                     document.getElementById('driver-date').value = this.currentDate; 
@@ -215,7 +213,6 @@
                 document.getElementById('app-screen').classList.add('flex');
                 document.getElementById('header-driver-name').innerText = this.myName;
 
-                // Listeners para sistema offline/online
                 window.addEventListener('offline', () => this.showOfflineWarning(true));
                 window.addEventListener('online', () => this.showOfflineWarning(false));
                 if (!navigator.onLine) this.showOfflineWarning(true);
@@ -239,7 +236,6 @@
                     const data = snapshot.val();
                     if (data) {
                         this.trips = Array.isArray(data) ? data : Object.values(data);
-                        // Salva localmente para uso offline
                         localStorage.setItem(`sgc_rotas_${this.currentDate}`, JSON.stringify(this.trips));
                         this.renderTrips();
                     } else {
@@ -248,7 +244,6 @@
                     }
                 });
 
-                // Carrega do cache se estiver sem internet
                 if (!navigator.onLine) {
                     const rotasSalvas = localStorage.getItem(`sgc_rotas_${this.currentDate}`);
                     if (rotasSalvas) {
@@ -378,17 +373,14 @@
                     const qty = t.qty || 1;
                     const label = this.getLabel(t.type, qty);
                     
-                    // LÓGICA DO ENDEREÇO (SOMENTE O QUE ESTÁ ENTRE PARÊNTESES)
                     const rawAddress = (t.to && t.to.text) ? t.to.text : 'Endereço não informado';
                     let finalAddress = rawAddress.replace(/, Brasil$/i, '');
                     
-                    // Pega apenas o que está dentro do parênteses
                     const matchParens = rawAddress.match(/\(([^)]+)\)/);
                     if (matchParens) {
                         finalAddress = matchParens[1].trim(); 
                     }
                     
-                    // O link do mapa agora usa só o texto extraído
                     const mapLink = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(finalAddress);
                     
                     let obsHtml = '';
@@ -405,7 +397,6 @@
                             </div>`;
                     }
 
-                    // 🔥 FOTO ANEXADA DA LOGÍSTICA 🔥
                     const fotoObsHtml = t.fotoObs ? `<button onclick="App.viewPhoto('${t.fotoObs}')" class="w-full bg-sky-100 text-sky-800 text-xs font-black p-3 rounded-lg mb-2 border border-sky-300 shadow-sm flex items-center justify-center gap-2 btn-press"><i class="fas fa-image text-lg"></i> VER FOTO DA OBSERVAÇÃO</button>` : '';
 
                     const mtrHtml = t.mtr ? `<div class="bg-indigo-100 text-indigo-900 text-[10px] font-bold p-1.5 rounded mb-2 w-fit border border-indigo-200 shadow-sm"><i class="fas fa-file-invoice mr-1"></i> ${t.mtr}</div>` : '';
@@ -453,7 +444,6 @@
                         `;
                     }
 
-                    // 🔥 O CARTÃO DO SERVIÇO EM SI (FECHADO SEM A OBS EXTRA DENTRO) 🔥
                     const cardHtml = `
                     <div class="rounded-2xl border p-4 ${cardClass} transition-all">
                         <div class="flex justify-between items-start mb-3">
@@ -481,17 +471,16 @@
                         ${botoesAcao}
                     </div>`;
 
-                    // 🔥 BLOCO DA OBSERVAÇÃO EXTRA (SEPARADOR DE ROTAS) 🔥
                     const extraBlockHtml = t.obsExtra ? `
                     <div class="bg-red-100 border-2 border-dashed border-red-500 text-red-900 text-xs font-black py-2 px-3 rounded-xl shadow-sm uppercase text-center break-words my-2 mx-auto w-[90%] animate-pulse">
                         ATENÇÃO: ${t.obsExtra}
                     </div>` : '<div class="mb-2"></div>';
 
-                    // Concatena o Card com a OBS Extra em baixo!
                     container.innerHTML += cardHtml + extraBlockHtml;
                 });
             }
-            
+        };
+
         window.onload = () => App.init();
     </script>
 </body>
