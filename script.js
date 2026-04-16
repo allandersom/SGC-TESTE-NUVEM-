@@ -1052,29 +1052,17 @@ const App = {
             bodyDiv.setAttribute('ondragover', 'App.handleDragOver(event)');
             bodyDiv.setAttribute('ondrop', `App.handleDrop(event, '${name}', -1)`);
             
-            const buildCell = (t, i, customLabel = null) => {
+            const buildCell = (t, i, colorClass, customLabel = null) => {
                 let status = t.status || (t.completed ? 'concluido' : 'pendente');
-                let bgClass = 'bg-white border-slate-300'; 
+                let bgClass = 'bg-white border-slate-200'; 
                 let opacityClass = '';
                 const isRetorno = t.veioDeReprogramacao;
                 
-                // 🔥 CORES EXATAS DO PRINT: VERDE PURO E VERMELHO PURO (COM TRANSPARÊNCIA) 🔥
-                if (status === 'concluido') { 
-                    bgClass = 'bg-[#00ff00]/20 border-[#00cc00]'; 
-                } else if (status === 'cancelado' || status === 'nao_feito') { 
-                    bgClass = 'bg-[#ff0000]/15 border-[#ff0000]'; 
-                } else if (status === 'reprogramado') { 
-                    bgClass = 'bg-orange-200/80 border-orange-500'; 
-                } else if (isRetorno) { 
-                    bgClass = 'bg-yellow-100/80 border-yellow-500'; 
-                }
-
-                // 🔥 CORES DOS TEXTOS DOS BOTÕES DE SERVIÇO 🔥
-                let typeColorClass = 'text-slate-800'; // Troca
-                if (t.type === 'colocacao') typeColorClass = 'text-red-600';
-                if (t.type === 'retirada') typeColorClass = 'text-purple-600';
-                if (t.type === 'encher' && customLabel && customLabel.includes('COLOCAÇÕES')) typeColorClass = 'text-red-600';
-                if (t.type === 'encher' && customLabel && customLabel.includes('RETIRADAS')) typeColorClass = 'text-purple-600';
+                // 🔥 CORES ATUALIZADAS (CANCELADO/NÃO FEITO AGORA SÃO VERMELHOS) 🔥
+                if (status === 'concluido') { bgClass = 'bg-emerald-50/70 border-emerald-300'; } 
+                else if (status === 'cancelado' || status === 'nao_feito') { bgClass = 'bg-red-50/70 border-red-300'; } 
+                else if (status === 'reprogramado') { bgClass = 'bg-orange-50/70 border-orange-300'; } 
+                else if (isRetorno) { bgClass = 'bg-amber-50/40 border-amber-300'; }
 
                 const label = customLabel || WhatsappService.getPluralLabel(t.type || 'troca', t.qty || 1);
                 
@@ -1084,16 +1072,16 @@ const App = {
                     const logObs = parts[0].trim();
                     const motObs = parts[1] ? parts[1].trim() : '';
 
-                    if (logObs) obsHtml += `<div class="mt-1.5 text-[9px] text-amber-950 bg-amber-100/70 border-l-2 border-amber-500 px-1.5 py-0.5 font-black leading-tight shadow-sm">${logObs}</div>`;
-                    if (motObs) obsHtml += `<div class="mt-1.5 text-[9px] text-blue-950 bg-blue-100/70 border-l-2 border-blue-500 px-1.5 py-0.5 font-black leading-tight shadow-sm"><i class="fas fa-reply text-blue-600 text-[8px] mr-0.5"></i> ${motObs}</div>`;
+                    if (logObs) obsHtml += `<div class="mt-1.5 text-[9px] text-slate-700 bg-amber-50/60 border-l-2 border-amber-400 px-1.5 py-0.5 font-medium leading-tight shadow-sm">${logObs}</div>`;
+                    if (motObs) obsHtml += `<div class="mt-1.5 text-[9px] text-slate-700 bg-blue-50/60 border-l-2 border-blue-400 px-1.5 py-0.5 font-medium leading-tight shadow-sm"><i class="fas fa-reply text-blue-400 text-[8px] mr-0.5"></i> ${motObs}</div>`;
                 }
-                const obsExtraHtml = t.obsExtra ? `<div class="mt-1.5 text-[10px] text-red-950 bg-red-100/90 border-l-2 border-red-600 px-1.5 py-1 font-black shadow-sm leading-tight uppercase">ATENÇÃO: ${t.obsExtra}</div>` : '';
+                const obsExtraHtml = t.obsExtra ? `<div class="mt-1.5 text-[10px] text-red-800 bg-red-50 border-l-2 border-red-500 px-1.5 py-1 font-bold shadow-sm leading-tight uppercase">ATENÇÃO: ${t.obsExtra}</div>` : '';
 
                 let tagsHtml = '';
                 if (t.mtr || t.descarteLocal) {
                     tagsHtml += `<div class="flex flex-wrap gap-1 mt-1.5">`;
-                    if (t.mtr) tagsHtml += `<span class="bg-indigo-100 text-indigo-950 border border-indigo-300 px-1.5 py-0.5 rounded text-[8px] font-black shadow-sm"><i class="fas fa-file-invoice mr-0.5"></i> MTR: ${t.mtr}</span>`;
-                    if (t.descarteLocal) tagsHtml += `<span class="bg-rose-100 text-rose-950 border border-rose-300 px-1.5 py-0.5 rounded text-[8px] font-black shadow-sm"><i class="fas fa-recycle mr-0.5"></i> DESC: ${t.descarteLocal}</span>`;
+                    if (t.mtr) tagsHtml += `<span class="bg-indigo-50 text-indigo-700 border border-indigo-200 px-1.5 py-0.5 rounded text-[8px] font-bold"><i class="fas fa-file-invoice mr-0.5"></i> MTR: ${t.mtr}</span>`;
+                    if (t.descarteLocal) tagsHtml += `<span class="bg-red-50 text-red-700 border border-red-200 px-1.5 py-0.5 rounded text-[8px] font-bold"><i class="fas fa-recycle mr-0.5"></i> DESC: ${t.descarteLocal}</span>`;
                     tagsHtml += `</div>`;
                 }
 
@@ -1102,78 +1090,75 @@ const App = {
                     fotosHtml += `<div class="flex flex-wrap gap-1 mt-1.5">`;
                     if (t.fotoObs) fotosHtml += `
                         <div class="flex shadow-sm">
-                            <button onclick="UI.showPhoto('${t.fotoObs}')" class="bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-300 border-r-0 px-1.5 py-0.5 rounded-l text-[8px] font-black transition"><i class="fas fa-image mr-1"></i>FOTO LOG</button>
-                            <button onclick="App.removePhotoObs('${name}', ${i})" class="bg-sky-50 hover:bg-red-100 text-slate-500 hover:text-red-700 border border-sky-300 px-1.5 py-0.5 rounded-r transition"><i class="fas fa-times text-[8px]"></i></button>
+                            <button onclick="UI.showPhoto('${t.fotoObs}')" class="bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 border-r-0 px-1.5 py-0.5 rounded-l text-[8px] font-bold transition"><i class="fas fa-image mr-1"></i>FOTO LOG</button>
+                            <button onclick="App.removePhotoObs('${name}', ${i})" class="bg-sky-50 hover:bg-red-100 text-slate-400 hover:text-red-600 border border-sky-200 px-1.5 py-0.5 rounded-r transition"><i class="fas fa-times text-[8px]"></i></button>
                         </div>`;
-                    if (t.foto) fotosHtml += `<button onclick="UI.showPhoto('${t.foto}')" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 px-1.5 py-0.5 rounded text-[8px] font-black transition shadow-sm"><i class="fas fa-camera mr-1"></i>FOTO MOT</button>`;
+                    if (t.foto) fotosHtml += `<button onclick="UI.showPhoto('${t.foto}')" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-1.5 py-0.5 rounded text-[8px] font-bold transition shadow-sm"><i class="fas fa-camera mr-1"></i>FOTO MOT</button>`;
                     fotosHtml += `</div>`;
                 }
 
-                const avisoRetorno = isRetorno ? `<div class="mt-1.5 text-[9px] text-orange-950 bg-orange-100/90 font-black px-1.5 py-0.5 rounded inline-block shadow-sm"><i class="fas fa-exclamation-triangle text-orange-600 mr-0.5"></i> PRIORIDADE: ${t.dataOrigem}</div>` : '';
-                const avisoReprogramado = (status === 'reprogramado') ? `<div class="mt-1.5 text-[9px] text-orange-950 bg-orange-100/90 font-black px-1.5 py-0.5 rounded inline-block shadow-sm border border-orange-400"><i class="fas fa-forward text-orange-600 mr-0.5"></i> REPROGRAMADO PARA: ${t.dataReprogramada}</div>` : '';
-                const timeTag = ((status === 'concluido' || status === 'nao_feito' || status === 'cancelado') && t.horaConclusao) ? `<div class="mt-2 text-[9px] font-black ${status==='concluido'?'text-emerald-900':'text-red-900'} flex items-center gap-1 bg-white/70 px-2 py-0.5 rounded-full w-fit shadow"><i class="far fa-clock"></i> ${status==='concluido'?'FEITO':'NÃO FEITO'} ÀS ${t.horaConclusao}</div>` : '';
+                const avisoRetorno = isRetorno ? `<div class="mt-1.5 text-[9px] text-orange-800 bg-orange-100 font-bold px-1.5 py-0.5 rounded inline-block shadow-sm"><i class="fas fa-exclamation-triangle text-orange-500 mr-0.5"></i> PRIORIDADE: ${t.dataOrigem}</div>` : '';
+                const avisoReprogramado = (status === 'reprogramado') ? `<div class="mt-1.5 text-[9px] text-orange-800 bg-orange-100 font-bold px-1.5 py-0.5 rounded inline-block shadow-sm border border-orange-300"><i class="fas fa-forward text-orange-500 mr-0.5"></i> REPROGRAMADO PARA: ${t.dataReprogramada}</div>` : '';
+                const timeTag = ((status === 'concluido' || status === 'nao_feito' || status === 'cancelado') && t.horaConclusao) ? `<div class="mt-2 text-[8px] font-black ${status==='concluido'?'text-emerald-600':'text-red-600'} flex items-center gap-1"><i class="far fa-clock"></i> ${status==='concluido'?'FEITO':'NÃO FEITO'} ÀS ${t.horaConclusao}</div>` : '';
 
                 const barraAcoesHtml = `
-                    <div class="mt-2 pt-1.5 border-t border-black/10 flex gap-1 justify-between items-center ${status === 'pendente' ? 'bg-white/95' : 'bg-white/70'} -mx-1 -mb-1 px-1 pb-1 rounded-b">
+                    <div class="mt-2 pt-1.5 border-t border-slate-100 flex gap-1 justify-between items-center bg-slate-50/50 -mx-1 -mb-1 px-1 pb-1 rounded-b">
                         <div class="flex gap-1">
-                            <button onclick="App.returnToAgenda('${name}', ${i})" class="w-6 h-6 rounded bg-white border border-slate-300 text-slate-500 hover:text-purple-600 hover:border-purple-400 hover:bg-purple-50 flex items-center justify-center transition shadow-sm" title="Devolver p/ Agenda">
+                            <button onclick="App.returnToAgenda('${name}', ${i})" class="w-6 h-6 rounded bg-white border border-slate-200 text-slate-400 hover:text-purple-600 hover:border-purple-200 hover:bg-purple-50 flex items-center justify-center transition shadow-sm" title="Devolver p/ Agenda">
                                 <i class="fas fa-undo text-[9px]"></i>
                             </button>
-                            <button onclick="App.openDriverRescheduleModal('${name}', ${i})" class="w-6 h-6 rounded bg-white border border-slate-300 text-slate-500 hover:text-orange-600 hover:border-orange-400 hover:bg-orange-50 flex items-center justify-center transition shadow-sm" title="Adiar / Reprogramar">
+                            <button onclick="App.openDriverRescheduleModal('${name}', ${i})" class="w-6 h-6 rounded bg-white border border-slate-200 text-slate-400 hover:text-orange-600 hover:border-orange-200 hover:bg-orange-50 flex items-center justify-center transition shadow-sm" title="Adiar / Reprogramar">
                                 <i class="fas fa-calendar-alt text-[9px]"></i>
                             </button>
                         </div>
                         <div class="flex gap-1">
-                            <button onclick="App.editObs('${name}', ${i})" class="h-6 px-1.5 rounded bg-white border border-slate-300 text-slate-700 hover:text-amber-700 hover:border-amber-400 hover:bg-amber-50 flex items-center justify-center gap-1 transition shadow-sm text-[9px] font-bold" title="Editar OBS">
+                            <button onclick="App.editObs('${name}', ${i})" class="h-6 px-1.5 rounded bg-white border border-slate-200 text-slate-500 hover:text-amber-600 hover:border-amber-200 hover:bg-amber-50 flex items-center justify-center gap-1 transition shadow-sm text-[9px] font-bold" title="Editar OBS">
                                 <i class="fas fa-comment-dots text-[9px]"></i><span class="hidden xl:inline">OBS</span>
                             </button>
-                            <button onclick="App.openMtrModal(${i}, '${name}')" class="h-6 px-1.5 rounded bg-white border border-slate-300 text-slate-700 hover:text-indigo-700 hover:border-indigo-400 hover:bg-indigo-50 flex items-center justify-center gap-1 transition shadow-sm text-[9px] font-bold" title="Definir MTR">
+                            <button onclick="App.openMtrModal(${i}, '${name}')" class="h-6 px-1.5 rounded bg-white border border-slate-200 text-slate-500 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 flex items-center justify-center gap-1 transition shadow-sm text-[9px] font-bold" title="Definir MTR">
                                 <i class="fas fa-file-invoice text-[9px]"></i><span class="hidden xl:inline">MTR</span>
                             </button>
-                            <button onclick="App.attachPhotoObs('${name}', ${i})" class="w-6 h-6 rounded bg-white border border-slate-300 text-slate-500 hover:text-sky-600 hover:border-sky-400 hover:bg-sky-50 flex items-center justify-center transition shadow-sm" title="Anexar Foto (Logística)">
+                            <button onclick="App.attachPhotoObs('${name}', ${i})" class="w-6 h-6 rounded bg-white border border-slate-200 text-slate-400 hover:text-sky-600 hover:border-sky-200 hover:bg-sky-50 flex items-center justify-center transition shadow-sm" title="Anexar Foto (Logística)">
                                 <i class="fas fa-camera text-[9px]"></i>
                             </button>
-                            <button onclick="App.addExtraObs('${name}', ${i})" class="w-6 h-6 rounded bg-white border border-slate-300 text-slate-500 hover:text-red-700 hover:border-red-400 hover:bg-red-50 flex items-center justify-center transition shadow-sm font-black" title="Adicionar OBS Extra (Negrito)">
+                            <button onclick="App.addExtraObs('${name}', ${i})" class="w-6 h-6 rounded bg-white border border-slate-200 text-slate-400 hover:text-red-600 hover:border-red-200 hover:bg-red-50 flex items-center justify-center transition shadow-sm font-black" title="Adicionar OBS Extra (Negrito)">
                                 +
                             </button>
                         </div>
                     </div>
                 `;
 
-                const textEmpresa = t.empresa ? `<div class="text-[12px] font-black text-slate-950 break-words mb-0.5 leading-tight">${t.empresa}</div>` : '';
-                const textObra = t.obra ? `<div class="${t.empresa ? 'text-[9px] font-bold text-slate-700 uppercase tracking-widest' : 'text-[12px] font-black text-slate-950 break-words'} leading-tight">${t.obra}</div>` : '';
-
                 return `
                 <div draggable="true" 
                      ondragstart="App.handleDriverDragStart(event, '${name}', ${i})"
                      ondrop="App.handleDrop(event, '${name}', ${i})"
-                     class="drag-item p-2.5 border rounded-lg shadow-md relative flex flex-col cursor-grab active:cursor-grabbing transition-all hover:border-blue-500 ${bgClass} ${opacityClass}">
+                     class="drag-item p-2.5 border rounded-lg shadow-md relative flex flex-col cursor-grab active:cursor-grabbing transition-all hover:border-blue-400 ${bgClass} ${opacityClass}">
                     
                     <div class="absolute top-2 right-2 flex gap-1 z-10">
-                        <button onclick="App.setTripStatus('${name}', ${i}, 'concluido')" class="w-5 h-5 rounded bg-white hover:bg-emerald-50 text-slate-400 hover:text-emerald-500 flex items-center justify-center border border-slate-300 transition shadow-sm" title="Marcar Concluído"><i class="fas fa-check text-[9px]"></i></button>
-                        <button onclick="App.setTripStatus('${name}', ${i}, 'nao_feito')" class="w-5 h-5 rounded bg-white hover:bg-red-50 text-slate-400 hover:text-red-500 flex items-center justify-center border border-slate-300 transition shadow-sm" title="Marcar Não Feito"><i class="fas fa-times text-[9px]"></i></button>
+                        <button onclick="App.setTripStatus('${name}', ${i}, 'concluido')" class="w-5 h-5 rounded bg-white hover:bg-emerald-50 text-slate-300 hover:text-emerald-500 flex items-center justify-center border border-slate-200 transition shadow-sm" title="Marcar Concluído"><i class="fas fa-check text-[9px]"></i></button>
+                        <button onclick="App.setTripStatus('${name}', ${i}, 'nao_feito')" class="w-5 h-5 rounded bg-white hover:bg-red-50 text-slate-300 hover:text-red-500 flex items-center justify-center border border-slate-200 transition shadow-sm" title="Marcar Não Feito"><i class="fas fa-times text-[9px]"></i></button>
                     </div>
 
                     <div class="flex items-center gap-1 w-fit mb-1.5">
-                        <button onclick="App.changeQty('${name}', ${i})" class="${typeColorClass} hover:bg-slate-100 text-[11px] font-black bg-white rounded px-2 py-0.5 border border-slate-300 shadow-sm transition cursor-pointer" title="Mudar Quantidade">
+                        <button onclick="App.changeQty('${name}', ${i})" class="text-slate-600 hover:text-blue-600 hover:bg-blue-50 text-[10px] font-black bg-white rounded px-1.5 py-0.5 border border-slate-200 shadow-sm transition cursor-pointer" title="Mudar Quantidade">
                             ${t.qty || 1}
                         </button>
-                        <button onclick="App.cycleType('${name}', ${i})" class="${typeColorClass} text-[10px] font-black bg-white hover:bg-slate-100 rounded px-2 py-0.5 border border-slate-300 shadow-sm transition cursor-pointer flex items-center gap-1" title="Mudar Tipo">
+                        <button onclick="App.cycleType('${name}', ${i})" class="${colorClass} text-[9px] font-black bg-white hover:bg-slate-50 rounded px-1.5 py-0.5 border border-slate-200 shadow-sm transition cursor-pointer flex items-center gap-1" title="Mudar Tipo">
                             ${label} <i class="fas fa-sync-alt opacity-30 text-[7px]"></i>
                         </button>
                     </div>
 
-                    <div class="pr-12">
-                        ${textEmpresa}
-                        ${textObra}
+                    <div class="pr-12 leading-tight">
+                        ${t.empresa ? `<div class="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">${t.empresa}</div>` : ''}
+                        <div class="text-[12px] font-black text-slate-800 break-words">${t.obra || 'Sem Nome'}</div>
                     </div>
                     
                     ${avisoRetorno}
                     ${avisoReprogramado}
 
-                    <div class="flex items-start gap-1 mt-2">
-                        <i class="fas fa-map-marker-alt text-red-600 text-[10px] mt-0.5"></i>
-                        <div class="text-[9px] font-semibold text-slate-800 leading-tight flex-1 break-words">${WhatsappService.formatAddress(typeof t.to === 'string' ? t.to : (t.to && t.to.text ? t.to.text : ''))}</div>
+                    <div class="flex items-start gap-1 mt-1.5">
+                        <i class="fas fa-map-marker-alt text-red-400 text-[9px] mt-0.5"></i>
+                        <div class="text-[9px] font-semibold text-slate-500 leading-tight flex-1 break-words">${WhatsappService.formatAddress(typeof t.to === 'string' ? t.to : (t.to && t.to.text ? t.to.text : ''))}</div>
                     </div>
 
                     ${tagsHtml}
@@ -1196,11 +1181,12 @@ const App = {
                 `;
             } else {
                 trips.forEach((t, i) => {
-                    if (t.type === 'encher') {
-                        tripsHtml += buildCell(t, i, 'COLOCAÇÕES (ENCHER)');
-                        tripsHtml += buildCell(t, i, 'RETIRADAS (ENCHER)');
-                    } else {
-                        tripsHtml += buildCell(t, i);
+                    if (t.type === 'troca') tripsHtml += buildCell(t, i, 'text-slate-800'); 
+                    else if (t.type === 'colocacao') tripsHtml += buildCell(t, i, 'text-red-600'); 
+                    else if (t.type === 'retirada') tripsHtml += buildCell(t, i, 'text-purple-600'); 
+                    else if (t.type === 'encher') {
+                        tripsHtml += buildCell(t, i, 'text-red-600', 'COLOCAÇÕES (ENCHER)');
+                        tripsHtml += buildCell(t, i, 'text-purple-600', 'RETIRADAS (ENCHER)');
                     }
                 });
             }
@@ -1222,7 +1208,7 @@ const App = {
             container.appendChild(column);
         });
     },
-    
+
     handleAgendaDragStart(e, id) {
         const agendaItem = State.data.agendamentos.find(a => a.id === id);
         if (agendaItem && (agendaItem.distribuido || agendaItem.reprogramado)) {
@@ -1727,8 +1713,8 @@ const App = {
         this.renderGrid();
         UI.toast("Serviços distribuídos!");
     },
-  // =========================================================
-    // 🔥 GERADOR DE IMAGEM LIMPA PARA CLIENTES/LEIGOS (RENDERIZAÇÃO CORRIGIDA) 🔥
+   // =========================================================
+    // 🔥 GERADOR DE IMAGEM LIMPA PARA CLIENTES/LEIGOS 🔥
     // =========================================================
     downloadPreview() {
         UI.toast("Gerando imagem de alta qualidade, aguarde...", "info");
@@ -1748,14 +1734,12 @@ const App = {
             const d = State.getDriver(name);
             if(!d || !d.trips || d.trips.length === 0) return; 
             
+            // Agora mostra tudo, inclusive reprogramados e não feitos
             const activeTrips = d.trips;
             if (activeTrips.length === 0) return;
 
             rotasExistem = true;
             let tripsHtml = '';
-            
-            const bgColorCard = '#1e293b'; 
-            const borderColorCard = '#1f293a'; 
             
             activeTrips.forEach(t => {
                 const isDone = (t.status === 'concluido' || t.completed);
@@ -1763,93 +1747,61 @@ const App = {
                 const isReprogramado = (t.status === 'reprogramado');
                 const isRetorno = t.veioDeReprogramacao;
                 
+                let bgColor = '#ffffff'; 
+                let borderColor = '#e2e8f0'; 
                 let statusColor = '#94a3b8'; 
                 let iconStr = '';
 
-                // 🔥 CORES EXATAS PRO EXPORTADOR TB 🔥
                 if (isDone) {
-                    statusColor = '#00ff00'; 
+                    bgColor = '#ecfdf5'; 
+                    borderColor = '#a7f3d0'; 
+                    statusColor = '#10b981'; 
                     iconStr = '✅ ';
                 } else if (isFailed) {
-                    statusColor = '#ff0000'; 
+                    bgColor = '#fef2f2'; 
+                    borderColor = '#fecaca'; 
+                    statusColor = '#ef4444'; 
                     iconStr = '❌ ';
                 } else if (isReprogramado) {
+                    bgColor = '#fff7ed'; 
+                    borderColor = '#fed7aa'; 
                     statusColor = '#f97316'; 
-                    iconStr = ''; 
+                    iconStr = ''; // 🔥 SEM EMOJI AQUI, SÓ A COR LARANJA 🔥
                 } else if (isRetorno) {
+                    bgColor = '#fefce8'; 
+                    borderColor = '#fde047'; 
                     statusColor = '#eab308'; 
-                    iconStr = '⚠️ ';
+                    iconStr = '⚠️ '; // Aviso de prioridade mantido
                 }
 
-                const qty = parseInt(t.qty) || 1;
-                let displayTypeHtml = '';
-                let pillTextColor = '#1e293b'; 
-
-                if (t.type === 'colocacao') pillTextColor = '#dc2626'; 
-                if (t.type === 'retirada') pillTextColor = '#9333ea'; 
-
-                if (t.type === 'encher') {
-                    const colTxt = qty > 1 ? 'COLOCAÇÕES' : 'COLOCAÇÃO';
-                    const retTxt = qty > 1 ? 'RETIRADAS' : 'RETIRADA';
-                    if (isFailed || isReprogramado) {
-                        displayTypeHtml = `${qty} ${colTxt} + ${qty} ${retTxt}`;
-                        pillTextColor = '#ffffff'; 
-                    } else {
-                        displayTypeHtml = `<span style="color: #dc2626">${qty} ${colTxt}</span> <span style="color: #64748b">+</span> <span style="color: #9333ea">${qty} ${retTxt}</span>`;
-                    }
-                } else {
-                    displayTypeHtml = `${qty} ${WhatsappService.getPluralLabel(t.type, qty)}`;
-                    if (isFailed || isReprogramado) {
-                        pillTextColor = '#ffffff'; 
-                    }
-                }
+                const qty = t.qty || 1;
+                const label = WhatsappService.getPluralLabel(t.type, qty);
+                const displayType = t.type === 'encher' ? 'ENCHER' : label;
                 
-                let pillBgColor = '#ffffff'; 
-                let pillBorderColor = '#e2e8f0'; 
-
-                if (isFailed) {
-                    pillBgColor = '#ff0000'; 
-                    pillTextColor = '#ffffff'; 
-                    pillBorderColor = '#ff0000'; 
-                } else if (isReprogramado) {
-                    pillBgColor = '#f97316'; 
-                    pillTextColor = '#ffffff'; 
-                    pillBorderColor = '#fed7aa'; 
-                }
-                
-                let titleHtml = '';
-                if (t.empresa) {
-                    titleHtml += `<div style="font-size: 14px; font-weight: 900; color: #ffffff; word-break: break-word; text-decoration: ${isFailed ? 'line-through' : 'none'};">${iconStr}${t.empresa}</div>`;
-                    if (t.obra) {
-                        titleHtml += `<div style="font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-top: 2px; text-decoration: ${isFailed ? 'line-through' : 'none'};">${t.obra}</div>`;
-                    }
-                } else if (t.obra) {
-                    titleHtml += `<div style="font-size: 14px; font-weight: 900; color: #ffffff; word-break: break-word; text-decoration: ${isFailed ? 'line-through' : 'none'};">${iconStr}${t.obra}</div>`;
-                }
-                
+                // 🔥 HORÁRIO SÓ APARECE SE FOI CONCLUÍDO 🔥
                 let timeHtml = '';
                 if (isDone && t.horaConclusao) {
-                    timeHtml = `<div style="font-size: 10px; font-weight: 900; color: #00ff00; margin-top: 6px; letter-spacing: 0.5px;">🕒 FEITO ÀS ${t.horaConclusao}</div>`;
+                    timeHtml = `<div style="font-size: 10px; font-weight: 900; color: #059669; margin-top: 6px; letter-spacing: 0.5px;">🕒 FEITO ÀS ${t.horaConclusao}</div>`;
                 }
                 
-                // 🔥 CORRIGIDO ESTRUTURA PARA O HTML2CANVAS NÃO BBUGAR OS QUADRADOS 🔥
                 tripsHtml += `
-                    <div style="margin-bottom: 8px; padding: 10px; background-color: ${bgColorCard}; border: 1px solid ${borderColorCard}; border-radius: 8px; display: flex; align-items: flex-start; gap: 8px;">
-                        <div style="margin-top: 6px; width: 12px; height: 12px; border-radius: 50%; background-color: ${statusColor}; flex-shrink: 0;"></div>
-                        <div style="flex: 1;">
-                            <div style="margin-bottom: 6px;">
-                                <span style="background-color: ${pillBgColor}; color: ${pillTextColor}; border: 1px solid ${pillBorderColor}; font-size: 11px; font-weight: 900; padding: 3px 8px; border-radius: 6px;">${displayTypeHtml}</span>
+                    <div style="margin-bottom: 8px; padding: 10px; background-color: ${bgColor}; border: 1px solid ${borderColor}; border-radius: 8px;">
+                        <div style="display: flex; align-items: flex-start; gap: 8px;">
+                            <div style="margin-top: 4px; width: 12px; height: 12px; border-radius: 50%; background-color: ${statusColor}; flex-shrink: 0; box-shadow: 0 1px 2px rgba(0,0,0,0.1);"></div>
+                            <div style="flex: 1; line-height: 1.2;">
+                                <div style="display: inline-block; background-color: #ffffff; border: 1px solid ${borderColor}; color: #1e293b; font-size: 10px; font-weight: 900; padding: 2px 6px; border-radius: 4px; letter-spacing: 1px; margin-bottom: 4px;">${qty} ${displayType}</div>
+                                <div style="font-size: 14px; font-weight: 900; color: #0f172a; word-break: break-word;">${iconStr}${t.obra || 'Sem Obra'}</div>
+                                ${t.empresa ? `<div style="font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-top: 2px;">${t.empresa}</div>` : ''}
+                                ${timeHtml}
                             </div>
-                            ${titleHtml}
-                            ${timeHtml}
                         </div>
                     </div>
                 `;
             });
 
             const col = `
-                <div style="background-color: #111827; border: 2px solid #1f2937; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);">
-                    <div style="text-align: center; font-weight: 900; font-size: 18px; text-transform: uppercase; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid #374151; letter-spacing: 2px; color: ${d.color || '#ccc'}">${name}</div>
+                <div style="background-color: #ffffff; border: 2px solid #e2e8f0; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                    <div style="text-align: center; font-weight: 900; font-size: 18px; text-transform: uppercase; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid #f1f5f9; letter-spacing: 2px; color: ${d.color || '#333'}">${name}</div>
                     <div>${tripsHtml}</div>
                 </div>
             `;
@@ -1863,7 +1815,7 @@ const App = {
         html2canvas(container, { 
             scale: 2, 
             useCORS: true, 
-            backgroundColor: '#1f293a' 
+            backgroundColor: '#ffffff' 
         }).then(canvas => {
             const link = document.createElement('a');
             link.download = `SGC_Rotas_${date.replace(/\//g, '-')}_${shift}.png`;
