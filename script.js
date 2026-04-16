@@ -18,6 +18,16 @@ if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
 const db = firebase.database();
+
+// 👇 NOVA PARTE: LOGIN INVISÍVEL DA LOGÍSTICA 👇
+firebase.auth().signInAnonymously()
+    .then(() => {
+        console.log("Logística: Conectado ao Firebase com segurança invisível!");
+    })
+    .catch((error) => {
+        console.error("Erro na autenticação de segurança:", error.message);
+    });
+// 👆 FIM DA NOVA PARTE 👆
 // ============================================================================
 
 const CONFIG = {
