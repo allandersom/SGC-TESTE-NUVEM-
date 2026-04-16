@@ -16,6 +16,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <style>
@@ -99,6 +100,18 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
+
+        // =========================================================
+        // LOGIN INVISÍVEL ADICIONADO AQUI
+        // =========================================================
+        firebase.auth().signInAnonymously()
+            .then(() => {
+                console.log("Motorista: Conectado com segurança invisível ao Firebase!");
+            })
+            .catch((error) => {
+                console.error("Erro na autenticação de segurança:", error.message);
+            });
+        // =========================================================
 
         const App = {
             myName: localStorage.getItem('sgc_driver_name'),
