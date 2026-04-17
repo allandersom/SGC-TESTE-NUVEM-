@@ -2056,4 +2056,15 @@ const App = {
     }
 };
 
+// 🔥 FECHAR A PLANILHA GIGANTE COM A TECLA ESC 🔥
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+        const planilhaModal = document.getElementById('spreadsheet-modal');
+        // Verifica se a planilha existe e se ela está ABERTA (sem a classe hidden)
+        if (planilhaModal && !planilhaModal.classList.contains('hidden')) {
+            UI.toggleModal('spreadsheet-modal');
+        }
+    }
+});
+
 window.onload = () => UI.init();
