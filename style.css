@@ -581,3 +581,20 @@ body.night-mode .drag-item.bg-yellow-50 {
     background-color: rgba(234, 179, 8, 0.15) !important;
     border-color: #a16207 !important;
 }
+/* 🔥 CORREÇÃO: LIBERA O SCROLL DA CAIXA DE SUGESTÕES NO OPERACIONAL 🔥 */
+#editor-panel {
+    overflow: visible !important; /* Impede que a caixa de sugestões seja cortada */
+}
+
+/* Devolve as bordas arredondadas ao cabeçalho escuro do painel do motorista */
+#editor-panel > .bg-slate-800 {
+    border-top-left-radius: 0.75rem; 
+    border-top-right-radius: 0.75rem;
+}
+
+/* Aumenta a caixa de sugestões para caber mais itens e garante a rolagem */
+#suggestions-box, #suggestions-box-agenda {
+    max-height: 250px !important; 
+    overflow-y: auto !important;
+    overscroll-behavior: contain; /* Impede que a tela de fundo role junto quando chegar no final da lista */
+}
