@@ -1019,12 +1019,37 @@ const App = {
             el.appendChild(row);
         });
     },
+    // 🔥 1. NOVAS FUNÇÕES PARA SUBIR E DESCER SERVIÇOS 🔥
+    moveTripUp(driverName, index) {
+        const driver = State.getCurrentFleet()[driverName];
+        if (!driver || !driver.trips || index <= 0) return;
+        
+        // Troca o item atual com o de cima
+        const temp = driver.trips[index];
+        driver.trips[index] = driver.trips[index - 1];
+        driver.trips[index - 1] = temp;
+        
+        State.saveFleet();
+        this.renderSpreadsheet();
+    },
 
+    moveTripDown(driverName, index) {
+        const driver = State.getCurrentFleet()[driverName];
+        if (!driver || !driver.trips || index >= driver.trips.length - 1) return;
+        
+        // Troca o item atual com o de baixo
+        const temp = driver.trips[index];
+        driver.trips[index] = driver.trips[index + 1];
+        driver.trips[index + 1] = temp;
+        
+        State.saveFleet();
+        this.renderSpreadsheet();
+    },
    renderSpreadsheet() {
         const container = document.getElementById('spreadsheet-container');
         if (!container) return; 
 
-        // 🔥 1. SALVAR POSIÇÕES DE SCROLL (VERTICAL E HORIZONTAL) 🔥
+        // 🔥 SALVAR POSIÇÕES DE SCROLL (VERTICAL E HORIZONTAL) 🔥
         const scrollY = {};
         const scrollX = container.scrollLeft;
 
@@ -1060,7 +1085,6 @@ const App = {
             `;
             
             const bodyDiv = document.createElement('div');
-            // 🔥 ADICIONADO: CLASSE driver-list-scroll E DATA-DRIVER 🔥
             bodyDiv.className = "driver-list-scroll flex-1 flex flex-col overflow-y-auto custom-scroll p-2 gap-2 min-h-[150px]";
             bodyDiv.setAttribute('data-driver', name);
             bodyDiv.setAttribute('ondragover', 'App.handleDragOver(event)');
@@ -1114,6 +1138,11 @@ const App = {
                 const avisoReprogramado = (status === 'reprogramado') ? `<div class="mt-1.5 text-[9px] text-orange-800 bg-orange-100 font-bold px-1.5 py-0.5 rounded inline-block shadow-sm border border-orange-300"><i class="fas fa-forward text-orange-500 mr-0.5"></i> REPROGRAMADO PARA: ${t.dataReprogramada}</div>` : '';
                 const timeTag = ((status === 'concluido' || status === 'nao_feito' || status === 'cancelado') && t.horaConclusao) ? `<div class="mt-2 text-[8px] font-black ${status==='concluido'?'text-emerald-600':'text-red-600'} flex items-center gap-1"><i class="far fa-clock"></i> ${status==='concluido'?'FEITO':'NÃO FEITO'} ÀS ${t.horaConclusao}</div>` : '';
 
+                // 🔥 NOVOS BOTÕES DE SETA PARA CIMA E PARA BAIXO 🔥
+                const btnUp = i > 0 ? `<button onclick="App.moveTripUp('${name}', ${i})" class="w-5 h-5 rounded bg-slate-100 hover:bg-blue-100 text-slate-500 hover:text-blue-600 flex items-center justify-center border border-slate-200 transition shadow-sm" title="Subir Serviço"><i class="fas fa-arrow-up text-[9px]"></i></button>` : '';
+                const btnDown = i < trips.length - 1 ? `<button onclick="App.moveTripDown('${name}', ${i})" class="w-5 h-5 rounded bg-slate-100 hover:bg-blue-100 text-slate-500 hover:text-blue-600 flex items-center justify-center border border-slate-200 transition shadow-sm" title="Descer Serviço"><i class="fas fa-arrow-down text-[9px]"></i></button>` : '';
+                const divider = (btnUp || btnDown) ? `<div class="w-px bg-slate-200 mx-0.5 my-1"></div>` : '';
+
                 const barraAcoesHtml = `
                     <div class="mt-2 pt-1.5 border-t border-slate-100 flex gap-1 justify-between items-center bg-slate-50/50 -mx-1 -mb-1 px-1 pb-1 rounded-b">
                         <div class="flex gap-1">
@@ -1148,6 +1177,9 @@ const App = {
                      class="drag-item p-2.5 border rounded-lg shadow-md relative flex flex-col cursor-grab active:cursor-grabbing transition-all hover:border-blue-400 ${bgClass} ${opacityClass}">
                     
                     <div class="absolute top-2 right-2 flex gap-1 z-10">
+                        ${btnUp}
+                        ${btnDown}
+                        ${divider}
                         <button onclick="App.setTripStatus('${name}', ${i}, 'concluido')" class="w-5 h-5 rounded bg-white hover:bg-emerald-50 text-slate-300 hover:text-emerald-500 flex items-center justify-center border border-slate-200 transition shadow-sm" title="Marcar Concluído"><i class="fas fa-check text-[9px]"></i></button>
                         <button onclick="App.setTripStatus('${name}', ${i}, 'nao_feito')" class="w-5 h-5 rounded bg-white hover:bg-red-50 text-slate-300 hover:text-red-500 flex items-center justify-center border border-slate-200 transition shadow-sm" title="Marcar Não Feito"><i class="fas fa-times text-[9px]"></i></button>
                     </div>
@@ -1221,7 +1253,7 @@ const App = {
             container.appendChild(column);
         });
 
-        // 🔥 2. DEVOLVER A ROLAGEM EXATAMENTE ONDE ESTAVA (Com atraso estratégico de 15ms) 🔥
+        // 🔥 DEVOLVER A ROLAGEM EXATAMENTE ONDE ESTAVA (Com atraso estratégico de 15ms) 🔥
         setTimeout(() => {
             container.scrollLeft = scrollX;
             container.querySelectorAll('.driver-list-scroll').forEach(scrollDiv => {
