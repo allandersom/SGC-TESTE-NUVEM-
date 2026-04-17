@@ -1023,6 +1023,17 @@ const App = {
     renderSpreadsheet() {
         const container = document.getElementById('spreadsheet-container');
         if (!container) return; 
+
+        // 🔥 1. SALVAR AS POSIÇÕES DE ROLAGEM ANTES DE ATUALIZAR A TELA 🔥
+        const scrollPositions = {};
+        container.querySelectorAll('.driver-column').forEach(col => {
+            const nameEl = col.querySelector('.text-sm.font-black'); // Pega a div que tem o nome do motorista
+            const scrollDiv = col.querySelector('.custom-scroll');   // Pega a área que rola
+            if (nameEl && scrollDiv) {
+                scrollPositions[nameEl.innerText.trim()] = scrollDiv.scrollTop;
+            }
+        });
+        
         container.innerHTML = '';
 
         const drivers = State.getDriversByShift();
@@ -1192,13 +1203,17 @@ const App = {
             }
 
             bodyDiv.innerHTML = tripsHtml;
+            // 🔥 2. DEVOLVER A ROLAGEM PARA ONDE ESTAVA ANTES DA ATUALIZAÇÃO 🔥
+            if (scrollPositions[name] !== undefined) {
+                // Usamos um pequeno timeout para garantir que o HTML já está na tela
+                setTimeout(() => {
+                    bodyDiv.scrollTop = scrollPositions[name];
+                }, 0);
+            }
 
             const footerHtml = `
                 <div class="mt-auto p-2 bg-slate-100 border-t border-slate-300">
-                    <button onclick="App.shareDriverRoute('${name}')" class="w-full py-2.5 bg-green-600 hover:bg-green-700 text-white text-[10px] font-black rounded-lg shadow flex items-center justify-center gap-2 transition transform hover:scale-[1.02] ${trips.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}" ${trips.length === 0 ? 'disabled' : ''}>
-                        <i class="fab fa-whatsapp text-sm"></i> ENVIAR ROTA
-                    </button>
-                </div>
+                    <button onclick="App.shareDriverRoute('${name}')" ...
             `;
 
             column.innerHTML = headerHtml;
