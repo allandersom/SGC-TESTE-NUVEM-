@@ -1025,14 +1025,16 @@ const App = {
         if (!container) return; 
 
         // 🔥 1. SALVAR AS POSIÇÕES DE ROLAGEM ANTES DE ATUALIZAR A TELA 🔥
+        // Salvamos o scroll de cada coluna E o scroll horizontal do container inteiro
         const scrollPositions = {};
         container.querySelectorAll('.driver-column').forEach(col => {
-            const nameEl = col.querySelector('.text-sm.font-black'); // Pega a div que tem o nome do motorista
-            const scrollDiv = col.querySelector('.custom-scroll');   // Pega a área que rola
+            const nameEl = col.querySelector('.text-sm.font-black'); 
+            const scrollDiv = col.querySelector('.custom-scroll');   
             if (nameEl && scrollDiv) {
                 scrollPositions[nameEl.innerText.trim()] = scrollDiv.scrollTop;
             }
         });
+        const containerScrollLeft = container.scrollLeft;
         
         container.innerHTML = '';
 
@@ -1069,7 +1071,6 @@ const App = {
                 let opacityClass = '';
                 const isRetorno = t.veioDeReprogramacao;
                 
-                // 🔥 CORES ATUALIZADAS (CANCELADO/NÃO FEITO AGORA SÃO VERMELHOS) 🔥
                 if (status === 'concluido') { bgClass = 'bg-emerald-50/70 border-emerald-300'; } 
                 else if (status === 'cancelado' || status === 'nao_feito') { bgClass = 'bg-red-50/70 border-red-300'; } 
                 else if (status === 'reprogramado') { bgClass = 'bg-orange-50/70 border-orange-300'; } 
@@ -1203,17 +1204,13 @@ const App = {
             }
 
             bodyDiv.innerHTML = tripsHtml;
-            // 🔥 2. DEVOLVER A ROLAGEM PARA ONDE ESTAVA ANTES DA ATUALIZAÇÃO 🔥
-            if (scrollPositions[name] !== undefined) {
-                // Usamos um pequeno timeout para garantir que o HTML já está na tela
-                setTimeout(() => {
-                    bodyDiv.scrollTop = scrollPositions[name];
-                }, 0);
-            }
 
             const footerHtml = `
                 <div class="mt-auto p-2 bg-slate-100 border-t border-slate-300">
-                    <button onclick="App.shareDriverRoute('${name}')" ...
+                    <button onclick="App.shareDriverRoute('${name}')" class="w-full py-2.5 bg-green-600 hover:bg-green-700 text-white text-[10px] font-black rounded-lg shadow flex items-center justify-center gap-2 transition transform hover:scale-[1.02] ${trips.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}" ${trips.length === 0 ? 'disabled' : ''}>
+                        <i class="fab fa-whatsapp text-sm"></i> ENVIAR ROTA
+                    </button>
+                </div>
             `;
 
             column.innerHTML = headerHtml;
@@ -1221,6 +1218,19 @@ const App = {
             column.insertAdjacentHTML('beforeend', footerHtml);
             
             container.appendChild(column);
+        });
+
+        // 🔥 2. DEVOLVER A ROLAGEM PARA ONDE ESTAVA ANTES DA ATUALIZAÇÃO 🔥
+        // Usamos requestAnimationFrame para garantir que o navegador já desenhou tudo
+        requestAnimationFrame(() => {
+            container.scrollLeft = containerScrollLeft;
+            container.querySelectorAll('.driver-column').forEach(col => {
+                const nameEl = col.querySelector('.text-sm.font-black');
+                const scrollDiv = col.querySelector('.custom-scroll');
+                if (nameEl && scrollDiv && scrollPositions[nameEl.innerText.trim()] !== undefined) {
+                    scrollDiv.scrollTop = scrollPositions[nameEl.innerText.trim()];
+                }
+            });
         });
     },
 
