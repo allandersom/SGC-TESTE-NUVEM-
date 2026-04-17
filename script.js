@@ -757,7 +757,7 @@ const App = {
     setShift(shift) {
         State.session.shift = shift;
         
-        // Sincroniza os botões do menu antigo E da planilha nova
+        // 🔥 LÓGICA NOVA: Sincroniza os botões do menu antigo E da planilha nova 🔥
         document.querySelectorAll('#shift-day, .shift-day-sync').forEach(el => el.className = `shift-btn ${shift==='day'?'active':''} shift-day-sync text-xs px-3 py-1.5`);
         document.querySelectorAll('#shift-night, .shift-night-sync').forEach(el => el.className = `shift-btn ${shift==='night'?'active':''} shift-night-sync text-xs px-3 py-1.5`);
         
@@ -1020,7 +1020,6 @@ const App = {
         });
     },
 
-    // 🔥 RENDER SPREADSHEET COM ARRASTAR E SOLTAR SUAVE 🔥
     renderSpreadsheet() {
         const container = document.getElementById('spreadsheet-container');
         if (!container) return; 
@@ -1049,10 +1048,8 @@ const App = {
             `;
             
             const bodyDiv = document.createElement('div');
-            // DROP-ZONE classe e eventos para receber cards suaves
-            bodyDiv.className = "drop-zone flex-1 flex flex-col overflow-y-auto custom-scroll p-2 gap-2 min-h-[150px] transition-colors duration-200";
+            bodyDiv.className = "flex-1 flex flex-col overflow-y-auto custom-scroll p-2 gap-2 min-h-[150px]";
             bodyDiv.setAttribute('ondragover', 'App.handleDragOver(event)');
-            bodyDiv.setAttribute('ondragleave', 'App.handleDragLeave(event)');
             bodyDiv.setAttribute('ondrop', `App.handleDrop(event, '${name}', -1)`);
             
             const buildCell = (t, i, colorClass, customLabel = null) => {
@@ -1061,6 +1058,7 @@ const App = {
                 let opacityClass = '';
                 const isRetorno = t.veioDeReprogramacao;
                 
+                // 🔥 CORES ATUALIZADAS (CANCELADO/NÃO FEITO AGORA SÃO VERMELHOS) 🔥
                 if (status === 'concluido') { bgClass = 'bg-emerald-50/70 border-emerald-300'; } 
                 else if (status === 'cancelado' || status === 'nao_feito') { bgClass = 'bg-red-50/70 border-red-300'; } 
                 else if (status === 'reprogramado') { bgClass = 'bg-orange-50/70 border-orange-300'; } 
@@ -1074,14 +1072,14 @@ const App = {
                     const logObs = parts[0].trim();
                     const motObs = parts[1] ? parts[1].trim() : '';
 
-                    if (logObs) obsHtml += `<div class="mt-1.5 text-[9px] text-slate-700 bg-amber-50/60 border-l-2 border-amber-400 px-1.5 py-0.5 font-medium leading-tight shadow-sm pointer-events-none">${logObs}</div>`;
-                    if (motObs) obsHtml += `<div class="mt-1.5 text-[9px] text-slate-700 bg-blue-50/60 border-l-2 border-blue-400 px-1.5 py-0.5 font-medium leading-tight shadow-sm pointer-events-none"><i class="fas fa-reply text-blue-400 text-[8px] mr-0.5"></i> ${motObs}</div>`;
+                    if (logObs) obsHtml += `<div class="mt-1.5 text-[9px] text-slate-700 bg-amber-50/60 border-l-2 border-amber-400 px-1.5 py-0.5 font-medium leading-tight shadow-sm">${logObs}</div>`;
+                    if (motObs) obsHtml += `<div class="mt-1.5 text-[9px] text-slate-700 bg-blue-50/60 border-l-2 border-blue-400 px-1.5 py-0.5 font-medium leading-tight shadow-sm"><i class="fas fa-reply text-blue-400 text-[8px] mr-0.5"></i> ${motObs}</div>`;
                 }
-                const obsExtraHtml = t.obsExtra ? `<div class="mt-1.5 text-[10px] text-red-800 bg-red-50 border-l-2 border-red-500 px-1.5 py-1 font-bold shadow-sm leading-tight uppercase pointer-events-none">ATENÇÃO: ${t.obsExtra}</div>` : '';
+                const obsExtraHtml = t.obsExtra ? `<div class="mt-1.5 text-[10px] text-red-800 bg-red-50 border-l-2 border-red-500 px-1.5 py-1 font-bold shadow-sm leading-tight uppercase">ATENÇÃO: ${t.obsExtra}</div>` : '';
 
                 let tagsHtml = '';
                 if (t.mtr || t.descarteLocal) {
-                    tagsHtml += `<div class="flex flex-wrap gap-1 mt-1.5 pointer-events-none">`;
+                    tagsHtml += `<div class="flex flex-wrap gap-1 mt-1.5">`;
                     if (t.mtr) tagsHtml += `<span class="bg-indigo-50 text-indigo-700 border border-indigo-200 px-1.5 py-0.5 rounded text-[8px] font-bold"><i class="fas fa-file-invoice mr-0.5"></i> MTR: ${t.mtr}</span>`;
                     if (t.descarteLocal) tagsHtml += `<span class="bg-red-50 text-red-700 border border-red-200 px-1.5 py-0.5 rounded text-[8px] font-bold"><i class="fas fa-recycle mr-0.5"></i> DESC: ${t.descarteLocal}</span>`;
                     tagsHtml += `</div>`;
@@ -1089,7 +1087,7 @@ const App = {
 
                 let fotosHtml = '';
                 if (t.fotoObs || t.foto) {
-                    fotosHtml += `<div class="flex flex-wrap gap-1 mt-1.5 z-10">`;
+                    fotosHtml += `<div class="flex flex-wrap gap-1 mt-1.5">`;
                     if (t.fotoObs) fotosHtml += `
                         <div class="flex shadow-sm">
                             <button onclick="UI.showPhoto('${t.fotoObs}')" class="bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 border-r-0 px-1.5 py-0.5 rounded-l text-[8px] font-bold transition"><i class="fas fa-image mr-1"></i>FOTO LOG</button>
@@ -1099,12 +1097,12 @@ const App = {
                     fotosHtml += `</div>`;
                 }
 
-                const avisoRetorno = isRetorno ? `<div class="mt-1.5 text-[9px] text-orange-800 bg-orange-100 font-bold px-1.5 py-0.5 rounded inline-block shadow-sm pointer-events-none"><i class="fas fa-exclamation-triangle text-orange-500 mr-0.5"></i> PRIORIDADE: ${t.dataOrigem}</div>` : '';
-                const avisoReprogramado = (status === 'reprogramado') ? `<div class="mt-1.5 text-[9px] text-orange-800 bg-orange-100 font-bold px-1.5 py-0.5 rounded inline-block shadow-sm border border-orange-300 pointer-events-none"><i class="fas fa-forward text-orange-500 mr-0.5"></i> REPROGRAMADO PARA: ${t.dataReprogramada}</div>` : '';
-                const timeTag = ((status === 'concluido' || status === 'nao_feito' || status === 'cancelado') && t.horaConclusao) ? `<div class="mt-2 text-[8px] font-black ${status==='concluido'?'text-emerald-600':'text-red-600'} flex items-center gap-1 pointer-events-none"><i class="far fa-clock"></i> ${status==='concluido'?'FEITO':'NÃO FEITO'} ÀS ${t.horaConclusao}</div>` : '';
+                const avisoRetorno = isRetorno ? `<div class="mt-1.5 text-[9px] text-orange-800 bg-orange-100 font-bold px-1.5 py-0.5 rounded inline-block shadow-sm"><i class="fas fa-exclamation-triangle text-orange-500 mr-0.5"></i> PRIORIDADE: ${t.dataOrigem}</div>` : '';
+                const avisoReprogramado = (status === 'reprogramado') ? `<div class="mt-1.5 text-[9px] text-orange-800 bg-orange-100 font-bold px-1.5 py-0.5 rounded inline-block shadow-sm border border-orange-300"><i class="fas fa-forward text-orange-500 mr-0.5"></i> REPROGRAMADO PARA: ${t.dataReprogramada}</div>` : '';
+                const timeTag = ((status === 'concluido' || status === 'nao_feito' || status === 'cancelado') && t.horaConclusao) ? `<div class="mt-2 text-[8px] font-black ${status==='concluido'?'text-emerald-600':'text-red-600'} flex items-center gap-1"><i class="far fa-clock"></i> ${status==='concluido'?'FEITO':'NÃO FEITO'} ÀS ${t.horaConclusao}</div>` : '';
 
                 const barraAcoesHtml = `
-                    <div class="mt-2 pt-1.5 border-t border-slate-100 flex gap-1 justify-between items-center bg-slate-50/50 -mx-1 -mb-1 px-1 pb-1 rounded-b z-10">
+                    <div class="mt-2 pt-1.5 border-t border-slate-100 flex gap-1 justify-between items-center bg-slate-50/50 -mx-1 -mb-1 px-1 pb-1 rounded-b">
                         <div class="flex gap-1">
                             <button onclick="App.returnToAgenda('${name}', ${i})" class="w-6 h-6 rounded bg-white border border-slate-200 text-slate-400 hover:text-purple-600 hover:border-purple-200 hover:bg-purple-50 flex items-center justify-center transition shadow-sm" title="Devolver p/ Agenda">
                                 <i class="fas fa-undo text-[9px]"></i>
@@ -1130,21 +1128,18 @@ const App = {
                     </div>
                 `;
 
-                // 🔥 CARD COM NOVAS ANIMAÇÕES E POINTER-EVENTS-NONE NO TEXTO 🔥
                 return `
                 <div draggable="true" 
                      ondragstart="App.handleDriverDragStart(event, '${name}', ${i})"
-                     ondragover="App.handleDragOverCard(event)"
-                     ondragleave="App.handleDragLeaveCard(event)"
                      ondrop="App.handleDrop(event, '${name}', ${i})"
-                     class="drag-item animate-pop-in p-2.5 border rounded-lg shadow-md relative flex flex-col cursor-grab active:cursor-grabbing transition-all hover:border-blue-400 ${bgClass} ${opacityClass}">
+                     class="drag-item p-2.5 border rounded-lg shadow-md relative flex flex-col cursor-grab active:cursor-grabbing transition-all hover:border-blue-400 ${bgClass} ${opacityClass}">
                     
                     <div class="absolute top-2 right-2 flex gap-1 z-10">
                         <button onclick="App.setTripStatus('${name}', ${i}, 'concluido')" class="w-5 h-5 rounded bg-white hover:bg-emerald-50 text-slate-300 hover:text-emerald-500 flex items-center justify-center border border-slate-200 transition shadow-sm" title="Marcar Concluído"><i class="fas fa-check text-[9px]"></i></button>
                         <button onclick="App.setTripStatus('${name}', ${i}, 'nao_feito')" class="w-5 h-5 rounded bg-white hover:bg-red-50 text-slate-300 hover:text-red-500 flex items-center justify-center border border-slate-200 transition shadow-sm" title="Marcar Não Feito"><i class="fas fa-times text-[9px]"></i></button>
                     </div>
 
-                    <div class="flex items-center gap-1 w-fit mb-1.5 z-10">
+                    <div class="flex items-center gap-1 w-fit mb-1.5">
                         <button onclick="App.changeQty('${name}', ${i})" class="text-slate-600 hover:text-blue-600 hover:bg-blue-50 text-[10px] font-black bg-white rounded px-1.5 py-0.5 border border-slate-200 shadow-sm transition cursor-pointer" title="Mudar Quantidade">
                             ${t.qty || 1}
                         </button>
@@ -1153,7 +1148,7 @@ const App = {
                         </button>
                     </div>
 
-                    <div class="pr-12 leading-tight pointer-events-none">
+                    <div class="pr-12 leading-tight">
                         ${t.empresa ? `<div class="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">${t.empresa}</div>` : ''}
                         <div class="text-[12px] font-black text-slate-800 break-words">${t.obra || 'Sem Nome'}</div>
                     </div>
@@ -1161,7 +1156,7 @@ const App = {
                     ${avisoRetorno}
                     ${avisoReprogramado}
 
-                    <div class="flex items-start gap-1 mt-1.5 pointer-events-none">
+                    <div class="flex items-start gap-1 mt-1.5">
                         <i class="fas fa-map-marker-alt text-red-400 text-[9px] mt-0.5"></i>
                         <div class="text-[9px] font-semibold text-slate-500 leading-tight flex-1 break-words">${WhatsappService.formatAddress(typeof t.to === 'string' ? t.to : (t.to && t.to.text ? t.to.text : ''))}</div>
                     </div>
@@ -1214,58 +1209,41 @@ const App = {
         });
     },
 
-    // 🔥 NOVAS FUNÇÕES DRAG AND DROP FLUIDAS 🔥
     handleAgendaDragStart(e, id) {
         const agendaItem = State.data.agendamentos.find(a => a.id === id);
         if (agendaItem && (agendaItem.distribuido || agendaItem.reprogramado)) {
             e.preventDefault(); 
             return false;
         }
+
         this.dragSource = { type: 'agenda', id: id };
         e.dataTransfer.effectAllowed = 'move';
         e.dataTransfer.setData('text/plain', JSON.stringify(this.dragSource));
-        setTimeout(() => e.target.classList.add('opacity-40', 'grayscale'), 0);
+        setTimeout(() => e.target.classList.add('opacity-50'), 0);
     },
     
     handleDriverDragStart(e, driverName, index) {
         this.dragSource = { type: 'driver', driver: driverName, index: index };
         e.dataTransfer.effectAllowed = 'move';
         e.dataTransfer.setData('text/plain', JSON.stringify(this.dragSource));
-        setTimeout(() => e.target.classList.add('opacity-40', 'grayscale'), 0);
+        setTimeout(() => e.target.classList.add('opacity-50', 'bg-blue-50'), 0);
     },
 
     handleDragOver(e) {
         if (e.preventDefault) e.preventDefault(); 
         e.dataTransfer.dropEffect = 'move';
+        
         const col = e.target.closest('.driver-column');
         if(col) col.classList.add('bg-blue-50/50');
+        
         return false;
-    },
-
-    handleDragLeave(e) {
-        const col = e.target.closest('.driver-column');
-        if(col) col.classList.remove('bg-blue-50/50');
-    },
-
-    handleDragOverCard(e) {
-        if (e.preventDefault) e.preventDefault();
-        e.dataTransfer.dropEffect = 'move';
-        const card = e.target.closest('.drag-item');
-        if (card) card.classList.add('drag-over');
-        return false;
-    },
-
-    handleDragLeaveCard(e) {
-        const card = e.target.closest('.drag-item');
-        if (card) card.classList.remove('drag-over');
     },
 
     handleDrop(e, targetDriverName, targetIndex) {
         e.stopPropagation();
         e.preventDefault();
         
-        // Limpeza visual de todos os efeitos
-        document.querySelectorAll('.drag-item').forEach(el => el.classList.remove('opacity-50', 'bg-blue-50', 'opacity-40', 'grayscale', 'drag-over'));
+        document.querySelectorAll('.drag-item').forEach(el => el.classList.remove('opacity-50', 'bg-blue-50'));
         document.querySelectorAll('.driver-column').forEach(el => el.classList.remove('bg-blue-50/50'));
 
         const source = this.dragSource;
@@ -1286,7 +1264,7 @@ const App = {
                     id: Date.now() + Math.random(),
                     status: 'pendente',
                     completed: false,
-                    agendaId: agendaItem.id,
+                    agendaId: agendaItem.id, // VINCULA
                     empresa: agendaItem.empresa, 
                     obra: agendaItem.obra, 
                     qty: agendaItem.qty, 
@@ -1295,7 +1273,7 @@ const App = {
                     to: { text: agendaItem.address }, 
                     mtr: null, 
                     descarteLocal: null,
-                    veioDeReprogramacao: agendaItem.veioDeReprogramacao || false, 
+                    veioDeReprogramacao: agendaItem.veioDeReprogramacao || false, // 🔥 HERDA A PRIORIDADE 🔥
                     dataOrigem: agendaItem.dataOrigem || ''
                 };
                 
@@ -1443,6 +1421,7 @@ const App = {
                     State.data.agendamentos.push(novoItem);
                 }
 
+                // 🔥 A MÁGICA AQUI: O SERVIÇO NÃO É MAIS EXCLUÍDO DA ROTA, ELE FICA LARANJA 🔥
                 trip.status = 'reprogramado';
                 trip.dataReprogramada = dataBr;
                 
@@ -1522,7 +1501,7 @@ const App = {
             const isDist = item.distribuido;
             const isReprog = item.reprogramado;
             const isLocked = isDist || isReprog;
-            const isRetorno = item.veioDeReprogramacao; 
+            const isRetorno = item.veioDeReprogramacao; // 🔥 VERIFICA SE É PRIORIDADE 🔥
             const isNight = document.body.classList.contains('night-mode');
             
             let baseClass = 'bg-slate-50 border-slate-200';
@@ -1535,6 +1514,7 @@ const App = {
                 baseClass = 'opacity-80';
                 finalStyle = isNight ? 'background-color: rgba(30,58,138,0.4) !important; border-color: #1e3a8a !important;' : 'background-color: #eff6ff !important; border-color: #bfdbfe !important;';
             } else if (isRetorno) {
+                // 🔥 SE FOR PRIORIDADE E NÃO TIVER SIDO FEITO AINDA, FICA AMARELO 🔥
                 baseClass = 'bg-yellow-50 border-yellow-400 shadow-md';
                 finalStyle = isNight ? 'background-color: rgba(234, 179, 8, 0.15) !important; border-color: #a16207 !important;' : 'background-color: #fefce8 !important; border-color: #facc15 !important;';
             }
@@ -1543,6 +1523,7 @@ const App = {
             const shiftBadge = (item.shift === 'night') ? `<span class="bg-slate-800 text-white px-1.5 py-0.5 rounded text-[8px] uppercase border border-slate-600 shadow-sm ml-1">🌙 Noite</span>` : `<span class="bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded text-[8px] uppercase border border-yellow-300 shadow-sm ml-1">🌞 Dia</span>`;
             const obsTag = item.obs ? `<div class="mt-1 text-[9px] bg-amber-100 text-amber-800 p-1 rounded font-bold">OBS: ${item.obs}</div>` : '';
             
+            // 🔥 AVISO DE PRIORIDADE NA TELA 🔥
             const avisoRetorno = (isRetorno && !isLocked) ? `<div class="mt-2 text-[10px] bg-yellow-200 text-yellow-900 font-black rounded-lg p-1.5 border border-yellow-400 shadow-sm animate-pulse"><i class="fas fa-exclamation-triangle"></i> PRIORIDADE: ADIADO DO DIA ${item.dataOrigem}</div>` : '';
 
             let typeColor = 'text-slate-800';
@@ -1623,7 +1604,7 @@ const App = {
             const isDist = a.distribuido;
             const isReprog = a.reprogramado;
             const isLocked = isDist || isReprog;
-            const isRetorno = a.veioDeReprogramacao; 
+            const isRetorno = a.veioDeReprogramacao; // 🔥 VERIFICA PRIORIDADE 🔥
 
             let colorClass = 'text-slate-800';
             if(a.type === 'colocacao') colorClass = 'text-red-600';
@@ -1640,6 +1621,7 @@ const App = {
             } else if (isDist) {
                 finalStyle = isNight ? 'background-color: rgba(30,58,138,0.4) !important; border-color: #1e3a8a !important;' : 'background-color: #eff6ff !important; border-color: #bfdbfe !important;';
             } else if (isRetorno) {
+                // 🔥 SE FOR PRIORIDADE NA PLANILHA TAMBÉM FICA AMARELO 🔥
                 baseClass = 'bg-yellow-50 border-yellow-400 shadow-md cursor-grab active:cursor-grabbing';
                 finalStyle = isNight ? 'background-color: rgba(234, 179, 8, 0.15) !important; border-color: #a16207 !important;' : 'background-color: #fefce8 !important; border-color: #facc15 !important;';
             }
@@ -1669,20 +1651,21 @@ const App = {
                 `;
             }
             
+            // 🔥 AVISO DE PRIORIDADE NA PLANILHA ROXA 🔥
             const avisoRetorno = (isRetorno && !isLocked) ? `<div class="mt-2 text-[10px] bg-orange-500 text-white font-black rounded-lg p-1.5 border border-orange-600 shadow-md animate-pulse"><i class="fas fa-exclamation-triangle text-yellow-200"></i> PRIORIDADE: ADIADO DO DIA ${a.dataOrigem}</div>` : '';
             list.innerHTML += `
             <div ${dragAttrs} style="${finalStyle}" class="drag-item p-3 border rounded-xl shadow-sm flex flex-col relative animate-fade-in transition ag-item-card ${baseClass}">
-                <div class="flex items-center justify-between gap-1 w-full mb-2 z-10">
+                <div class="flex items-center justify-between gap-1 w-full mb-2">
                     <div class="flex gap-1">${botoesEdit}</div>
                     ${botoesAcaoPanel}
                 </div>
-                <div class="font-bold text-[11px] leading-tight tracking-wide ${isDist ? 'text-blue-900' : (isReprog ? 'text-orange-900' : 'text-slate-800')} break-words pointer-events-none">
+                <div class="font-bold text-[11px] leading-tight tracking-wide ${isDist ? 'text-blue-900' : (isReprog ? 'text-orange-900' : 'text-slate-800')} break-words">
                     ${a.empresa ? `<span class="text-slate-500 uppercase text-[9px]">${a.empresa}</span><br>` : ''}
                     <span class="text-[13px] font-black">${a.obra || 'Sem Nome'}</span>
                 </div>
-                <div class="text-[9px] ${isDist ? 'text-blue-600' : (isReprog ? 'text-orange-700' : 'text-slate-500')} mt-1 leading-tight pointer-events-none"><i class="fas fa-map-marker-alt ${isDist ? 'text-blue-500' : (isReprog ? 'text-orange-400' : 'text-red-400')} mr-1"></i>${WhatsappService.formatAddress(a.address)}</div>
-                <div class="pointer-events-none">${avisoRetorno}</div>
-                ${a.obs ? `<div class="mt-2 text-[10px] bg-amber-100 text-amber-900 font-bold rounded-lg p-1.5 border border-amber-300 pointer-events-none"><i class="fas fa-exclamation-triangle"></i> OBS: ${a.obs}</div>` : ''}
+                <div class="text-[9px] ${isDist ? 'text-blue-600' : (isReprog ? 'text-orange-700' : 'text-slate-500')} mt-1 leading-tight"><i class="fas fa-map-marker-alt ${isDist ? 'text-blue-500' : (isReprog ? 'text-orange-400' : 'text-red-400')} mr-1"></i>${WhatsappService.formatAddress(a.address)}</div>
+                ${avisoRetorno}
+                ${a.obs ? `<div class="mt-2 text-[10px] bg-amber-100 text-amber-900 font-bold rounded-lg p-1.5 border border-amber-300"><i class="fas fa-exclamation-triangle"></i> OBS: ${a.obs}</div>` : ''}
             </div>`;
         });
     },
@@ -1716,7 +1699,7 @@ const App = {
                 targetDriverObj.trips.push({
                     id: Date.now() + Math.random(), status: 'pendente', completed: false, agendaId: a.id,
                     empresa: a.empresa, obra: a.obra, qty: a.qty, type: a.type, obs: a.obs, to: { text: a.address }, mtr: null, descarteLocal: null,
-                    veioDeReprogramacao: a.veioDeReprogramacao || false, dataOrigem: a.dataOrigem || '' 
+                    veioDeReprogramacao: a.veioDeReprogramacao || false, dataOrigem: a.dataOrigem || '' // 🔥 COPIA A PRIORIDADE PRO MOTORISTA 🔥
                 });
                 a.distribuido = true;
                 targetDriver.count++;
@@ -1730,7 +1713,9 @@ const App = {
         this.renderGrid();
         UI.toast("Serviços distribuídos!");
     },
-   
+   // =========================================================
+    // 🔥 GERADOR DE IMAGEM LIMPA PARA CLIENTES/LEIGOS 🔥
+    // =========================================================
     downloadPreview() {
         UI.toast("Gerando imagem de alta qualidade, aguarde...", "info");
         
@@ -1749,6 +1734,7 @@ const App = {
             const d = State.getDriver(name);
             if(!d || !d.trips || d.trips.length === 0) return; 
             
+            // Agora mostra tudo, inclusive reprogramados e não feitos
             const activeTrips = d.trips;
             if (activeTrips.length === 0) return;
 
@@ -1780,18 +1766,19 @@ const App = {
                     bgColor = '#fff7ed'; 
                     borderColor = '#fed7aa'; 
                     statusColor = '#f97316'; 
-                    iconStr = ''; 
+                    iconStr = ''; // 🔥 SEM EMOJI AQUI, SÓ A COR LARANJA 🔥
                 } else if (isRetorno) {
                     bgColor = '#fefce8'; 
                     borderColor = '#fde047'; 
                     statusColor = '#eab308'; 
-                    iconStr = '⚠️ '; 
+                    iconStr = '⚠️ '; // Aviso de prioridade mantido
                 }
 
                 const qty = t.qty || 1;
                 const label = WhatsappService.getPluralLabel(t.type, qty);
                 const displayType = t.type === 'encher' ? 'ENCHER' : label;
                 
+                // 🔥 HORÁRIO SÓ APARECE SE FOI CONCLUÍDO 🔥
                 let timeHtml = '';
                 if (isDone && t.horaConclusao) {
                     timeHtml = `<div style="font-size: 10px; font-weight: 900; color: #059669; margin-top: 6px; letter-spacing: 0.5px;">🕒 FEITO ÀS ${t.horaConclusao}</div>`;
@@ -1906,7 +1893,7 @@ const App = {
             App.renderGrid();
         }
     },
-
+    // 🔥 NOVA: OBSERVAÇÃO EXTRA (NEGRITO NO WPP) 🔥
     addExtraObs(name, index) {
         const d = State.getCurrentFleet()[name];
         if(!d || !d.trips[index]) return;
@@ -1920,6 +1907,7 @@ const App = {
         }
     },
 
+    // 🔥 NOVA: ANEXAR FOTO DE OBSERVAÇÃO 🔥
     attachPhotoObs(name, index) {
         const input = document.createElement('input');
         input.type = 'file';
@@ -1936,7 +1924,7 @@ const App = {
                 img.src = ev.target.result;
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
-                    const MAX_WIDTH = 800; 
+                    const MAX_WIDTH = 800; // Trava o tamanho pra não estourar o banco
                     let width = img.width;
                     let height = img.height;
                     
@@ -1949,7 +1937,7 @@ const App = {
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
                     
-                    const base64 = canvas.toDataURL('image/jpeg', 0.5); 
+                    const base64 = canvas.toDataURL('image/jpeg', 0.5); // Comprime a foto
                     
                     const d = State.getCurrentFleet()[name];
                     if(d && d.trips[index]) {
