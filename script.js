@@ -1049,7 +1049,7 @@ const App = {
         const container = document.getElementById('spreadsheet-container');
         if (!container) return; 
 
-        // 🔥 CAPTURA O SCROLL EXATO ANTES DE DESTRUIR A TELA 🔥
+        // 🔥 1. CAPTURA O SCROLL EXATO ANTES DE DESTRUIR A TELA 🔥
         const scrollY = {};
         container.querySelectorAll('.driver-list-scroll').forEach(scrollDiv => {
             const driverName = scrollDiv.getAttribute('data-driver');
@@ -1067,9 +1067,8 @@ const App = {
             const d = State.getDriver(name) || { plate: '', color: '#ccc', trips: [] };
             const trips = d.trips || [];
             
-            // 🔥 COLUNA COMPACTA (Cabem mais na tela sem amassar) 🔥
             const column = document.createElement('div');
-            column.className = "driver-column shrink-0 min-w-[220px] max-w-[250px] flex flex-col bg-slate-50 snap-start border-r border-slate-300 transition-colors h-full";
+            column.className = "driver-column shrink-0 min-w-[200px] sm:min-w-[230px] max-w-[260px] md:min-w-[280px] md:max-w-[340px] flex flex-col bg-slate-50 snap-start border-r border-slate-300 transition-colors h-full";
 
             let totalServicos = 0;
             trips.forEach(t => {
@@ -1077,17 +1076,15 @@ const App = {
                 totalServicos += (t.type === 'encher') ? (qty * 2) : qty;
             });
 
-            // Cabeçalho otimizado
             let headerHtml = `
-                <div class="bg-slate-800 text-white text-center text-[10px] font-bold py-0.5 shadow-sm">MOTORISTA</div>
-                <div class="bg-yellow-300 text-center text-xs font-black py-1 border-b border-slate-300 text-slate-800 tracking-widest">${d.plate || 'SEM PLACA'}</div>
-                <div class="text-center text-[13px] font-black py-2 uppercase tracking-wide bg-white border-b border-slate-200" style="color: ${d.color || '#333'};">${name}</div>
-                <div class="bg-blue-600 text-white text-center text-[10px] font-bold py-1 shadow-sm">HOJE: ${totalServicos} SERVIÇOS</div>
+                <div class="bg-slate-800 text-white text-center text-[10px] font-bold py-1 shadow-sm">MOTORISTA</div>
+                <div class="bg-yellow-300 text-center text-xs font-bold py-1 border-b border-slate-300 text-slate-800 tracking-wider">${d.plate || 'SEM PLACA'}</div>
+                <div class="text-center text-sm font-black py-2.5 uppercase tracking-wide bg-white border-b border-slate-200" style="color: ${d.color || '#333'};">${name}</div>
+                <div class="bg-blue-600 text-white text-center text-[10px] font-bold py-1.5 shadow-sm">HOJE: ${totalServicos} SERVIÇOS</div>
             `;
             
             const bodyDiv = document.createElement('div');
-            // Espaçamento entre os cards diminuído (gap-1.5 e p-1.5)
-            bodyDiv.className = "driver-list-scroll flex-1 flex flex-col overflow-y-auto custom-scroll p-1.5 gap-1.5 min-h-[150px]";
+            bodyDiv.className = "driver-list-scroll flex-1 flex flex-col overflow-y-auto custom-scroll p-2 gap-2 min-h-[150px]";
             bodyDiv.setAttribute('data-driver', name);
             bodyDiv.setAttribute('ondragover', 'App.handleDragOver(event)');
             bodyDiv.setAttribute('ondrop', `App.handleDrop(event, '${name}', -1)`);
@@ -1111,91 +1108,100 @@ const App = {
                     const logObs = parts[0].trim();
                     const motObs = parts[1] ? parts[1].trim() : '';
 
-                    if (logObs) obsHtml += `<div class="mt-1 text-[10px] text-slate-800 bg-amber-50 border-l-2 border-amber-400 px-1 py-0.5 font-bold leading-tight shadow-sm">${logObs}</div>`;
-                    if (motObs) obsHtml += `<div class="mt-1 text-[10px] text-slate-800 bg-blue-50 border-l-2 border-blue-400 px-1 py-0.5 font-bold leading-tight shadow-sm"><i class="fas fa-reply text-blue-500 text-[9px] mr-1"></i> ${motObs}</div>`;
+                    if (logObs) obsHtml += `<div class="mt-1.5 text-[9px] text-slate-700 bg-amber-50/60 border-l-2 border-amber-400 px-1.5 py-0.5 font-medium leading-tight shadow-sm">${logObs}</div>`;
+                    if (motObs) obsHtml += `<div class="mt-1.5 text-[9px] text-slate-700 bg-blue-50/60 border-l-2 border-blue-400 px-1.5 py-0.5 font-medium leading-tight shadow-sm"><i class="fas fa-reply text-blue-400 text-[8px] mr-0.5"></i> ${motObs}</div>`;
                 }
-                const obsExtraHtml = t.obsExtra ? `<div class="mt-1 text-[10px] text-red-900 bg-red-100 border-l-2 border-red-500 px-1 py-0.5 font-black shadow-sm leading-tight uppercase">ATENÇÃO: ${t.obsExtra}</div>` : '';
+                const obsExtraHtml = t.obsExtra ? `<div class="mt-1.5 text-[10px] text-red-800 bg-red-50 border-l-2 border-red-500 px-1.5 py-1 font-bold shadow-sm leading-tight uppercase">ATENÇÃO: ${t.obsExtra}</div>` : '';
 
                 let tagsHtml = '';
                 if (t.mtr || t.descarteLocal) {
-                    tagsHtml += `<div class="flex flex-wrap gap-1 mt-1">`;
-                    if (t.mtr) tagsHtml += `<span class="bg-indigo-50 text-indigo-700 border border-indigo-200 px-1 py-0.5 rounded text-[9px] font-bold"><i class="fas fa-file-invoice mr-0.5"></i> MTR: ${t.mtr}</span>`;
-                    if (t.descarteLocal) tagsHtml += `<span class="bg-red-50 text-red-700 border border-red-200 px-1 py-0.5 rounded text-[9px] font-bold"><i class="fas fa-recycle mr-0.5"></i> DESC: ${t.descarteLocal}</span>`;
+                    tagsHtml += `<div class="flex flex-wrap gap-1 mt-1.5">`;
+                    if (t.mtr) tagsHtml += `<span class="bg-indigo-50 text-indigo-700 border border-indigo-200 px-1.5 py-0.5 rounded text-[8px] font-bold"><i class="fas fa-file-invoice mr-0.5"></i> MTR: ${t.mtr}</span>`;
+                    if (t.descarteLocal) tagsHtml += `<span class="bg-red-50 text-red-700 border border-red-200 px-1.5 py-0.5 rounded text-[8px] font-bold"><i class="fas fa-recycle mr-0.5"></i> DESC: ${t.descarteLocal}</span>`;
                     tagsHtml += `</div>`;
                 }
 
                 let fotosHtml = '';
                 if (t.fotoObs || t.foto) {
-                    fotosHtml += `<div class="flex flex-wrap gap-1 mt-1">`;
+                    fotosHtml += `<div class="flex flex-wrap gap-1 mt-1.5">`;
                     if (t.fotoObs) fotosHtml += `
                         <div class="flex shadow-sm">
-                            <button onclick="UI.showPhoto('${t.fotoObs}')" class="bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 border-r-0 px-1 py-0.5 rounded-l text-[9px] font-bold transition"><i class="fas fa-image mr-1"></i>FOTO LOG</button>
-                            <button onclick="App.removePhotoObs('${name}', ${i})" class="bg-sky-50 hover:bg-red-100 text-slate-400 hover:text-red-600 border border-sky-200 px-1 py-0.5 rounded-r transition"><i class="fas fa-times text-[9px]"></i></button>
+                            <button onclick="UI.showPhoto('${t.fotoObs}')" class="bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 border-r-0 px-1.5 py-0.5 rounded-l text-[8px] font-bold transition"><i class="fas fa-image mr-1"></i>FOTO LOG</button>
+                            <button onclick="App.removePhotoObs('${name}', ${i})" class="bg-sky-50 hover:bg-red-100 text-slate-400 hover:text-red-600 border border-sky-200 px-1.5 py-0.5 rounded-r transition"><i class="fas fa-times text-[8px]"></i></button>
                         </div>`;
-                    if (t.foto) fotosHtml += `<button onclick="UI.showPhoto('${t.foto}')" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-1 py-0.5 rounded text-[9px] font-bold transition shadow-sm"><i class="fas fa-camera mr-1"></i>FOTO MOT</button>`;
+                    if (t.foto) fotosHtml += `<button onclick="UI.showPhoto('${t.foto}')" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-1.5 py-0.5 rounded text-[8px] font-bold transition shadow-sm"><i class="fas fa-camera mr-1"></i>FOTO MOT</button>`;
                     fotosHtml += `</div>`;
                 }
 
-                const avisoRetorno = isRetorno ? `<div class="mt-1 text-[9px] text-orange-900 bg-orange-100 font-bold px-1 py-0.5 rounded inline-block shadow-sm"><i class="fas fa-exclamation-triangle text-orange-500 mr-0.5"></i> PRIORIDADE: ${t.dataOrigem}</div>` : '';
-                const avisoReprogramado = (status === 'reprogramado') ? `<div class="mt-1 text-[9px] text-orange-900 bg-orange-100 font-bold px-1 py-0.5 rounded inline-block shadow-sm border border-orange-300"><i class="fas fa-forward text-orange-500 mr-0.5"></i> REPROGRAMADO PARA: ${t.dataReprogramada}</div>` : '';
-                const timeTag = ((status === 'concluido' || status === 'nao_feito' || status === 'cancelado') && t.horaConclusao) ? `<div class="mt-1 text-[9px] font-black ${status==='concluido'?'text-emerald-600':'text-red-600'} flex items-center gap-1"><i class="far fa-clock"></i> ${status==='concluido'?'FEITO':'NÃO FEITO'} ÀS ${t.horaConclusao}</div>` : '';
+                const avisoRetorno = isRetorno ? `<div class="mt-1.5 text-[9px] text-orange-800 bg-orange-100 font-bold px-1.5 py-0.5 rounded inline-block shadow-sm"><i class="fas fa-exclamation-triangle text-orange-500 mr-0.5"></i> PRIORIDADE: ${t.dataOrigem}</div>` : '';
+                const avisoReprogramado = (status === 'reprogramado') ? `<div class="mt-1.5 text-[9px] text-orange-800 bg-orange-100 font-bold px-1.5 py-0.5 rounded inline-block shadow-sm border border-orange-300"><i class="fas fa-forward text-orange-500 mr-0.5"></i> REPROGRAMADO PARA: ${t.dataReprogramada}</div>` : '';
+                const timeTag = ((status === 'concluido' || status === 'nao_feito' || status === 'cancelado') && t.horaConclusao) ? `<div class="mt-2 text-[8px] font-black ${status==='concluido'?'text-emerald-600':'text-red-600'} flex items-center gap-1"><i class="far fa-clock"></i> ${status==='concluido'?'FEITO':'NÃO FEITO'} ÀS ${t.horaConclusao}</div>` : '';
 
-                // Setinhas super compactas
                 const btnUp = i > 0 ? `<button onclick="App.moveTripUp('${name}', ${i})" class="w-5 h-5 rounded bg-slate-100 hover:bg-blue-100 text-slate-500 hover:text-blue-600 flex items-center justify-center border border-slate-200 transition shadow-sm" title="Subir Serviço"><i class="fas fa-arrow-up text-[9px]"></i></button>` : '';
                 const btnDown = i < trips.length - 1 ? `<button onclick="App.moveTripDown('${name}', ${i})" class="w-5 h-5 rounded bg-slate-100 hover:bg-blue-100 text-slate-500 hover:text-blue-600 flex items-center justify-center border border-slate-200 transition shadow-sm" title="Descer Serviço"><i class="fas fa-arrow-down text-[9px]"></i></button>` : '';
-                const divider = (btnUp || btnDown) ? `<div class="w-px bg-slate-200 mx-0.5 my-0.5"></div>` : '';
+                const divider = (btnUp || btnDown) ? `<div class="w-px bg-slate-200 mx-0.5 my-1"></div>` : '';
 
-                // Barra de ações ultra fina
                 const barraAcoesHtml = `
-                    <div class="mt-1.5 pt-1 border-t border-slate-200 flex gap-1 justify-between items-center bg-slate-50/50 -mx-1.5 -mb-1.5 px-1.5 pb-1 rounded-b">
+                    <div class="mt-2 pt-1.5 border-t border-slate-100 flex gap-1 justify-between items-center bg-slate-50/50 -mx-1 -mb-1 px-1 pb-1 rounded-b">
                         <div class="flex gap-1">
-                            <button onclick="App.returnToAgenda('${name}', ${i})" class="w-5 h-5 rounded bg-white border border-slate-200 text-slate-400 hover:text-purple-600 hover:border-purple-300 hover:bg-purple-50 flex items-center justify-center transition shadow-sm" title="Devolver p/ Agenda"><i class="fas fa-undo text-[9px]"></i></button>
-                            <button onclick="App.openDriverRescheduleModal('${name}', ${i})" class="w-5 h-5 rounded bg-white border border-slate-200 text-slate-400 hover:text-orange-600 hover:border-orange-300 hover:bg-orange-50 flex items-center justify-center transition shadow-sm" title="Adiar / Reprogramar"><i class="fas fa-calendar-alt text-[9px]"></i></button>
+                            <button onclick="App.returnToAgenda('${name}', ${i})" class="w-6 h-6 rounded bg-white border border-slate-200 text-slate-400 hover:text-purple-600 hover:border-purple-200 hover:bg-purple-50 flex items-center justify-center transition shadow-sm" title="Devolver p/ Agenda">
+                                <i class="fas fa-undo text-[9px]"></i>
+                            </button>
+                            <button onclick="App.openDriverRescheduleModal('${name}', ${i})" class="w-6 h-6 rounded bg-white border border-slate-200 text-slate-400 hover:text-orange-600 hover:border-orange-200 hover:bg-orange-50 flex items-center justify-center transition shadow-sm" title="Adiar / Reprogramar">
+                                <i class="fas fa-calendar-alt text-[9px]"></i>
+                            </button>
                         </div>
                         <div class="flex gap-1">
-                            <button onclick="App.editObs('${name}', ${i})" class="h-5 px-1 rounded bg-white border border-slate-200 text-slate-500 hover:text-amber-600 hover:border-amber-300 hover:bg-amber-50 flex items-center justify-center gap-1 transition shadow-sm text-[9px] font-bold" title="Editar OBS"><i class="fas fa-comment-dots text-[9px]"></i><span class="hidden xl:inline">OBS</span></button>
-                            <button onclick="App.openMtrModal(${i}, '${name}')" class="h-5 px-1 rounded bg-white border border-slate-200 text-slate-500 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50 flex items-center justify-center gap-1 transition shadow-sm text-[9px] font-bold" title="Definir MTR"><i class="fas fa-file-invoice text-[9px]"></i><span class="hidden xl:inline">MTR</span></button>
-                            <button onclick="App.attachPhotoObs('${name}', ${i})" class="w-5 h-5 rounded bg-white border border-slate-200 text-slate-400 hover:text-sky-600 hover:border-sky-300 hover:bg-sky-50 flex items-center justify-center transition shadow-sm" title="Anexar Foto (Logística)"><i class="fas fa-camera text-[9px]"></i></button>
-                            <button onclick="App.addExtraObs('${name}', ${i})" class="w-5 h-5 rounded bg-white border border-slate-200 text-slate-400 hover:text-red-600 hover:border-red-300 hover:bg-red-50 flex items-center justify-center transition shadow-sm font-black text-[10px]" title="Adicionar OBS Extra (Negrito)">+</button>
+                            <button onclick="App.editObs('${name}', ${i})" class="h-6 px-1.5 rounded bg-white border border-slate-200 text-slate-500 hover:text-amber-600 hover:border-amber-200 hover:bg-amber-50 flex items-center justify-center gap-1 transition shadow-sm text-[9px] font-bold" title="Editar OBS">
+                                <i class="fas fa-comment-dots text-[9px]"></i><span class="hidden xl:inline">OBS</span>
+                            </button>
+                            <button onclick="App.openMtrModal(${i}, '${name}')" class="h-6 px-1.5 rounded bg-white border border-slate-200 text-slate-500 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 flex items-center justify-center gap-1 transition shadow-sm text-[9px] font-bold" title="Definir MTR">
+                                <i class="fas fa-file-invoice text-[9px]"></i><span class="hidden xl:inline">MTR</span>
+                            </button>
+                            <button onclick="App.attachPhotoObs('${name}', ${i})" class="w-6 h-6 rounded bg-white border border-slate-200 text-slate-400 hover:text-sky-600 hover:border-sky-200 hover:bg-sky-50 flex items-center justify-center transition shadow-sm" title="Anexar Foto (Logística)">
+                                <i class="fas fa-camera text-[9px]"></i>
+                            </button>
+                            <button onclick="App.addExtraObs('${name}', ${i})" class="w-6 h-6 rounded bg-white border border-slate-200 text-slate-400 hover:text-red-600 hover:border-red-200 hover:bg-red-50 flex items-center justify-center transition shadow-sm font-black" title="Adicionar OBS Extra (Negrito)">
+                                +
+                            </button>
                         </div>
                     </div>
                 `;
 
-                // 🔥 PADDINGS MENORES (p-1.5) NO CARD 🔥
                 return `
                 <div draggable="true" 
                      ondragstart="App.handleDriverDragStart(event, '${name}', ${i})"
                      ondrop="App.handleDrop(event, '${name}', ${i})"
-                     class="drag-item p-1.5 border rounded-lg shadow-sm relative flex flex-col cursor-grab active:cursor-grabbing transition-all hover:border-blue-400 hover:shadow-md ${bgClass} ${opacityClass}">
+                     class="drag-item p-2.5 border rounded-lg shadow-md relative flex flex-col cursor-grab active:cursor-grabbing transition-all hover:border-blue-400 ${bgClass} ${opacityClass}">
                     
-                    <div class="absolute top-1.5 right-1.5 flex gap-1 z-10">
+                    <div class="absolute top-2 right-2 flex gap-1 z-10">
                         ${btnUp}
                         ${btnDown}
                         ${divider}
-                        <button onclick="App.setTripStatus('${name}', ${i}, 'concluido')" class="w-5 h-5 rounded bg-white hover:bg-emerald-100 text-slate-400 hover:text-emerald-600 flex items-center justify-center border border-slate-200 transition shadow-sm" title="Marcar Concluído"><i class="fas fa-check text-[9px]"></i></button>
-                        <button onclick="App.setTripStatus('${name}', ${i}, 'nao_feito')" class="w-5 h-5 rounded bg-white hover:bg-red-100 text-slate-400 hover:text-red-600 flex items-center justify-center border border-slate-200 transition shadow-sm" title="Marcar Não Feito"><i class="fas fa-times text-[9px]"></i></button>
+                        <button onclick="App.setTripStatus('${name}', ${i}, 'concluido')" class="w-5 h-5 rounded bg-white hover:bg-emerald-50 text-slate-300 hover:text-emerald-500 flex items-center justify-center border border-slate-200 transition shadow-sm" title="Marcar Concluído"><i class="fas fa-check text-[9px]"></i></button>
+                        <button onclick="App.setTripStatus('${name}', ${i}, 'nao_feito')" class="w-5 h-5 rounded bg-white hover:bg-red-50 text-slate-300 hover:text-red-500 flex items-center justify-center border border-slate-200 transition shadow-sm" title="Marcar Não Feito"><i class="fas fa-times text-[9px]"></i></button>
                     </div>
 
-                    <div class="flex items-center gap-1 w-fit mb-1">
-                        <button onclick="App.changeQty('${name}', ${i})" class="text-slate-800 hover:text-blue-600 hover:bg-blue-50 text-[11px] font-black bg-white rounded px-1.5 py-0.5 border border-slate-300 shadow-sm transition cursor-pointer" title="Mudar Quantidade">
+                    <div class="flex items-center gap-1 w-fit mb-1.5">
+                        <button onclick="App.changeQty('${name}', ${i})" class="text-slate-600 hover:text-blue-600 hover:bg-blue-50 text-[10px] font-black bg-white rounded px-1.5 py-0.5 border border-slate-200 shadow-sm transition cursor-pointer" title="Mudar Quantidade">
                             ${t.qty || 1}
                         </button>
-                        <button onclick="App.cycleType('${name}', ${i})" class="${colorClass} text-[10px] font-black bg-white hover:bg-slate-50 rounded px-1.5 py-0.5 border border-slate-300 shadow-sm transition cursor-pointer flex items-center gap-1" title="Mudar Tipo">
-                            ${label} <i class="fas fa-sync-alt opacity-40 text-[8px]"></i>
+                        <button onclick="App.cycleType('${name}', ${i})" class="${colorClass} text-[9px] font-black bg-white hover:bg-slate-50 rounded px-1.5 py-0.5 border border-slate-200 shadow-sm transition cursor-pointer flex items-center gap-1" title="Mudar Tipo">
+                            ${label} <i class="fas fa-sync-alt opacity-30 text-[7px]"></i>
                         </button>
                     </div>
 
-                    <div class="pr-14 leading-tight">
-                        ${t.empresa ? `<div class="text-[9px] font-bold text-slate-500 uppercase tracking-wide mb-0.5">${t.empresa}</div>` : ''}
-                        <div class="text-[13px] font-black text-slate-900 break-words leading-none">${t.obra || 'Sem Nome'}</div>
+                    <div class="pr-12 leading-tight">
+                        ${t.empresa ? `<div class="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">${t.empresa}</div>` : ''}
+                        <div class="text-[12px] font-black text-slate-800 break-words">${t.obra || 'Sem Nome'}</div>
                     </div>
                     
                     ${avisoRetorno}
                     ${avisoReprogramado}
 
-                    <div class="flex items-start gap-1 mt-1">
-                        <i class="fas fa-map-marker-alt text-red-500 text-[10px] mt-0.5"></i>
-                        <div class="text-[10px] font-bold text-slate-600 leading-tight flex-1 break-words">${WhatsappService.formatAddress(typeof t.to === 'string' ? t.to : (t.to && t.to.text ? t.to.text : ''))}</div>
+                    <div class="flex items-start gap-1 mt-1.5">
+                        <i class="fas fa-map-marker-alt text-red-400 text-[9px] mt-0.5"></i>
+                        <div class="text-[9px] font-semibold text-slate-500 leading-tight flex-1 break-words">${WhatsappService.formatAddress(typeof t.to === 'string' ? t.to : (t.to && t.to.text ? t.to.text : ''))}</div>
                     </div>
 
                     ${tagsHtml}
@@ -1211,9 +1217,9 @@ const App = {
             
             if (trips.length === 0) {
                 tripsHtml = `
-                    <div class="text-center text-slate-400 font-bold flex flex-col items-center justify-center h-full border-2 border-dashed border-slate-200 rounded-lg m-1 pointer-events-none bg-white/50">
-                        <i class="fas fa-truck-loading text-2xl mb-2 text-slate-300"></i>
-                        <span class="text-[10px] uppercase tracking-widest text-slate-400">Sem Rotas</span>
+                    <div class="text-center text-slate-300 font-bold opacity-60 flex flex-col items-center justify-center h-full border-2 border-dashed border-slate-200 rounded-xl m-2 pointer-events-none">
+                        <i class="fas fa-truck-loading text-2xl mb-2"></i>
+                        <span class="text-[9px] uppercase tracking-widest">Rotas<br>aqui</span>
                     </div>
                 `;
             } else {
@@ -1231,9 +1237,9 @@ const App = {
             bodyDiv.innerHTML = tripsHtml;
 
             const footerHtml = `
-                <div class="mt-auto p-1.5 bg-slate-100 border-t border-slate-300">
-                    <button onclick="App.shareDriverRoute('${name}')" class="w-full py-1.5 bg-green-600 hover:bg-green-700 text-white text-[11px] font-black rounded-lg shadow-sm flex items-center justify-center gap-1.5 transition transform hover:scale-[1.02] ${trips.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}" ${trips.length === 0 ? 'disabled' : ''}>
-                        <i class="fab fa-whatsapp text-[13px]"></i> ENVIAR ROTA
+                <div class="mt-auto p-2 bg-slate-100 border-t border-slate-300">
+                    <button onclick="App.shareDriverRoute('${name}')" class="w-full py-2.5 bg-green-600 hover:bg-green-700 text-white text-[10px] font-black rounded-lg shadow flex items-center justify-center gap-2 transition transform hover:scale-[1.02] ${trips.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}" ${trips.length === 0 ? 'disabled' : ''}>
+                        <i class="fab fa-whatsapp text-sm"></i> ENVIAR ROTA
                     </button>
                 </div>
             `;
@@ -1244,16 +1250,14 @@ const App = {
             
             container.appendChild(column);
 
-            // 🔥 DEVOLVER A ROLAGEM EXATAMENTE ONDE ESTAVA 🔥
+            // 🔥 2. A MÁGICA REAL ACONTECE AQUI: Aplica o scroll no milissegundo exato que a coluna entra na tela 🔥
             if (scrollY[name] !== undefined) {
                 bodyDiv.scrollTop = scrollY[name];
             }
         });
 
-        // 🔥 Devolve a rolagem lateral com 15ms de atraso
-        setTimeout(() => {
-            container.scrollLeft = scrollX;
-        }, 15);
+        // 🔥 3. Devolve a rolagem lateral
+        container.scrollLeft = scrollX;
     },
 
     handleAgendaDragStart(e, id) {
