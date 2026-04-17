@@ -1049,16 +1049,15 @@ const App = {
         const container = document.getElementById('spreadsheet-container');
         if (!container) return; 
 
-        // 🔥 SALVAR POSIÇÕES DE SCROLL (VERTICAL E HORIZONTAL) 🔥
+        // 🔥 1. CAPTURA O SCROLL EXATO ANTES DE DESTRUIR A TELA 🔥
         const scrollY = {};
-        const scrollX = container.scrollLeft;
-
         container.querySelectorAll('.driver-list-scroll').forEach(scrollDiv => {
             const driverName = scrollDiv.getAttribute('data-driver');
             if (driverName) {
                 scrollY[driverName] = scrollDiv.scrollTop;
             }
         });
+        const scrollX = container.scrollLeft;
         
         container.innerHTML = '';
 
@@ -1138,7 +1137,6 @@ const App = {
                 const avisoReprogramado = (status === 'reprogramado') ? `<div class="mt-1.5 text-[9px] text-orange-800 bg-orange-100 font-bold px-1.5 py-0.5 rounded inline-block shadow-sm border border-orange-300"><i class="fas fa-forward text-orange-500 mr-0.5"></i> REPROGRAMADO PARA: ${t.dataReprogramada}</div>` : '';
                 const timeTag = ((status === 'concluido' || status === 'nao_feito' || status === 'cancelado') && t.horaConclusao) ? `<div class="mt-2 text-[8px] font-black ${status==='concluido'?'text-emerald-600':'text-red-600'} flex items-center gap-1"><i class="far fa-clock"></i> ${status==='concluido'?'FEITO':'NÃO FEITO'} ÀS ${t.horaConclusao}</div>` : '';
 
-                // 🔥 NOVOS BOTÕES DE SETA PARA CIMA E PARA BAIXO 🔥
                 const btnUp = i > 0 ? `<button onclick="App.moveTripUp('${name}', ${i})" class="w-5 h-5 rounded bg-slate-100 hover:bg-blue-100 text-slate-500 hover:text-blue-600 flex items-center justify-center border border-slate-200 transition shadow-sm" title="Subir Serviço"><i class="fas fa-arrow-up text-[9px]"></i></button>` : '';
                 const btnDown = i < trips.length - 1 ? `<button onclick="App.moveTripDown('${name}', ${i})" class="w-5 h-5 rounded bg-slate-100 hover:bg-blue-100 text-slate-500 hover:text-blue-600 flex items-center justify-center border border-slate-200 transition shadow-sm" title="Descer Serviço"><i class="fas fa-arrow-down text-[9px]"></i></button>` : '';
                 const divider = (btnUp || btnDown) ? `<div class="w-px bg-slate-200 mx-0.5 my-1"></div>` : '';
@@ -1251,18 +1249,15 @@ const App = {
             column.insertAdjacentHTML('beforeend', footerHtml);
             
             container.appendChild(column);
+
+            // 🔥 2. A MÁGICA REAL ACONTECE AQUI: Aplica o scroll no milissegundo exato que a coluna entra na tela 🔥
+            if (scrollY[name] !== undefined) {
+                bodyDiv.scrollTop = scrollY[name];
+            }
         });
 
-        // 🔥 DEVOLVER A ROLAGEM EXATAMENTE ONDE ESTAVA (Com atraso estratégico de 15ms) 🔥
-        setTimeout(() => {
-            container.scrollLeft = scrollX;
-            container.querySelectorAll('.driver-list-scroll').forEach(scrollDiv => {
-                const driverName = scrollDiv.getAttribute('data-driver');
-                if (driverName && scrollY[driverName] !== undefined) {
-                    scrollDiv.scrollTop = scrollY[driverName];
-                }
-            });
-        }, 15);
+        // 🔥 3. Devolve a rolagem lateral
+        container.scrollLeft = scrollX;
     },
 
     handleAgendaDragStart(e, id) {
