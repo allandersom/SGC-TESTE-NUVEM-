@@ -1020,21 +1020,20 @@ const App = {
         });
     },
 
-    renderSpreadsheet() {
+   renderSpreadsheet() {
         const container = document.getElementById('spreadsheet-container');
         if (!container) return; 
 
-        // 🔥 1. SALVAR AS POSIÇÕES DE ROLAGEM ANTES DE ATUALIZAR A TELA 🔥
-        // Salvamos o scroll de cada coluna E o scroll horizontal do container inteiro
-        const scrollPositions = {};
-        container.querySelectorAll('.driver-column').forEach(col => {
-            const nameEl = col.querySelector('.text-sm.font-black'); 
-            const scrollDiv = col.querySelector('.custom-scroll');   
-            if (nameEl && scrollDiv) {
-                scrollPositions[nameEl.innerText.trim()] = scrollDiv.scrollTop;
+        // 🔥 1. SALVAR POSIÇÕES DE SCROLL (VERTICAL E HORIZONTAL) 🔥
+        const scrollY = {};
+        const scrollX = container.scrollLeft;
+
+        container.querySelectorAll('.driver-list-scroll').forEach(scrollDiv => {
+            const driverName = scrollDiv.getAttribute('data-driver');
+            if (driverName) {
+                scrollY[driverName] = scrollDiv.scrollTop;
             }
         });
-        const containerScrollLeft = container.scrollLeft;
         
         container.innerHTML = '';
 
@@ -1061,7 +1060,9 @@ const App = {
             `;
             
             const bodyDiv = document.createElement('div');
-            bodyDiv.className = "flex-1 flex flex-col overflow-y-auto custom-scroll p-2 gap-2 min-h-[150px]";
+            // 🔥 ADICIONADO: CLASSE driver-list-scroll E DATA-DRIVER 🔥
+            bodyDiv.className = "driver-list-scroll flex-1 flex flex-col overflow-y-auto custom-scroll p-2 gap-2 min-h-[150px]";
+            bodyDiv.setAttribute('data-driver', name);
             bodyDiv.setAttribute('ondragover', 'App.handleDragOver(event)');
             bodyDiv.setAttribute('ondrop', `App.handleDrop(event, '${name}', -1)`);
             
@@ -1220,18 +1221,16 @@ const App = {
             container.appendChild(column);
         });
 
-        // 🔥 2. DEVOLVER A ROLAGEM PARA ONDE ESTAVA ANTES DA ATUALIZAÇÃO 🔥
-        // Usamos requestAnimationFrame para garantir que o navegador já desenhou tudo
-        requestAnimationFrame(() => {
-            container.scrollLeft = containerScrollLeft;
-            container.querySelectorAll('.driver-column').forEach(col => {
-                const nameEl = col.querySelector('.text-sm.font-black');
-                const scrollDiv = col.querySelector('.custom-scroll');
-                if (nameEl && scrollDiv && scrollPositions[nameEl.innerText.trim()] !== undefined) {
-                    scrollDiv.scrollTop = scrollPositions[nameEl.innerText.trim()];
+        // 🔥 2. DEVOLVER A ROLAGEM EXATAMENTE ONDE ESTAVA (Com atraso estratégico de 15ms) 🔥
+        setTimeout(() => {
+            container.scrollLeft = scrollX;
+            container.querySelectorAll('.driver-list-scroll').forEach(scrollDiv => {
+                const driverName = scrollDiv.getAttribute('data-driver');
+                if (driverName && scrollY[driverName] !== undefined) {
+                    scrollDiv.scrollTop = scrollY[driverName];
                 }
             });
-        });
+        }, 15);
     },
 
     handleAgendaDragStart(e, id) {
