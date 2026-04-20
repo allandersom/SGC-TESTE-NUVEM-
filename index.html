@@ -398,26 +398,22 @@
                             <i id="arrow-list" class="fas fa-chevron-down text-slate-300 text-xs"></i>
                         </div>
                     </button>
-                   <div id="section-list" class="accordion-body hidden bg-slate-50/30">
+                  <div id="section-list" class="accordion-body hidden bg-slate-50/30">
                         <div class="p-4 md:p-8 max-w-3xl mx-auto">
                             
-                            <div class="relative group cursor-pointer" onclick="UI.toggleModal('spreadsheet-modal')">
-                                <div class="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-teal-400 rounded-2xl blur opacity-25 group-hover:opacity-60 transition duration-500"></div>
+                            <div class="cursor-pointer" onclick="UI.toggleModal('spreadsheet-modal')">
                                 
-                                <button class="relative w-full py-8 md:py-10 bg-gradient-to-br from-emerald-600 to-green-500 text-white rounded-2xl shadow-xl transition-all duration-300 flex flex-col items-center justify-center gap-4 overflow-hidden border border-emerald-400/30 group-hover:scale-[1.01]">
+                                <div class="w-full py-8 md:py-10 bg-gradient-to-br from-emerald-600 to-green-500 text-white rounded-2xl shadow-xl flex flex-col items-center justify-center gap-4 border border-emerald-400/30">
                                     
-                                    <div class="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-xl"></div>
-                                    <div class="absolute -bottom-10 -left-10 w-32 h-32 bg-black/10 rounded-full blur-xl"></div>
-                                    
-                                    <div class="bg-white/20 p-4 md:p-5 rounded-full backdrop-blur-md border border-white/30 shadow-inner group-hover:scale-110 transition-transform duration-300">
-                                        <i class="fas fa-border-all text-3xl md:text-4xl drop-shadow-md"></i> 
+                                    <div class="p-4 md:p-5 flex items-center justify-center">
+                                        <i class="fas fa-border-all text-3xl md:text-4xl"></i> 
                                     </div>
                                     
-                                    <div class="flex flex-col items-center z-10 px-4">
-                                        <span class="text-base md:text-xl font-black tracking-wide drop-shadow-md text-center">ABRIR PLANILHA GERAL DE SERVIÇOS</span>
+                                    <div class="flex flex-col items-center px-4">
+                                        <span class="text-base md:text-xl font-black tracking-wide text-center">ABRIR PLANILHA GERAL DE SERVIÇOS</span>
                                         <span class="text-[10px] md:text-xs font-bold text-emerald-100 uppercase tracking-widest mt-1.5 text-center opacity-90">Visão panorâmica e gestão em tempo real</span>
                                     </div>
-                                </button>
+                                </div>
                             </div>
 
                         </div>
