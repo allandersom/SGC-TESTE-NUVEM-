@@ -2257,7 +2257,9 @@ window.onload = () => {
     UI.init();
     
     flatpickr('input[type="date"]', {
-        dateFormat: "Y-m-d",
+        dateFormat: "Y-m-d", // O que o banco de dados lê em segredo
+        altInput: true,      // 🔥 LIGA A MÁSCARA VISUAL 🔥
+        altFormat: "d/m/Y",  // 🔥 MOSTRA O PADRÃO BRASILEIRO NA TELA 🔥
         locale: "pt", 
         disableMobile: true, 
         onChange: function(selectedDates, dateStr, instance) {
