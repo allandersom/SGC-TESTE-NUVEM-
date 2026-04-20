@@ -309,16 +309,16 @@ const WhatsappService = {
         const plateTxt = plate ? `*[${plate}]*` : '';
         const driver = State.getCurrentFleet()[driverName];
         
-        // 🔥 Usa a quantidade manual de caixas, se não houver, assume 0 🔥
+        // Puxa as caixas manuais definidas no modal
         let totalCaixas = driver.totalCaixas || 0;
         
         let msg = `ROTA ${date} (${shiftTxt})\n`;
         msg += `MOTORISTA: *${driverName}* ${plateTxt}\n`;
-        msg += `📦 TOTAL: *${totalCaixas} CAIXAS*\n`;
+        msg += `TOTAL: *${totalCaixas} CAIXAS*\n`;
         
-        // 🔥 AVISO GERAL DA ROTA VEM AQUI SEM EMOJI ESQUISITO 🔥
+        // Aviso Geral Totalmente Limpo (Sem Emojis)
         if (driver && driver.obsGeral) {
-            msg += `\n🚨 *ATENÇÃO GERAL: ${driver.obsGeral.toUpperCase()}* 🚨\n`;
+            msg += `\n*ATENÇÃO GERAL: ${driver.obsGeral.toUpperCase()}*\n`;
         }
         
         msg += `--------------------------------\n\n`;
@@ -377,14 +377,14 @@ const WhatsappService = {
                 hasContent = true;
                 const plate = driver.plate ? `*[${driver.plate}]*` : '';
                 
-                // 🔥 Usa a quantidade manual de caixas, se não houver, assume 0 🔥
+                // Puxa as caixas manuais definidas no modal
                 let totalCaixas = driver.totalCaixas || 0;
 
-                msg += `>> *${name}* ${plate} (📦 ${totalCaixas} CXS)\n`;
+                msg += `>> *${name}* ${plate} (${totalCaixas} CXS)\n`;
                 
-                // 🔥 AVISO GERAL DA ROTA VEM AQUI SEM EMOJI ESQUISITO 🔥
+                // Aviso Geral Limpo (Sem Emojis)
                 if (driver.obsGeral) {
-                    msg += `🚨 *ATENÇÃO GERAL: ${driver.obsGeral.toUpperCase()}*\n`;
+                    msg += `*ATENÇÃO GERAL: ${driver.obsGeral.toUpperCase()}*\n`;
                 }
                 
                 for (let i = 0; i < activeTrips.length; i++) {
