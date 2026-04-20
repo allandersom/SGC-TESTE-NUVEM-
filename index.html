@@ -41,10 +41,7 @@
                     <i class="fas fa-magic mr-1"></i> <b>Busca Automática:</b> Cole os nomes das empresas um abaixo do outro. O sistema buscará no banco e adicionará <b>todas</b> as obras da empresa.<br><br>
                     <i>As que não forem ser feitas hoje, basta apagar na lixeira depois.</i>
                 </div>
-                <textarea id="paste-area" rows="8" class="input-modern font-mono text-xs" placeholder="Exemplo de lista:
-Construtora A
-Construtora B
-Posto Ipiranga..."></textarea>
+                <textarea id="paste-area" rows="8" class="input-modern font-mono text-xs" placeholder="Exemplo de lista:&#10;Construtora A&#10;Construtora B&#10;Posto Ipiranga..."></textarea>
                 <button onclick="App.processSmartPaste()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow-lg">Processar Lista</button>
             </div>
         </div>
@@ -152,6 +149,77 @@ Posto Ipiranga..."></textarea>
         </div>
     </div>
 
+    <div id="driver-settings-modal" class="hidden fixed inset-0 z-[10006] modal-backdrop flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full animate-fade-in overflow-hidden">
+            <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-blue-50">
+                <h3 class="font-black text-sm text-blue-800"><i class="fas fa-truck-loading mr-2"></i>Ajustes: <span id="ds-driver-name" class="text-blue-600"></span></h3>
+                <button onclick="UI.toggleModal('driver-settings-modal')" class="text-blue-400 hover:text-blue-700"><i class="fas fa-times text-lg"></i></button>
+            </div>
+            <div class="p-5 space-y-4">
+                <div>
+                    <label class="text-[10px] font-bold text-slate-500 uppercase mb-1 block">Total de Caixas Extras (📦):</label>
+                    <input type="number" id="ds-boxes" class="input-modern w-full font-black text-slate-800 text-lg text-center" placeholder="Ex: 12">
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-slate-500 uppercase mb-1 block">Atenção Geral (Aviso Vermelho):</label>
+                    <textarea id="ds-obs" rows="3" class="input-modern w-full font-semibold text-slate-700 text-sm" placeholder="Ex: Cuidado na chuva..."></textarea>
+                </div>
+                <button onclick="App.saveDriverSettings()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-3 rounded-xl shadow-lg transition transform hover:scale-[1.02]">SALVAR DADOS</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="edit-trip-modal" class="hidden fixed inset-0 z-[10006] modal-backdrop flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full animate-fade-in overflow-hidden">
+            <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h3 class="font-black text-sm text-slate-800"><i class="fas fa-pen mr-2 text-blue-500"></i>Editar Viagem</h3>
+                <button onclick="UI.toggleModal('edit-trip-modal')" class="text-slate-400 hover:text-slate-700"><i class="fas fa-times text-lg"></i></button>
+            </div>
+            <div class="p-5 space-y-3">
+                <div>
+                    <label class="text-[10px] font-bold text-slate-500 uppercase mb-1 block">Empresa:</label>
+                    <input type="text" id="edit-empresa" class="input-modern w-full font-bold text-sm">
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-slate-500 uppercase mb-1 block">Obra:</label>
+                    <input type="text" id="edit-obra" class="input-modern w-full font-black text-sm text-slate-800">
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-slate-500 uppercase mb-1 block">Endereço Completo:</label>
+                    <textarea id="edit-addr" rows="3" class="input-modern w-full font-semibold text-xs text-slate-600"></textarea>
+                </div>
+                <button onclick="App.saveTripEdits()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-3 rounded-xl shadow-lg transition transform hover:scale-[1.02]">ATUALIZAR VIAGEM</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="edit-obs-modal" class="hidden fixed inset-0 z-[10006] modal-backdrop flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full animate-fade-in overflow-hidden">
+            <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-amber-50">
+                <h3 class="font-black text-sm text-amber-800"><i class="fas fa-comment-dots mr-2"></i>Observação Logística</h3>
+                <button onclick="UI.toggleModal('edit-obs-modal')" class="text-amber-400 hover:text-amber-700"><i class="fas fa-times text-lg"></i></button>
+            </div>
+            <div class="p-5 space-y-4">
+                <textarea id="edit-obs-log" rows="4" class="input-modern w-full font-bold text-sm text-slate-700" placeholder="Digite a observação..."></textarea>
+                <button onclick="App.saveObsEdits()" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-black py-3 rounded-xl shadow-lg transition transform hover:scale-[1.02]">SALVAR OBSERVAÇÃO</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="extra-obs-modal" class="hidden fixed inset-0 z-[10006] modal-backdrop flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full animate-fade-in overflow-hidden">
+            <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-red-50">
+                <h3 class="font-black text-sm text-red-800"><i class="fas fa-exclamation-triangle mr-2"></i>Atenção Extra (WhatsApp)</h3>
+                <button onclick="UI.toggleModal('extra-obs-modal')" class="text-red-400 hover:text-red-700"><i class="fas fa-times text-lg"></i></button>
+            </div>
+            <div class="p-5 space-y-4">
+                <p class="text-xs text-slate-500 font-medium">Este texto sairá em <b class="text-slate-800">NEGRITO</b> e vermelho logo abaixo do serviço no envio do WhatsApp.</p>
+                <textarea id="edit-extra-obs" rows="3" class="input-modern w-full font-black text-sm text-red-600" placeholder="Ex: LIGAR ANTES DE CHEGAR"></textarea>
+                <button onclick="App.saveExtraObs()" class="w-full bg-red-600 hover:bg-red-700 text-white font-black py-3 rounded-xl shadow-lg transition transform hover:scale-[1.02]">SALVAR ATENÇÃO</button>
+            </div>
+        </div>
+    </div>
+
     <div id="spreadsheet-modal" class="hidden fixed inset-0 z-[10005] bg-slate-100 flex flex-col animate-fade-in">
         <div class="bg-white px-3 py-2 md:px-4 md:py-3 flex justify-between items-center shadow-md z-20 shrink-0 border-b-4 border-green-500 flex-wrap gap-2">
             <h2 class="font-black text-sm md:text-xl text-slate-800 flex items-center gap-1 md:gap-2">
@@ -208,6 +276,7 @@ Posto Ipiranga..."></textarea>
                             <input type="text" id="search-agenda-panel" oninput="App.renderAgendaPanel()" class="input-modern pl-9 bg-white border-purple-200 text-xs w-full text-purple-900" placeholder="Buscar obra, empresa...">
                             <i class="fas fa-search absolute left-3 top-3 text-purple-400 text-xs"></i>
                         </div>
+                        
                         <div class="flex gap-1 mt-2">
                             <button onclick="App.setAgendaPanelFilter('all')" id="flt-panel-all" class="flex-1 bg-purple-600 text-white text-[10px] font-bold py-1.5 rounded border border-purple-600 shadow-sm transition">TODOS</button>
                             <button onclick="App.setAgendaPanelFilter('troca')" id="flt-panel-troca" class="flex-1 bg-white text-slate-800 border border-slate-200 text-[10px] font-bold py-1.5 rounded hover:bg-slate-50 transition">T</button>
@@ -421,31 +490,7 @@ Posto Ipiranga..."></textarea>
             </div>
         </aside>
     </div>
-    
-<div id="driver-settings-modal" class="hidden fixed inset-0 z-[10006] modal-backdrop flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full animate-fade-in overflow-hidden">
-            <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-blue-50">
-                <h3 class="font-black text-sm text-blue-800"><i class="fas fa-truck-loading mr-2"></i>Ajustes: <span id="ds-driver-name" class="text-blue-600"></span></h3>
-                <button onclick="UI.toggleModal('driver-settings-modal')" class="text-blue-400 hover:text-blue-700"><i class="fas fa-times text-lg"></i></button>
-            </div>
-            <div class="p-5 space-y-4">
-                <div>
-                    <label class="text-[10px] font-bold text-slate-500 uppercase mb-1 block">Total de Caixas (📦):</label>
-                    <input type="number" id="ds-boxes" class="input-modern w-full font-black text-slate-800 text-lg text-center" placeholder="Ex: 12">
-                </div>
-                <div>
-                    <label class="text-[10px] font-bold text-slate-500 uppercase mb-1 block">Atenção Geral (Aviso Vermelho):</label>
-                    <textarea id="ds-obs" rows="3" class="input-modern w-full font-semibold text-slate-700 text-sm" placeholder="Ex: Cuidado na chuva..."></textarea>
-                </div>
-                <button onclick="App.saveDriverSettings()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-3 rounded-xl shadow-lg transition transform hover:scale-[1.02]">SALVAR DADOS</button>
-            </div>
-        </div>
-    </div>
 
-
-
-
-    
     <div id="export-container" class="absolute top-0 left-[-9999px] p-8 flex flex-col font-sans min-w-[800px] w-[1200px]" style="z-index: -1; background-color: #ffffff; color: #0f172a;">
         <div class="text-center mb-6 border-b border-gray-300 pb-4">
             <h1 class="text-3xl font-black uppercase tracking-widest" id="export-title" style="color: #1e293b;">ROTAS DO DIA</h1>
