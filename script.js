@@ -307,15 +307,26 @@ const WhatsappService = {
         const date = this.getFormattedDate();
         const shiftTxt = this.generateShiftIcon(shift);
         const plateTxt = plate ? `*[${plate}]*` : '';
+        const driver = State.getCurrentFleet()[driverName];
+        
+        // Conta as Caixas
+        let totalCaixas = 0;
+        trips.forEach(t => totalCaixas += (parseInt(t.qty) || 1));
         
         let msg = `ROTA ${date} (${shiftTxt})\n`;
         msg += `MOTORISTA: *${driverName}* ${plateTxt}\n`;
+        msg += `📦 TOTAL: *${totalCaixas} CAIXAS*\n`;
+        
+        // 🔥 AVISO GERAL DA ROTA VEM AQUI 🔥
+        if (driver && driver.obsGeral) {
+            msg += `\n🚨 *ATENÇÃO GERAL: ${driver.obsGeral.toUpperCase()}* 🚨\n`;
+        }
+        
         msg += `--------------------------------\n\n`;
 
         for (let i = 0; i < trips.length; i++) {
             const t = trips[i];
             
-            // 1. Logística / Empresa / Serviço
             if (t.obs) {
                 const logObs = t.obs.replace(/\|? ?MOT:.*$/g, '').trim();
                 if(logObs) msg += `*\`OBS: ${logObs.toUpperCase()}\`*\n`;
@@ -332,7 +343,6 @@ const WhatsappService = {
             msg += `*${typeHeader}*\n`;
             if (t.obra) msg += `OBRA: ${t.obra.toUpperCase()}\n`;
 
-            // 2. Endereço e Dados Técnicos
             const addressText = typeof t.to === 'string' ? t.to : (t.to && t.to.text ? t.to.text : '');
             const displayEnd = this.formatAddress(addressText).toUpperCase();
             msg += `END: ${displayEnd}\n`;
@@ -340,12 +350,10 @@ const WhatsappService = {
             if (t.descarteLocal) msg += `*DESCARTE: ${t.descarteLocal.toUpperCase()}*\n`;
             if (t.mtr) msg += `\`${t.mtr}\`\n`;
             
-            // 🔥 3. OBSERVAÇÃO EXTRA (ISOLADA SEM EMOJI E EM NEGRITO) 🔥
             if (t.obsExtra) {
                 msg += `\n*ATENÇÃO: ${t.obsExtra.toUpperCase()}*\n`;
             }
             
-            // Espaço final para o próximo serviço
             msg += `\n`; 
         }
         return msg;
@@ -369,7 +377,17 @@ const WhatsappService = {
             if (activeTrips.length > 0) {
                 hasContent = true;
                 const plate = driver.plate ? `*[${driver.plate}]*` : '';
-                msg += `>> *${name}* ${plate}\n`;
+                
+                // Conta as Caixas
+                let totalCaixas = 0;
+                activeTrips.forEach(t => totalCaixas += (parseInt(t.qty) || 1));
+
+                msg += `>> *${name}* ${plate} (📦 ${totalCaixas} CXS)\n`;
+                
+                // 🔥 AVISO GERAL DA ROTA VEM AQUI 🔥
+                if (driver.obsGeral) {
+                    msg += `🚨 *ATENÇÃO GERAL: ${driver.obsGeral.toUpperCase()}*\n`;
+                }
                 
                 for (let i = 0; i < activeTrips.length; i++) {
                     const t = activeTrips[i];
@@ -394,11 +412,9 @@ const WhatsappService = {
                     if(t.descarteLocal) msg += `*DESCARTE: ${t.descarteLocal.toUpperCase()}*\n`;
                     if (t.mtr) msg += `\`${t.mtr}\`\n`;
 
-                    // 🔥 OBSERVAÇÃO EXTRA NO RESUMO (SEM EMOJI) 🔥
                     if (t.obsExtra) {
                         msg += `\n*ATENÇÃO: ${t.obsExtra.toUpperCase()}*\n`;
                     }
-
                     msg += `\n`;
                 }
                 msg += `------------------------\n`;
@@ -593,6 +609,42 @@ const UI = {
 
 const App = {
     dragSource: null,
+
+    // 🔥 NOVAS FUNÇÕES: FILTRO E AVISO GERAL 🔥
+    setAgendaPanelFilter(type) {
+        State.session.agendaPanelFilter = type;
+        const types = ['all', 'troca', 'colocacao', 'retirada', 'encher'];
+        types.forEach(t => {
+            const btn = document.getElementById(`flt-panel-${t}`);
+            if(!btn) return;
+            if (t === type) {
+                if(t==='all') btn.className = 'flex-1 bg-purple-600 text-white text-[10px] font-bold py-1.5 rounded border border-purple-600 shadow-sm transition';
+                if(t==='troca') btn.className = 'flex-1 bg-slate-800 text-white text-[10px] font-bold py-1.5 rounded border border-slate-800 shadow-sm transition';
+                if(t==='colocacao') btn.className = 'flex-1 bg-red-600 text-white text-[10px] font-bold py-1.5 rounded border border-red-600 shadow-sm transition';
+                if(t==='retirada') btn.className = 'flex-1 bg-purple-600 text-white text-[10px] font-bold py-1.5 rounded border border-purple-600 shadow-sm transition';
+                if(t==='encher') btn.className = 'flex-1 bg-amber-500 text-white text-[10px] font-bold py-1.5 rounded border border-amber-500 shadow-sm transition';
+            } else {
+                let color = 'text-slate-800';
+                if(t==='colocacao') color = 'text-red-600';
+                if(t==='retirada') color = 'text-purple-600';
+                if(t==='encher') color = 'text-amber-600';
+                if(t==='all') color = 'text-purple-600';
+                btn.className = `flex-1 bg-white ${color} border border-slate-200 text-[10px] font-bold py-1.5 rounded hover:bg-slate-50 transition`;
+            }
+        });
+        this.renderAgendaPanel();
+    },
+
+    editObsGeral(driverName) {
+        const d = State.getCurrentFleet()[driverName];
+        const current = d.obsGeral || '';
+        const newObs = prompt(`Atenção Geral para a rota do motorista ${driverName}:`, current);
+        if (newObs !== null) {
+            d.obsGeral = newObs.trim();
+            State.saveFleet();
+            this.renderSpreadsheet();
+        }
+    },
 
     initDBForm() {
         const dbSection = document.getElementById('section-db');
@@ -1019,7 +1071,7 @@ const App = {
             el.appendChild(row);
         });
     },
-    // 🔥 1. NOVAS FUNÇÕES PARA SUBIR E DESCER SERVIÇOS 🔥
+
     moveTripUp(driverName, index) {
         const driver = State.getCurrentFleet()[driverName];
         if (!driver || !driver.trips || index <= 0) return;
@@ -1045,7 +1097,8 @@ const App = {
         State.saveFleet();
         this.renderSpreadsheet();
     },
-   renderSpreadsheet() {
+
+    renderSpreadsheet() {
         const container = document.getElementById('spreadsheet-container');
         if (!container) return; 
 
@@ -1070,17 +1123,27 @@ const App = {
             const column = document.createElement('div');
             column.className = "driver-column shrink-0 min-w-[200px] sm:min-w-[230px] max-w-[260px] md:min-w-[280px] md:max-w-[340px] flex flex-col bg-slate-50 snap-start border-r border-slate-300 transition-colors h-full";
 
+            // 🔥 NOVO CONTADOR DE CAIXAS 🔥
             let totalServicos = 0;
+            let totalCaixas = 0; 
             trips.forEach(t => {
                 let qty = parseInt(t.qty) || 1;
                 totalServicos += (t.type === 'encher') ? (qty * 2) : qty;
+                totalCaixas += qty;
             });
 
+            // 🔥 CABEÇALHO ATUALIZADO COM CAIXAS E BOTÃO '+' 🔥
+            let obsGeralHtml = d.obsGeral ? `<div class="bg-red-100 text-red-700 text-[10px] font-black py-1.5 px-2 border-b border-red-200 uppercase leading-tight cursor-pointer animate-pulse" onclick="App.editObsGeral('${name}')" title="Editar Atenção Geral">⚠️ ${d.obsGeral}</div>` : '';
+
             let headerHtml = `
-                <div class="bg-slate-800 text-white text-center text-[10px] font-bold py-1 shadow-sm">MOTORISTA</div>
-                <div class="bg-yellow-300 text-center text-xs font-bold py-1 border-b border-slate-300 text-slate-800 tracking-wider">${d.plate || 'SEM PLACA'}</div>
-                <div class="text-center text-sm font-black py-2.5 uppercase tracking-wide bg-white border-b border-slate-200" style="color: ${d.color || '#333'};">${name}</div>
-                <div class="bg-blue-600 text-white text-center text-[10px] font-bold py-1.5 shadow-sm">HOJE: ${totalServicos} SERVIÇOS</div>
+                <div class="bg-slate-800 text-white text-center text-[10px] font-bold py-0.5 shadow-sm">MOTORISTA</div>
+                <div class="bg-yellow-300 text-center text-xs font-black py-1 border-b border-slate-300 text-slate-800 tracking-widest">${d.plate || 'SEM PLACA'}</div>
+                <div class="text-center text-[13px] font-black py-2 uppercase tracking-wide bg-white border-b border-slate-200" style="color: ${d.color || '#333'};">${name}</div>
+                <div class="bg-blue-600 text-white flex justify-between items-center px-2 py-1 shadow-sm">
+                    <div class="text-[9px] font-bold">SV: ${totalServicos} | 📦 ${totalCaixas} CXS</div>
+                    <button onclick="App.editObsGeral('${name}')" class="w-5 h-5 bg-blue-500 hover:bg-blue-400 rounded text-[10px] flex items-center justify-center transition shadow-sm" title="Adicionar Atenção Geral na Rota"><i class="fas fa-plus"></i></button>
+                </div>
+                ${obsGeralHtml}
             `;
             
             const bodyDiv = document.createElement('div');
@@ -1250,14 +1313,16 @@ const App = {
             
             container.appendChild(column);
 
-            // 🔥 2. A MÁGICA REAL ACONTECE AQUI: Aplica o scroll no milissegundo exato que a coluna entra na tela 🔥
+            // 🔥 DEVOLVER A ROLAGEM EXATAMENTE ONDE ESTAVA 🔥
             if (scrollY[name] !== undefined) {
                 bodyDiv.scrollTop = scrollY[name];
             }
         });
 
-        // 🔥 3. Devolve a rolagem lateral
-        container.scrollLeft = scrollX;
+        // 🔥 Devolve a rolagem lateral com 15ms de atraso
+        setTimeout(() => {
+            container.scrollLeft = scrollX;
+        }, 15);
     },
 
     handleAgendaDragStart(e, id) {
@@ -1642,6 +1707,12 @@ const App = {
             agendadosHj = agendadosHj.filter(a => 
                 (a.obra && a.obra.toLowerCase().includes(searchTerm)) || (a.empresa && a.empresa.toLowerCase().includes(searchTerm)) || (a.address && a.address.toLowerCase().includes(searchTerm))
             );
+        }
+
+        // 🔥 APLICA O FILTRO POR TIPO 🔥
+        const filterType = State.session.agendaPanelFilter || 'all';
+        if (filterType !== 'all') {
+            agendadosHj = agendadosHj.filter(a => a.type === filterType);
         }
 
         list.innerHTML = '';
@@ -2055,6 +2126,7 @@ const App = {
         }
     }
 };
+
 window.onload = () => {
     UI.init();
     
@@ -2069,3 +2141,14 @@ window.onload = () => {
         }
     });
 };
+
+// 🔥 FECHAR A PLANILHA GIGANTE COM A TECLA ESC 🔥
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+        const planilhaModal = document.getElementById('spreadsheet-modal');
+        // Verifica se a planilha existe e se ela está ABERTA (sem a classe hidden)
+        if (planilhaModal && !planilhaModal.classList.contains('hidden')) {
+            UI.toggleModal('spreadsheet-modal');
+        }
+    }
+});
