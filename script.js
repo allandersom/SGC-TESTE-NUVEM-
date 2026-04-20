@@ -386,7 +386,7 @@ const WhatsappService = {
                 
                 // 🔥 AVISO GERAL DA ROTA VEM AQUI 🔥
                 if (driver.obsGeral) {
-                    msg += `🚨 *ATENÇÃO GERAL: ${driver.obsGeral.toUpperCase()}*\n`;
+                    msg += `🚨 *ATENÇÃO: ${driver.obsGeral.toUpperCase()}*\n`;
                 }
                 
                 for (let i = 0; i < activeTrips.length; i++) {
