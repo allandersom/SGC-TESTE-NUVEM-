@@ -615,3 +615,46 @@ input[type="date"]::-webkit-inner-spin-button {
     padding-right: 0 !important;
     padding-left: 0 !important;
 }
+/* 🔥 TOGGLE DIA/NOITE PREMIUM (MODERNO) 🔥 */
+
+/* Resetando o botão base */
+.shift-btn {
+    border-radius: 0.6rem !important; 
+    color: #64748b !important;
+    background: transparent !important; 
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) !important; /* Animação estilo "mola" suave */
+    transform: scale(0.98);
+}
+
+/* Quando o botão está ATIVO no Modo Dia */
+.shift-btn.active {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    box-shadow: 0 4px 10px -2px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+    transform: scale(1);
+    border: 1px solid #e2e8f0;
+}
+
+/* Brilho neon sutil no ícone ativo (Dia) */
+.shift-btn.active i.fa-sun {
+    color: #f59e0b !important;
+    filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.4));
+}
+
+/* Brilho neon sutil no ícone ativo (Noite) */
+.shift-btn.active i.fa-moon {
+    color: #60a5fa !important;
+    filter: drop-shadow(0 0 4px rgba(96, 165, 250, 0.4));
+}
+
+/* 🌙 Quando vira pra NOITE, inverte as cores do botão base */
+body.night-mode .shift-btn.active {
+    background: #1e293b !important; /* Fundo escuro premium */
+    color: #f8fafc !important; /* Texto branco */
+    border: 1px solid #334155;
+    box-shadow: 0 4px 10px -2px rgba(0, 0, 0, 0.5) !important;
+}
+
+body.night-mode .shift-btn {
+    color: #94a3b8 !important; /* Desativo na noite fica cinza charmoso */
+}
