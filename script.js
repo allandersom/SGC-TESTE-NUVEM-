@@ -309,15 +309,14 @@ const WhatsappService = {
         const plateTxt = plate ? `*[${plate}]*` : '';
         const driver = State.getCurrentFleet()[driverName];
         
-        // Conta as Caixas
-        let totalCaixas = 0;
-        trips.forEach(t => totalCaixas += (parseInt(t.qty) || 1));
+        // 🔥 Usa a quantidade manual de caixas, se não houver, assume 0 🔥
+        let totalCaixas = driver.totalCaixas || 0;
         
         let msg = `ROTA ${date} (${shiftTxt})\n`;
         msg += `MOTORISTA: *${driverName}* ${plateTxt}\n`;
         msg += `📦 TOTAL: *${totalCaixas} CAIXAS*\n`;
         
-        // 🔥 AVISO GERAL DA ROTA VEM AQUI 🔥
+        // 🔥 AVISO GERAL DA ROTA VEM AQUI SEM EMOJI ESQUISITO 🔥
         if (driver && driver.obsGeral) {
             msg += `\n🚨 *ATENÇÃO GERAL: ${driver.obsGeral.toUpperCase()}* 🚨\n`;
         }
@@ -378,15 +377,14 @@ const WhatsappService = {
                 hasContent = true;
                 const plate = driver.plate ? `*[${driver.plate}]*` : '';
                 
-                // Conta as Caixas
-                let totalCaixas = 0;
-                activeTrips.forEach(t => totalCaixas += (parseInt(t.qty) || 1));
+                // 🔥 Usa a quantidade manual de caixas, se não houver, assume 0 🔥
+                let totalCaixas = driver.totalCaixas || 0;
 
                 msg += `>> *${name}* ${plate} (📦 ${totalCaixas} CXS)\n`;
                 
-                // 🔥 AVISO GERAL DA ROTA VEM AQUI 🔥
+                // 🔥 AVISO GERAL DA ROTA VEM AQUI SEM EMOJI ESQUISITO 🔥
                 if (driver.obsGeral) {
-                    msg += `🚨 *ATENÇÃO: ${driver.obsGeral.toUpperCase()}*\n`;
+                    msg += `🚨 *ATENÇÃO GERAL: ${driver.obsGeral.toUpperCase()}*\n`;
                 }
                 
                 for (let i = 0; i < activeTrips.length; i++) {
@@ -610,7 +608,7 @@ const UI = {
 const App = {
     dragSource: null,
 
-    // 🔥 NOVAS FUNÇÕES: FILTRO E AVISO GERAL 🔥
+    // 🔥 FILTROS DA AGENDA E CONFIGS DO MOTORISTA 🔥
     setAgendaPanelFilter(type) {
         State.session.agendaPanelFilter = type;
         const types = ['all', 'troca', 'colocacao', 'retirada', 'encher'];
@@ -635,14 +633,25 @@ const App = {
         this.renderAgendaPanel();
     },
 
-    editObsGeral(driverName) {
-        const d = State.getCurrentFleet()[driverName];
-        const current = d.obsGeral || '';
-        const newObs = prompt(`Atenção Geral para a rota do motorista ${driverName}:`, current);
-        if (newObs !== null) {
-            d.obsGeral = newObs.trim();
+    openDriverSettings(driverName) {
+        UI.tempDriverName = driverName;
+        const driver = State.getCurrentFleet()[driverName];
+        document.getElementById('ds-driver-name').innerText = driverName;
+        document.getElementById('ds-boxes').value = driver.totalCaixas || '';
+        document.getElementById('ds-obs').value = driver.obsGeral || '';
+        UI.toggleModal('driver-settings-modal');
+    },
+
+    saveDriverSettings() {
+        const driverName = UI.tempDriverName;
+        const driver = State.getCurrentFleet()[driverName];
+        if(driver) {
+            driver.totalCaixas = parseInt(document.getElementById('ds-boxes').value) || 0;
+            driver.obsGeral = document.getElementById('ds-obs').value.trim();
             State.saveFleet();
-            this.renderSpreadsheet();
+            App.renderSpreadsheet();
+            UI.toggleModal('driver-settings-modal');
+            UI.toast("Ajustes do motorista salvos!");
         }
     },
 
@@ -809,7 +818,6 @@ const App = {
     setShift(shift) {
         State.session.shift = shift;
         
-        // 🔥 LÓGICA NOVA: Sincroniza os botões do menu antigo E da planilha nova 🔥
         document.querySelectorAll('#shift-day, .shift-day-sync').forEach(el => el.className = `shift-btn ${shift==='day'?'active':''} shift-day-sync text-xs px-3 py-1.5`);
         document.querySelectorAll('#shift-night, .shift-night-sync').forEach(el => el.className = `shift-btn ${shift==='night'?'active':''} shift-night-sync text-xs px-3 py-1.5`);
         
@@ -1075,12 +1083,9 @@ const App = {
     moveTripUp(driverName, index) {
         const driver = State.getCurrentFleet()[driverName];
         if (!driver || !driver.trips || index <= 0) return;
-        
-        // Troca o item atual com o de cima
         const temp = driver.trips[index];
         driver.trips[index] = driver.trips[index - 1];
         driver.trips[index - 1] = temp;
-        
         State.saveFleet();
         this.renderSpreadsheet();
     },
@@ -1088,12 +1093,9 @@ const App = {
     moveTripDown(driverName, index) {
         const driver = State.getCurrentFleet()[driverName];
         if (!driver || !driver.trips || index >= driver.trips.length - 1) return;
-        
-        // Troca o item atual com o de baixo
         const temp = driver.trips[index];
         driver.trips[index] = driver.trips[index + 1];
         driver.trips[index + 1] = temp;
-        
         State.saveFleet();
         this.renderSpreadsheet();
     },
@@ -1102,7 +1104,6 @@ const App = {
         const container = document.getElementById('spreadsheet-container');
         if (!container) return; 
 
-        // 🔥 1. CAPTURA O SCROLL EXATO ANTES DE DESTRUIR A TELA 🔥
         const scrollY = {};
         container.querySelectorAll('.driver-list-scroll').forEach(scrollDiv => {
             const driverName = scrollDiv.getAttribute('data-driver');
@@ -1123,25 +1124,23 @@ const App = {
             const column = document.createElement('div');
             column.className = "driver-column shrink-0 min-w-[200px] sm:min-w-[230px] max-w-[260px] md:min-w-[280px] md:max-w-[340px] flex flex-col bg-slate-50 snap-start border-r border-slate-300 transition-colors h-full";
 
-            // 🔥 NOVO CONTADOR DE CAIXAS 🔥
             let totalServicos = 0;
-            let totalCaixas = 0; 
             trips.forEach(t => {
                 let qty = parseInt(t.qty) || 1;
                 totalServicos += (t.type === 'encher') ? (qty * 2) : qty;
-                totalCaixas += qty;
             });
 
-            // 🔥 CABEÇALHO ATUALIZADO COM CAIXAS E BOTÃO '+' 🔥
-            let obsGeralHtml = d.obsGeral ? `<div class="bg-red-100 text-red-700 text-[10px] font-black py-1.5 px-2 border-b border-red-200 uppercase leading-tight cursor-pointer animate-pulse" onclick="App.editObsGeral('${name}')" title="Editar Atenção Geral">⚠️ ${d.obsGeral}</div>` : '';
+            // 🔥 Caixa e Aviso Manual 🔥
+            let totalCaixas = d.totalCaixas || 0;
+            let obsGeralHtml = d.obsGeral ? `<div class="bg-red-100 text-red-700 text-[10px] font-black py-1.5 px-2 border-b border-red-200 uppercase leading-tight cursor-pointer animate-pulse" onclick="App.openDriverSettings('${name}')" title="Editar Atenção Geral">⚠️ ${d.obsGeral}</div>` : '';
 
             let headerHtml = `
                 <div class="bg-slate-800 text-white text-center text-[10px] font-bold py-0.5 shadow-sm">MOTORISTA</div>
-                <div class="bg-yellow-300 text-center text-xs font-black py-1 border-b border-slate-300 text-slate-800 tracking-widest">${d.plate || 'SEM PLACA'}</div>
-                <div class="text-center text-[13px] font-black py-2 uppercase tracking-wide bg-white border-b border-slate-200" style="color: ${d.color || '#333'};">${name}</div>
+                <div class="bg-yellow-300 text-center text-xs font-bold py-1 border-b border-slate-300 text-slate-800 tracking-wider">${d.plate || 'SEM PLACA'}</div>
+                <div class="text-center text-sm font-black py-2.5 uppercase tracking-wide bg-white border-b border-slate-200" style="color: ${d.color || '#333'};">${name}</div>
                 <div class="bg-blue-600 text-white flex justify-between items-center px-2 py-1 shadow-sm">
                     <div class="text-[9px] font-bold">SV: ${totalServicos} | 📦 ${totalCaixas} CXS</div>
-                    <button onclick="App.editObsGeral('${name}')" class="w-5 h-5 bg-blue-500 hover:bg-blue-400 rounded text-[10px] flex items-center justify-center transition shadow-sm" title="Adicionar Atenção Geral na Rota"><i class="fas fa-plus"></i></button>
+                    <button onclick="App.openDriverSettings('${name}')" class="w-5 h-5 bg-blue-500 hover:bg-blue-400 rounded text-[10px] flex items-center justify-center transition shadow-sm" title="Ajustar Caixas e Avisos"><i class="fas fa-cog"></i></button>
                 </div>
                 ${obsGeralHtml}
             `;
@@ -1204,6 +1203,7 @@ const App = {
                 const btnDown = i < trips.length - 1 ? `<button onclick="App.moveTripDown('${name}', ${i})" class="w-5 h-5 rounded bg-slate-100 hover:bg-blue-100 text-slate-500 hover:text-blue-600 flex items-center justify-center border border-slate-200 transition shadow-sm" title="Descer Serviço"><i class="fas fa-arrow-down text-[9px]"></i></button>` : '';
                 const divider = (btnUp || btnDown) ? `<div class="w-px bg-slate-200 mx-0.5 my-1"></div>` : '';
 
+                // 🔥 BOTÕES DE EDIÇÃO AGORA CHAMAM MODAIS HTML 🔥
                 const barraAcoesHtml = `
                     <div class="mt-2 pt-1.5 border-t border-slate-100 flex gap-1 justify-between items-center bg-slate-50/50 -mx-1 -mb-1 px-1 pb-1 rounded-b">
                         <div class="flex gap-1">
@@ -1215,7 +1215,10 @@ const App = {
                             </button>
                         </div>
                         <div class="flex gap-1">
-                            <button onclick="App.editObs('${name}', ${i})" class="h-6 px-1.5 rounded bg-white border border-slate-200 text-slate-500 hover:text-amber-600 hover:border-amber-200 hover:bg-amber-50 flex items-center justify-center gap-1 transition shadow-sm text-[9px] font-bold" title="Editar OBS">
+                            <button onclick="App.openEditTripModal('${name}', ${i})" class="h-6 px-1.5 rounded bg-white border border-slate-200 text-slate-500 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 flex items-center justify-center gap-1 transition shadow-sm text-[9px] font-bold" title="Editar Obra/Endereço">
+                                <i class="fas fa-pen text-[9px]"></i>
+                            </button>
+                            <button onclick="App.openEditObsModal('${name}', ${i})" class="h-6 px-1.5 rounded bg-white border border-slate-200 text-slate-500 hover:text-amber-600 hover:border-amber-200 hover:bg-amber-50 flex items-center justify-center gap-1 transition shadow-sm text-[9px] font-bold" title="Editar OBS Logística">
                                 <i class="fas fa-comment-dots text-[9px]"></i><span class="hidden xl:inline">OBS</span>
                             </button>
                             <button onclick="App.openMtrModal(${i}, '${name}')" class="h-6 px-1.5 rounded bg-white border border-slate-200 text-slate-500 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 flex items-center justify-center gap-1 transition shadow-sm text-[9px] font-bold" title="Definir MTR">
@@ -1224,7 +1227,7 @@ const App = {
                             <button onclick="App.attachPhotoObs('${name}', ${i})" class="w-6 h-6 rounded bg-white border border-slate-200 text-slate-400 hover:text-sky-600 hover:border-sky-200 hover:bg-sky-50 flex items-center justify-center transition shadow-sm" title="Anexar Foto (Logística)">
                                 <i class="fas fa-camera text-[9px]"></i>
                             </button>
-                            <button onclick="App.addExtraObs('${name}', ${i})" class="w-6 h-6 rounded bg-white border border-slate-200 text-slate-400 hover:text-red-600 hover:border-red-200 hover:bg-red-50 flex items-center justify-center transition shadow-sm font-black" title="Adicionar OBS Extra (Negrito)">
+                            <button onclick="App.openExtraObsModal('${name}', ${i})" class="w-6 h-6 rounded bg-white border border-slate-200 text-slate-400 hover:text-red-600 hover:border-red-200 hover:bg-red-50 flex items-center justify-center transition shadow-sm font-black" title="Adicionar OBS Extra (Negrito)">
                                 +
                             </button>
                         </div>
@@ -1313,13 +1316,11 @@ const App = {
             
             container.appendChild(column);
 
-            // 🔥 DEVOLVER A ROLAGEM EXATAMENTE ONDE ESTAVA 🔥
             if (scrollY[name] !== undefined) {
                 bodyDiv.scrollTop = scrollY[name];
             }
         });
 
-        // 🔥 Devolve a rolagem lateral com 15ms de atraso
         setTimeout(() => {
             container.scrollLeft = scrollX;
         }, 15);
@@ -1380,7 +1381,7 @@ const App = {
                     id: Date.now() + Math.random(),
                     status: 'pendente',
                     completed: false,
-                    agendaId: agendaItem.id, // VINCULA
+                    agendaId: agendaItem.id,
                     empresa: agendaItem.empresa, 
                     obra: agendaItem.obra, 
                     qty: agendaItem.qty, 
@@ -1389,7 +1390,7 @@ const App = {
                     to: { text: agendaItem.address }, 
                     mtr: null, 
                     descarteLocal: null,
-                    veioDeReprogramacao: agendaItem.veioDeReprogramacao || false, // 🔥 HERDA A PRIORIDADE 🔥
+                    veioDeReprogramacao: agendaItem.veioDeReprogramacao || false,
                     dataOrigem: agendaItem.dataOrigem || ''
                 };
                 
@@ -1457,10 +1458,6 @@ const App = {
         
         UI.toast("Serviço devolvido para a agenda!");
     },
-
-    // ==========================================
-    // 🔥 LÓGICA DE AGENDAMENTO COM TURNOS E REPROGRAMAÇÃO 🔥
-    // ==========================================
     
     openRescheduleModal(id) {
         UI.tempAgendaId = id;
@@ -1537,7 +1534,6 @@ const App = {
                     State.data.agendamentos.push(novoItem);
                 }
 
-                // 🔥 A MÁGICA AQUI: O SERVIÇO NÃO É MAIS EXCLUÍDO DA ROTA, ELE FICA LARANJA 🔥
                 trip.status = 'reprogramado';
                 trip.dataReprogramada = dataBr;
                 
@@ -1617,7 +1613,7 @@ const App = {
             const isDist = item.distribuido;
             const isReprog = item.reprogramado;
             const isLocked = isDist || isReprog;
-            const isRetorno = item.veioDeReprogramacao; // 🔥 VERIFICA SE É PRIORIDADE 🔥
+            const isRetorno = item.veioDeReprogramacao; 
             const isNight = document.body.classList.contains('night-mode');
             
             let baseClass = 'bg-slate-50 border-slate-200';
@@ -1630,7 +1626,6 @@ const App = {
                 baseClass = 'opacity-80';
                 finalStyle = isNight ? 'background-color: rgba(30,58,138,0.4) !important; border-color: #1e3a8a !important;' : 'background-color: #eff6ff !important; border-color: #bfdbfe !important;';
             } else if (isRetorno) {
-                // 🔥 SE FOR PRIORIDADE E NÃO TIVER SIDO FEITO AINDA, FICA AMARELO 🔥
                 baseClass = 'bg-yellow-50 border-yellow-400 shadow-md';
                 finalStyle = isNight ? 'background-color: rgba(234, 179, 8, 0.15) !important; border-color: #a16207 !important;' : 'background-color: #fefce8 !important; border-color: #facc15 !important;';
             }
@@ -1639,7 +1634,6 @@ const App = {
             const shiftBadge = (item.shift === 'night') ? `<span class="bg-slate-800 text-white px-1.5 py-0.5 rounded text-[8px] uppercase border border-slate-600 shadow-sm ml-1">🌙 Noite</span>` : `<span class="bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded text-[8px] uppercase border border-yellow-300 shadow-sm ml-1">🌞 Dia</span>`;
             const obsTag = item.obs ? `<div class="mt-1 text-[9px] bg-amber-100 text-amber-800 p-1 rounded font-bold">OBS: ${item.obs}</div>` : '';
             
-            // 🔥 AVISO DE PRIORIDADE NA TELA 🔥
             const avisoRetorno = (isRetorno && !isLocked) ? `<div class="mt-2 text-[10px] bg-yellow-200 text-yellow-900 font-black rounded-lg p-1.5 border border-yellow-400 shadow-sm animate-pulse"><i class="fas fa-exclamation-triangle"></i> PRIORIDADE: ADIADO DO DIA ${item.dataOrigem}</div>` : '';
 
             let typeColor = 'text-slate-800';
@@ -1709,7 +1703,6 @@ const App = {
             );
         }
 
-        // 🔥 APLICA O FILTRO POR TIPO 🔥
         const filterType = State.session.agendaPanelFilter || 'all';
         if (filterType !== 'all') {
             agendadosHj = agendadosHj.filter(a => a.type === filterType);
@@ -1726,7 +1719,7 @@ const App = {
             const isDist = a.distribuido;
             const isReprog = a.reprogramado;
             const isLocked = isDist || isReprog;
-            const isRetorno = a.veioDeReprogramacao; // 🔥 VERIFICA PRIORIDADE 🔥
+            const isRetorno = a.veioDeReprogramacao; 
 
             let colorClass = 'text-slate-800';
             if(a.type === 'colocacao') colorClass = 'text-red-600';
@@ -1743,7 +1736,6 @@ const App = {
             } else if (isDist) {
                 finalStyle = isNight ? 'background-color: rgba(30,58,138,0.4) !important; border-color: #1e3a8a !important;' : 'background-color: #eff6ff !important; border-color: #bfdbfe !important;';
             } else if (isRetorno) {
-                // 🔥 SE FOR PRIORIDADE NA PLANILHA TAMBÉM FICA AMARELO 🔥
                 baseClass = 'bg-yellow-50 border-yellow-400 shadow-md cursor-grab active:cursor-grabbing';
                 finalStyle = isNight ? 'background-color: rgba(234, 179, 8, 0.15) !important; border-color: #a16207 !important;' : 'background-color: #fefce8 !important; border-color: #facc15 !important;';
             }
@@ -1773,7 +1765,6 @@ const App = {
                 `;
             }
             
-            // 🔥 AVISO DE PRIORIDADE NA PLANILHA ROXA 🔥
             const avisoRetorno = (isRetorno && !isLocked) ? `<div class="mt-2 text-[10px] bg-orange-500 text-white font-black rounded-lg p-1.5 border border-orange-600 shadow-md animate-pulse"><i class="fas fa-exclamation-triangle text-yellow-200"></i> PRIORIDADE: ADIADO DO DIA ${a.dataOrigem}</div>` : '';
             list.innerHTML += `
             <div ${dragAttrs} style="${finalStyle}" class="drag-item p-3 border rounded-xl shadow-sm flex flex-col relative animate-fade-in transition ag-item-card ${baseClass}">
@@ -1821,7 +1812,7 @@ const App = {
                 targetDriverObj.trips.push({
                     id: Date.now() + Math.random(), status: 'pendente', completed: false, agendaId: a.id,
                     empresa: a.empresa, obra: a.obra, qty: a.qty, type: a.type, obs: a.obs, to: { text: a.address }, mtr: null, descarteLocal: null,
-                    veioDeReprogramacao: a.veioDeReprogramacao || false, dataOrigem: a.dataOrigem || '' // 🔥 COPIA A PRIORIDADE PRO MOTORISTA 🔥
+                    veioDeReprogramacao: a.veioDeReprogramacao || false, dataOrigem: a.dataOrigem || ''
                 });
                 a.distribuido = true;
                 targetDriver.count++;
@@ -1835,9 +1826,7 @@ const App = {
         this.renderGrid();
         UI.toast("Serviços distribuídos!");
     },
-   // =========================================================
-    // 🔥 GERADOR DE IMAGEM LIMPA PARA CLIENTES/LEIGOS 🔥
-    // =========================================================
+
     downloadPreview() {
         UI.toast("Gerando imagem de alta qualidade, aguarde...", "info");
         
@@ -1856,7 +1845,6 @@ const App = {
             const d = State.getDriver(name);
             if(!d || !d.trips || d.trips.length === 0) return; 
             
-            // Agora mostra tudo, inclusive reprogramados e não feitos
             const activeTrips = d.trips;
             if (activeTrips.length === 0) return;
 
@@ -1888,19 +1876,18 @@ const App = {
                     bgColor = '#fff7ed'; 
                     borderColor = '#fed7aa'; 
                     statusColor = '#f97316'; 
-                    iconStr = ''; // 🔥 SEM EMOJI AQUI, SÓ A COR LARANJA 🔥
+                    iconStr = ''; 
                 } else if (isRetorno) {
                     bgColor = '#fefce8'; 
                     borderColor = '#fde047'; 
                     statusColor = '#eab308'; 
-                    iconStr = '⚠️ '; // Aviso de prioridade mantido
+                    iconStr = '⚠️ '; 
                 }
 
                 const qty = t.qty || 1;
                 const label = WhatsappService.getPluralLabel(t.type, qty);
                 const displayType = t.type === 'encher' ? 'ENCHER' : label;
                 
-                // 🔥 HORÁRIO SÓ APARECE SE FOI CONCLUÍDO 🔥
                 let timeHtml = '';
                 if (isDone && t.horaConclusao) {
                     timeHtml = `<div style="font-size: 10px; font-weight: 900; color: #059669; margin-top: 6px; letter-spacing: 0.5px;">🕒 FEITO ÀS ${t.horaConclusao}</div>`;
@@ -1965,71 +1952,104 @@ const App = {
         State.updateTripType(name, index, types[nextIndex]);
     },
     
-    editTripText(name, index) {
-        const d = State.getCurrentFleet()[name];
+    // 🔥 NOVAS FUNÇÕES PARA ABRIR OS MODAIS HTML DE EDIÇÃO 🔥
+    openEditTripModal(driverName, index) {
+        const d = State.getCurrentFleet()[driverName];
         if(!d || !d.trips[index]) return;
-        const currentCompany = d.trips[index].empresa || '';
-        const currentObra = d.trips[index].obra || '';
-        const currentObs = d.trips[index].obs || ''; 
-        const newCompany = prompt("Editar Empresa:", currentCompany);
-        if(newCompany === null) return; 
-        const newObra = prompt("Editar Obra:", currentObra);
-        if(newObra === null) return; 
-        const newObs = prompt("Editar Observação:", currentObs.replace(/\|? ?MOT:.*$/g, '').trim());
-        if (newObs === null) return;
         
-        const parts = currentObs.split(/\|? ?MOT: /);
-        const motObs = parts[1] ? ` | MOT: ${parts[1]}` : '';
-        const finalObs = newObs ? `${newObs}${motObs}` : motObs.replace(' | ', '');
-
-        State.updateTripText(name, index, newCompany, newObra, finalObs);
+        UI.tempDriverName = driverName;
+        UI.tempTripIndex = index;
+        
+        document.getElementById('edit-empresa').value = d.trips[index].empresa || '';
+        document.getElementById('edit-obra').value = d.trips[index].obra || '';
+        const currentAddr = (typeof d.trips[index].to === 'string' ? d.trips[index].to : (d.trips[index].to && d.trips[index].to.text ? d.trips[index].to.text : ''));
+        document.getElementById('edit-addr').value = currentAddr === "PREENCHER ENDEREÇO" ? "" : currentAddr;
+        
+        UI.toggleModal('edit-trip-modal');
     },
 
-    editTripAddress(name, index) {
-        const d = State.getCurrentFleet()[name];
-        if(!d || !d.trips[index]) return;
-        const trip = d.trips[index];
-        const currentAddr = (typeof trip.to === 'string' ? trip.to : (trip.to && trip.to.text ? trip.to.text : ''));
-        const newAddr = prompt("Digite o endereço correto:", currentAddr === "PREENCHER ENDEREÇO" ? "" : currentAddr);
-        if (newAddr !== null && newAddr.trim() !== "") {
-            trip.to = { text: newAddr.trim() };
-            if (trip.obs === "NÃO ACHOU NO BANCO") trip.obs = "";
-            State.saveFleet();
-            if (trip.empresa || trip.obra) State.addToAddressBook(trip.empresa, trip.obra, newAddr.trim());
-            UI.toast("Endereço salvo na viagem e no banco!");
-        }
-    },
-    
-    editObs(name, index) {
-        const d = State.getCurrentFleet()[name];
-        const currentObs = d.trips[index].obs || '';
-        const parts = currentObs.split(/\|? ?MOT: /);
-        const logObs = parts[0].trim();
-        const motObs = parts[1] ? ` | MOT: ${parts[1]}` : '';
-
-        const newObs = prompt("Adicionar/Editar Observação (Logística):", logObs);
-        if (newObs !== null) {
-            d.trips[index].obs = newObs ? `${newObs}${motObs}` : motObs.replace(' | ', '');
-            State.saveFleet();
-            App.renderSpreadsheet(); 
-            App.renderGrid();
-        }
-    },
-    // 🔥 NOVA: OBSERVAÇÃO EXTRA (NEGRITO NO WPP) 🔥
-    addExtraObs(name, index) {
-        const d = State.getCurrentFleet()[name];
-        if(!d || !d.trips[index]) return;
-        const current = d.trips[index].obsExtra || '';
-        const newObs = prompt("OBSERVAÇÃO EXTRA (Sairá em negrito no WhatsApp):", current);
-        if (newObs !== null) {
-            d.trips[index].obsExtra = newObs.trim();
+    saveTripEdits() {
+        const driverName = UI.tempDriverName;
+        const index = UI.tempTripIndex;
+        const d = State.getCurrentFleet()[driverName];
+        
+        if(d && d.trips[index]) {
+            const newCompany = document.getElementById('edit-empresa').value.trim();
+            const newObra = document.getElementById('edit-obra').value.trim();
+            const newAddr = document.getElementById('edit-addr').value.trim();
+            
+            d.trips[index].empresa = newCompany;
+            d.trips[index].obra = newObra;
+            if(newAddr) {
+                d.trips[index].to = { text: newAddr };
+                if (d.trips[index].obs === "NÃO ACHOU NO BANCO") d.trips[index].obs = "";
+                if (newCompany || newObra) State.addToAddressBook(newCompany, newObra, newAddr);
+            }
             State.saveFleet();
             App.renderSpreadsheet();
-            UI.toast("OBS Extra adicionada!");
+            UI.toggleModal('edit-trip-modal');
+            UI.toast("Dados da viagem atualizados!");
         }
     },
 
-    // 🔥 NOVA: ANEXAR FOTO DE OBSERVAÇÃO 🔥
+    openEditObsModal(driverName, index) {
+        const d = State.getCurrentFleet()[driverName];
+        if(!d || !d.trips[index]) return;
+        
+        UI.tempDriverName = driverName;
+        UI.tempTripIndex = index;
+        
+        const currentObs = d.trips[index].obs || '';
+        const parts = currentObs.split(/\|? ?MOT: /);
+        document.getElementById('edit-obs-log').value = parts[0].trim();
+        
+        UI.toggleModal('edit-obs-modal');
+    },
+
+    saveObsEdits() {
+        const driverName = UI.tempDriverName;
+        const index = UI.tempTripIndex;
+        const d = State.getCurrentFleet()[driverName];
+        
+        if(d && d.trips[index]) {
+            const currentObs = d.trips[index].obs || '';
+            const parts = currentObs.split(/\|? ?MOT: /);
+            const motObs = parts[1] ? ` | MOT: ${parts[1]}` : '';
+            const newLogObs = document.getElementById('edit-obs-log').value.trim();
+            
+            d.trips[index].obs = newLogObs ? `${newLogObs}${motObs}` : motObs.replace(' | ', '');
+            State.saveFleet();
+            App.renderSpreadsheet();
+            UI.toggleModal('edit-obs-modal');
+            UI.toast("Observação atualizada!");
+        }
+    },
+
+    openExtraObsModal(driverName, index) {
+        const d = State.getCurrentFleet()[driverName];
+        if(!d || !d.trips[index]) return;
+        
+        UI.tempDriverName = driverName;
+        UI.tempTripIndex = index;
+        document.getElementById('edit-extra-obs').value = d.trips[index].obsExtra || '';
+        
+        UI.toggleModal('extra-obs-modal');
+    },
+
+    saveExtraObs() {
+        const driverName = UI.tempDriverName;
+        const index = UI.tempTripIndex;
+        const d = State.getCurrentFleet()[driverName];
+        
+        if(d && d.trips[index]) {
+            d.trips[index].obsExtra = document.getElementById('edit-extra-obs').value.trim();
+            State.saveFleet();
+            App.renderSpreadsheet();
+            UI.toggleModal('extra-obs-modal');
+            UI.toast("Atenção Extra salva!");
+        }
+    },
+
     attachPhotoObs(name, index) {
         const input = document.createElement('input');
         input.type = 'file';
@@ -2046,7 +2066,7 @@ const App = {
                 img.src = ev.target.result;
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
-                    const MAX_WIDTH = 800; // Trava o tamanho pra não estourar o banco
+                    const MAX_WIDTH = 800;
                     let width = img.width;
                     let height = img.height;
                     
@@ -2059,7 +2079,7 @@ const App = {
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
                     
-                    const base64 = canvas.toDataURL('image/jpeg', 0.5); // Comprime a foto
+                    const base64 = canvas.toDataURL('image/jpeg', 0.5); 
                     
                     const d = State.getCurrentFleet()[name];
                     if(d && d.trips[index]) {
@@ -2089,8 +2109,17 @@ const App = {
         const d = State.getCurrentFleet()[name];
         if(!d || !d.trips[index]) return;
         const current = d.trips[index].qty;
+        
+        // Abre um mini modal rápido ao invés do prompt
         const newQty = prompt("Nova quantidade:", current);
-        if(newQty !== null) State.updateTripQty(name, index, newQty);
+        if(newQty !== null) {
+            const qty = parseInt(newQty);
+            if(qty > 0) {
+                d.trips[index].qty = qty;
+                State.saveFleet();
+                App.renderSpreadsheet();
+            }
+        }
     },
 
     setDescarte(n, i) { this.openDisposalModal(i); },
@@ -2130,25 +2159,27 @@ const App = {
 window.onload = () => {
     UI.init();
     
-    // 🔥 Transforma todos os campos de data normais no calendário modernão 🔥
     flatpickr('input[type="date"]', {
         dateFormat: "Y-m-d",
-        locale: "pt", // Deixa em português
-        disableMobile: true, // No celular ele continua usando o do Android/iPhone que já é bonito
+        locale: "pt", 
+        disableMobile: true, 
         onChange: function(selectedDates, dateStr, instance) {
-            // Garante que as suas funções antigas (onchange) continuem funcionando perfeitamente
             instance.element.dispatchEvent(new Event('change'));
         }
     });
 };
 
-// 🔥 FECHAR A PLANILHA GIGANTE COM A TECLA ESC 🔥
 document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
         const planilhaModal = document.getElementById('spreadsheet-modal');
-        // Verifica se a planilha existe e se ela está ABERTA (sem a classe hidden)
         if (planilhaModal && !planilhaModal.classList.contains('hidden')) {
             UI.toggleModal('spreadsheet-modal');
         }
+        
+        // Fecha todos os outros modais se o usuário apertar ESC
+        ['edit-trip-modal', 'edit-obs-modal', 'extra-obs-modal', 'driver-settings-modal'].forEach(id => {
+            const m = document.getElementById(id);
+            if(m && !m.classList.contains('hidden')) UI.toggleModal(id);
+        });
     }
 });
