@@ -1951,6 +1951,41 @@ const App = {
         if (nextIndex >= types.length || nextIndex === -1) nextIndex = 0;
         State.updateTripType(name, index, types[nextIndex]);
     },
+    // 🔥 EDITAR TIPO E QUANTIDADE DIRETO NOS AGENDAMENTOS 🔥
+    changeAgendaQty(id) {
+        const agendaItem = State.data.agendamentos.find(a => a.id === id);
+        if (!agendaItem) return;
+        
+        const current = agendaItem.qty || 1;
+        const newQty = prompt("Nova quantidade do agendamento:", current);
+        if (newQty !== null) {
+            const qty = parseInt(newQty);
+            if (qty > 0) {
+                agendaItem.qty = qty;
+                State.saveAgendamentos();
+                this.renderAgendaTab();
+                this.renderAgendaPanel();
+            }
+        }
+    },
+
+    cycleAgendaType(id) {
+        const agendaItem = State.data.agendamentos.find(a => a.id === id);
+        if (!agendaItem) return;
+        
+        const types = ['troca', 'colocacao', 'retirada', 'encher'];
+        const current = agendaItem.type || 'troca';
+        let nextIndex = types.indexOf(current) + 1;
+        if (nextIndex >= types.length || nextIndex === -1) nextIndex = 0;
+        
+        agendaItem.type = types[nextIndex];
+        State.saveAgendamentos();
+        this.renderAgendaTab();
+        this.renderAgendaPanel();
+    },
+
+
+
     
     // 🔥 NOVAS FUNÇÕES PARA ABRIR OS MODAIS HTML DE EDIÇÃO 🔥
     openEditTripModal(driverName, index) {
