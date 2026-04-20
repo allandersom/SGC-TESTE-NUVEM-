@@ -124,6 +124,15 @@ body.night-mode #spreadsheet-container .bg-white { background-color: #ffffff !im
 .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
+/* Modais pop-up suave */
+.animate-slide-up { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+@keyframes slideUp { from { opacity: 0; transform: translateY(20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+.modal-backdrop {
+    background-color: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(4px);
+}
+
 /* ========================================================================= */
 /* 🔥 ESTILIZAÇÃO DOS ÍCONES DO MENU LATERAL (Removendo os fundos brancos) 🔥 */
 /* ========================================================================= */
@@ -184,7 +193,7 @@ body.night-mode div:has(> #route-date) {
 }
 
 /* 2. Deixa o input transparente para se misturar ao container e arruma a cor */
-body.night-mode #route-date {
+body.night-mode #route-date, body.night-mode input.flatpickr-input {
     background-color: transparent !important;
     color: #f1f5f9 !important; /* Letra clara */
     color-scheme: dark; /* Mágica: avisa o navegador para deixar o ícone do calendário claro! */
@@ -234,7 +243,7 @@ body.night-mode .shift-btn.active {
 }
 
 /* 3. ✅ COLOCAR A MÃOZINHA NA DATA (Tanto Dia quanto Noite) */
-#route-date {
+#route-date, input.flatpickr-input {
     cursor: pointer !important;
 }
 body.night-mode #route-date {
@@ -608,12 +617,13 @@ input[type="date"]::-webkit-inner-spin-button {
     -webkit-appearance: none !important;
 }
 
-/* 2. Ajusta a largura exata para caber só o texto da data e centraliza */
-#route-date, #agenda-date {
-    width: 95px !important; /* Tamanho exato de YYYY-MM-DD */
+/* 2. Ajusta a largura exata para caber só o texto da data e centraliza. E pega a classe do Flatpickr! */
+#route-date, #agenda-date, input.flatpickr-input[type="text"], input.flatpickr-input[type="date"] {
+    width: 95px !important; /* Tamanho exato */
     text-align: center !important;
     padding-right: 0 !important;
     padding-left: 0 !important;
+    background: transparent !important;
 }
 /* 🔥 TOGGLE DIA/NOITE PREMIUM (MODERNO) 🔥 */
 
