@@ -398,15 +398,30 @@
                             <i id="arrow-list" class="fas fa-chevron-down text-slate-300 text-xs"></i>
                         </div>
                     </button>
-                    <div id="section-list" class="accordion-body hidden bg-slate-50/30">
-                        <div class="p-6 max-w-4xl mx-auto">
-                            <button onclick="UI.toggleModal('spreadsheet-modal')" class="w-full py-5 bg-green-600 hover:bg-green-700 text-white font-black rounded-xl shadow-lg transition flex flex-col items-center justify-center gap-2 transform hover:scale-[1.02]">
-                                <i class="fas fa-table text-3xl"></i> 
-                                <span>ABRIR PLANILHA GERAL DE SERVIÇOS</span>                  
-                            </button>
+                   <div id="section-list" class="accordion-body hidden bg-slate-50/30">
+                        <div class="p-4 md:p-8 max-w-3xl mx-auto">
+                            
+                            <div class="relative group cursor-pointer" onclick="UI.toggleModal('spreadsheet-modal')">
+                                <div class="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-teal-400 rounded-2xl blur opacity-25 group-hover:opacity-60 transition duration-500"></div>
+                                
+                                <button class="relative w-full py-8 md:py-10 bg-gradient-to-br from-emerald-600 to-green-500 text-white rounded-2xl shadow-xl transition-all duration-300 flex flex-col items-center justify-center gap-4 overflow-hidden border border-emerald-400/30 group-hover:scale-[1.01]">
+                                    
+                                    <div class="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-xl"></div>
+                                    <div class="absolute -bottom-10 -left-10 w-32 h-32 bg-black/10 rounded-full blur-xl"></div>
+                                    
+                                    <div class="bg-white/20 p-4 md:p-5 rounded-full backdrop-blur-md border border-white/30 shadow-inner group-hover:scale-110 transition-transform duration-300">
+                                        <i class="fas fa-border-all text-3xl md:text-4xl drop-shadow-md"></i> 
+                                    </div>
+                                    
+                                    <div class="flex flex-col items-center z-10 px-4">
+                                        <span class="text-base md:text-xl font-black tracking-wide drop-shadow-md text-center">ABRIR PLANILHA GERAL DE SERVIÇOS</span>
+                                        <span class="text-[10px] md:text-xs font-bold text-emerald-100 uppercase tracking-widest mt-1.5 text-center opacity-90">Visão panorâmica e gestão em tempo real</span>
+                                    </div>
+                                </button>
+                            </div>
+
                         </div>
                     </div>
-                </div>
 
                 <div class="border-b border-slate-100">
                     <button onclick="UI.toggleSection('db')" class="accordion-header group">
