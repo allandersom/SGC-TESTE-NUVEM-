@@ -598,3 +598,20 @@ body.night-mode .drag-item.bg-yellow-50 {
     overflow-y: auto !important;
     overscroll-behavior: contain; /* Impede que a tela de fundo role junto quando chegar no final da lista */
 }
+
+/* 🔥 CORREÇÃO DA PROPORÇÃO DO CAMPO DE DATA 🔥 */
+
+/* 1. Mata o espaço "fantasma" do ícone nativo do navegador */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="date"]::-webkit-inner-spin-button {
+    display: none !important;
+    -webkit-appearance: none !important;
+}
+
+/* 2. Ajusta a largura exata para caber só o texto da data e centraliza */
+#route-date, #agenda-date {
+    width: 95px !important; /* Tamanho exato de YYYY-MM-DD */
+    text-align: center !important;
+    padding-right: 0 !important;
+    padding-left: 0 !important;
+}
