@@ -2055,4 +2055,17 @@ const App = {
         }
     }
 };
-window.onload = () => UI.init();
+window.onload = () => {
+    UI.init();
+    
+    // 🔥 Transforma todos os campos de data normais no calendário modernão 🔥
+    flatpickr('input[type="date"]', {
+        dateFormat: "Y-m-d",
+        locale: "pt", // Deixa em português
+        disableMobile: true, // No celular ele continua usando o do Android/iPhone que já é bonito
+        onChange: function(selectedDates, dateStr, instance) {
+            // Garante que as suas funções antigas (onchange) continuem funcionando perfeitamente
+            instance.element.dispatchEvent(new Event('change'));
+        }
+    });
+};
