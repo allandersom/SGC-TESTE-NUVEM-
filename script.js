@@ -2218,9 +2218,6 @@ const App = {
     }
 
 }; // <--- Fim do App
-
-window.onload = () => {
-
 window.onload = () => {
     UI.init();
     
