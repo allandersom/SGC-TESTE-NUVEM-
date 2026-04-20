@@ -2153,8 +2153,73 @@ const App = {
             this.renderAgendaPanel();
             UI.toast("Agendamento removido");
         }
+    }, // <-- Vírgula importante conectando com as funções abaixo!
+
+    // 🔥 1. ABRE A JANELINHA BONITA DO BOTÃO "OBS" (ANTES) 🔥
+    editObs(driverName, index) {
+        const d = State.getCurrentFleet()[driverName];
+        if(!d || !d.trips[index]) return;
+        
+        UI.tempDriverName = driverName;
+        UI.tempTripIndex = index;
+        
+        const currentObs = d.trips[index].obs || '';
+        const parts = currentObs.split(/\|? ?MOT: /);
+        document.getElementById('edit-obs-log').value = parts[0].trim();
+        
+        UI.toggleModal('edit-obs-modal');
+    },
+
+    // 🔥 SALVA O BOTÃO "OBS" 🔥
+    saveObsEdits() {
+        const driverName = UI.tempDriverName;
+        const index = UI.tempTripIndex;
+        const d = State.getCurrentFleet()[driverName];
+        
+        if(d && d.trips[index]) {
+            const currentObs = d.trips[index].obs || '';
+            const parts = currentObs.split(/\|? ?MOT: /);
+            const motObs = parts[1] ? ` | MOT: ${parts[1]}` : '';
+            const newLogObs = document.getElementById('edit-obs-log').value.trim();
+            
+            d.trips[index].obs = newLogObs ? `${newLogObs}${motObs}` : motObs.replace(' | ', '');
+            State.saveFleet();
+            App.renderSpreadsheet();
+            UI.toggleModal('edit-obs-modal');
+            UI.toast("Observação atualizada!");
+        }
+    },
+
+    // 🔥 2. ABRE A JANELINHA BONITA DO BOTÃO "+" (DEPOIS/ATENÇÃO) 🔥
+    addExtraObs(driverName, index) {
+        const d = State.getCurrentFleet()[driverName];
+        if(!d || !d.trips[index]) return;
+        
+        UI.tempDriverName = driverName;
+        UI.tempTripIndex = index;
+        document.getElementById('edit-extra-obs').value = d.trips[index].obsExtra || '';
+        
+        UI.toggleModal('extra-obs-modal');
+    },
+
+    // 🔥 SALVA O BOTÃO "+" 🔥
+    saveExtraObs() {
+        const driverName = UI.tempDriverName;
+        const index = UI.tempTripIndex;
+        const d = State.getCurrentFleet()[driverName];
+        
+        if(d && d.trips[index]) {
+            d.trips[index].obsExtra = document.getElementById('edit-extra-obs').value.trim();
+            State.saveFleet();
+            App.renderSpreadsheet();
+            UI.toggleModal('extra-obs-modal');
+            UI.toast("Atenção Extra salva!");
+        }
     }
-};
+
+}; // <--- Fim do App
+
+window.onload = () => {
 
 window.onload = () => {
     UI.init();
