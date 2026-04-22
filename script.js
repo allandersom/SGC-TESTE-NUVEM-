@@ -607,6 +607,29 @@ const UI = {
 
 const App = {
     dragSource: null,   
+    // 🔥 VARIÁVEIS E FUNÇÕES DO COPIAR, RECORTAR E COLAR 🔥
+    selectedTrip: null,
+    selectedAgendaTrip: null,
+    clipboardTrip: null,
+    clipboardAction: null,
+    clipboardSource: null,
+    hoveredColumn: null,
+
+    selectTrip(driverName, index, event) {
+        // Desmarca os outros e marca o atual (Planilha)
+        document.querySelectorAll('.trip-selected').forEach(el => el.classList.remove('trip-selected'));
+        event.currentTarget.classList.add('trip-selected');
+        this.selectedTrip = { driver: driverName, index: index };
+        this.selectedAgendaTrip = null; // Limpa se tivesse algo na agenda
+    },
+
+    selectAgendaTrip(id, event) {
+        // Desmarca os outros e marca o atual (Agenda)
+        document.querySelectorAll('.trip-selected').forEach(el => el.classList.remove('trip-selected'));
+        event.currentTarget.classList.add('trip-selected');
+        this.selectedAgendaTrip = id;
+        this.selectedTrip = null; // Limpa se tivesse algo na planilha
+    },
     // 🔥 VARIÁVEIS DO CTRL+C / CTRL+V 🔥
     selectedTrip: null,
     clipboardTrip: null,
@@ -1254,7 +1277,7 @@ const App = {
                      onclick="App.selectTrip('${name}', ${i}, event)"
                      ondragstart="App.handleDriverDragStart(event, '${name}', ${i})"
                      ondrop="App.handleDrop(event, '${name}', ${i})"
-                     class="drag-item p-2.5 border rounded-lg shadow-sm relative flex flex-col cursor-grab active:cursor-grabbing hover:border-blue-400 ${bgClass} ${opacityClass}">
+                     class="drag-item p-2.5 border rounded-lg shadow-md relative flex flex-col cursor-grab active:cursor-grabbing transition-all hover:border-blue-400 ${bgClass} ${opacityClass}">
                     
                     <div class="absolute top-2 right-2 flex gap-1 z-10">
                         ${btnUp}
@@ -1790,8 +1813,7 @@ const App = {
             
             const avisoRetorno = (isRetorno && !isLocked) ? `<div class="mt-2 text-[10px] bg-orange-500 text-white font-black rounded-lg p-1.5 border border-orange-600 shadow-md animate-pulse"><i class="fas fa-exclamation-triangle text-yellow-200"></i> PRIORIDADE: ADIADO DO DIA ${a.dataOrigem}</div>` : '';
             list.innerHTML += `
-            <div ${dragAttrs} style="${finalStyle}" class="drag-item p-3 border rounded-xl shadow-sm flex flex-col relative animate-fade-in transition ag-item-card ${baseClass}">
-                <div class="flex items-center justify-between gap-1 w-full mb-2">
+<div ${dragAttrs} onclick="App.selectAgendaTrip(${a.id}, event)" style="${finalStyle}" class="drag-item p-3 border rounded-xl shadow-sm flex flex-col relative animate-fade-in transition ag-item-card ${baseClass}">                <div class="flex items-center justify-between gap-1 w-full mb-2">
                     <div class="flex gap-1">${botoesEdit}</div>
                     ${botoesAcaoPanel}
                 </div>
@@ -2305,33 +2327,113 @@ document.addEventListener('keydown', (event) => {
         });
     }
 });
-// 🔥 ESCUTADOR DO CTRL+C E CTRL+V 🔥
+// 🔥 ESCUTADOR DO CTRL+C, CTRL+X E CTRL+V 🔥
 document.addEventListener('keydown', (e) => {
-    // CTRL + C (Copiar)
+    // IGNORA SE ESTIVER DIGITANDO EM ALGUM CAMPO DE TEXTO
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+    // ✂️ CTRL + X (RECORTAR) ✂️
+    if (e.ctrlKey && (e.key === 'x' || e.key === 'X')) {
+        if (App.selectedTrip) {
+            const driver = State.getCurrentFleet()[App.selectedTrip.driver];
+            if (driver && driver.trips[App.selectedTrip.index]) {
+                App.clipboardTrip = JSON.parse(JSON.stringify(driver.trips[App.selectedTrip.index]));
+                App.clipboardAction = 'cut';
+                App.clipboardSource = { type: 'driver', driver: App.selectedTrip.driver, index: App.selectedTrip.index };
+                UI.toast("Serviço Recortado! Cole com Ctrl+V no destino.");
+                document.querySelector('.trip-selected')?.classList.add('opacity-40');
+            }
+        } else if (App.selectedAgendaTrip) {
+            const agendaItem = State.data.agendamentos.find(a => a.id === App.selectedAgendaTrip);
+            if (agendaItem && !agendaItem.distribuido && !agendaItem.reprogramado) {
+                App.clipboardTrip = JSON.parse(JSON.stringify(agendaItem));
+                App.clipboardAction = 'cut';
+                App.clipboardSource = { type: 'agenda', id: agendaItem.id };
+                UI.toast("Agendamento Recortado! Cole com Ctrl+V no motorista.");
+                document.querySelector('.trip-selected')?.classList.add('opacity-40');
+            }
+        }
+    }
+
+    // 📋 CTRL + C (COPIAR) 📋
     if (e.ctrlKey && (e.key === 'c' || e.key === 'C')) {
         if (App.selectedTrip) {
             const driver = State.getCurrentFleet()[App.selectedTrip.driver];
             if (driver && driver.trips[App.selectedTrip.index]) {
-                // Clona a viagem exata
                 App.clipboardTrip = JSON.parse(JSON.stringify(driver.trips[App.selectedTrip.index]));
-                UI.toast(`Viagem copiada! Pressione Ctrl+V em outro motorista.`);
+                App.clipboardAction = 'copy';
+                App.clipboardSource = { type: 'driver', driver: App.selectedTrip.driver, index: App.selectedTrip.index };
+                UI.toast("Serviço Copiado! Cole com Ctrl+V.");
+            }
+        } else if (App.selectedAgendaTrip) {
+            const agendaItem = State.data.agendamentos.find(a => a.id === App.selectedAgendaTrip);
+            if (agendaItem && !agendaItem.distribuido && !agendaItem.reprogramado) {
+                App.clipboardTrip = JSON.parse(JSON.stringify(agendaItem));
+                App.clipboardAction = 'copy';
+                App.clipboardSource = { type: 'agenda', id: agendaItem.id };
+                UI.toast("Agendamento Copiado! Cole com Ctrl+V.");
             }
         }
     }
     
-    // CTRL + V (Colar)
+    // 📌 CTRL + V (COLAR) 📌
     if (e.ctrlKey && (e.key === 'v' || e.key === 'V')) {
         if (App.clipboardTrip && App.hoveredColumn) {
-            // Cria uma nova ID para não dar conflito
-            const newTrip = { ...App.clipboardTrip, id: Date.now() + Math.random() };
-            
             const targetDriver = State.getCurrentFleet()[App.hoveredColumn];
             if (!targetDriver.trips) targetDriver.trips = [];
-            targetDriver.trips.push(newTrip);
             
-            State.saveFleet();
+            let newTrip = {};
+
+            if (App.clipboardSource.type === 'agenda') {
+                // Monta a viagem vinda da agenda
+                newTrip = {
+                    id: Date.now() + Math.random(), status: 'pendente', completed: false,
+                    empresa: App.clipboardTrip.empresa, obra: App.clipboardTrip.obra, qty: App.clipboardTrip.qty, 
+                    type: App.clipboardTrip.type, obs: App.clipboardTrip.obs, 
+                    to: { text: App.clipboardTrip.address || App.clipboardTrip.to?.text }, 
+                    mtr: null, descarteLocal: null, veioDeReprogramacao: App.clipboardTrip.veioDeReprogramacao || false, dataOrigem: App.clipboardTrip.dataOrigem || ''
+                };
+                
+                if (App.clipboardAction === 'cut') {
+                    // Se cortou, vincula a ID pra bloquear lá na agenda
+                    newTrip.agendaId = App.clipboardTrip.id;
+                    const ag = State.data.agendamentos.find(a => a.id === App.clipboardTrip.id);
+                    if(ag) ag.distribuido = true;
+                } else {
+                    // Se foi só cópia, não vincula pra não bugar a agenda
+                    newTrip.agendaId = null;
+                }
+            } else {
+                // Monta a viagem copiada da própria planilha
+                newTrip = { ...App.clipboardTrip, id: Date.now() + Math.random() };
+                
+                if (App.clipboardAction === 'cut') {
+                    // SE FOI RECORTAR, SOME DA ORIGEM!
+                    const sourceDriver = State.getCurrentFleet()[App.clipboardSource.driver];
+                    if (sourceDriver && sourceDriver.trips) {
+                        sourceDriver.trips.splice(App.clipboardSource.index, 1);
+                    }
+                } else {
+                    // Se foi cópia de motorista, solta as amarras da agenda
+                    newTrip.agendaId = null; 
+                }
+            }
+
+            targetDriver.trips.push(newTrip);
+            State.saveAll();
+            
+            // 🔥 O SEGREDO AQUI: Limpa a área de transferência pra não colar repetido! 🔥
+            App.clipboardTrip = null;
+            App.clipboardAction = null;
+            App.clipboardSource = null;
+            App.selectedTrip = null;
+            App.selectedAgendaTrip = null;
+
             App.renderSpreadsheet();
-            UI.toast(`Colado na rota de ${App.hoveredColumn}!`);
+            App.renderAgendaPanel();
+            UI.toast(`Ação concluída em ${App.hoveredColumn}!`);
+        } else if (App.clipboardTrip && !App.hoveredColumn) {
+            UI.toast("Coloque o mouse em cima da área de um motorista para colar!", "info");
         }
     }
 });
