@@ -606,8 +606,22 @@ const UI = {
 };
 
 const App = {
-    dragSource: null,
+    dragSource: null,   
+    // 🔥 VARIÁVEIS DO CTRL+C / CTRL+V 🔥
+    selectedTrip: null,
+    clipboardTrip: null,
+    hoveredColumn: null,
 
+    selectTrip(driverName, index, event) {
+        // Remove a marcação anterior
+        document.querySelectorAll('.trip-selected').forEach(el => el.classList.remove('trip-selected'));
+        
+        // Marca a nova
+        const card = event.currentTarget;
+        card.classList.add('trip-selected');
+        
+        this.selectedTrip = { driver: driverName, index: index };
+    },
     // 🔥 FILTROS DA AGENDA E CONFIGS DO MOTORISTA 🔥
     setAgendaPanelFilter(type) {
         State.session.agendaPanelFilter = type;
@@ -1150,6 +1164,7 @@ const App = {
             bodyDiv.setAttribute('data-driver', name);
             bodyDiv.setAttribute('ondragover', 'App.handleDragOver(event)');
             bodyDiv.setAttribute('ondrop', `App.handleDrop(event, '${name}', -1)`);
+            bodyDiv.setAttribute('onmouseenter', `App.hoveredColumn = '${name}'`); // 🔥 RASTREIA O MOUSE PRO CTRL+V 🔥
             
             const buildCell = (t, i, colorClass, customLabel = null) => {
                 let status = t.status || (t.completed ? 'concluido' : 'pendente');
@@ -1236,9 +1251,10 @@ const App = {
 
                 return `
                 <div draggable="true" 
+                     onclick="App.selectTrip('${name}', ${i}, event)"
                      ondragstart="App.handleDriverDragStart(event, '${name}', ${i})"
                      ondrop="App.handleDrop(event, '${name}', ${i})"
-                     class="drag-item p-2.5 border rounded-lg shadow-md relative flex flex-col cursor-grab active:cursor-grabbing transition-all hover:border-blue-400 ${bgClass} ${opacityClass}">
+                     class="drag-item p-2.5 border rounded-lg shadow-sm relative flex flex-col cursor-grab active:cursor-grabbing hover:border-blue-400 ${bgClass} ${opacityClass}">
                     
                     <div class="absolute top-2 right-2 flex gap-1 z-10">
                         ${btnUp}
@@ -1300,6 +1316,13 @@ const App = {
                 });
             }
 
+            // 🔥 GERA AS "CÉLULAS VAZIAS" NO FINAL DA COLUNA 🔥
+            const totalCells = Math.max(10, trips.length + 3); // Garante no mínimo 10 células, ou sempre 3 extras
+            for (let c = trips.length; c < totalCells; c++) {
+                tripsHtml += `<div class="border border-dashed border-slate-300/50 rounded-lg h-12 m-1 bg-slate-50/30"></div>`;
+            }
+
+            bodyDiv.innerHTML = tripsHtml;
             bodyDiv.innerHTML = tripsHtml;
 
             const footerHtml = `
@@ -2280,5 +2303,35 @@ document.addEventListener('keydown', (event) => {
             const m = document.getElementById(id);
             if(m && !m.classList.contains('hidden')) UI.toggleModal(id);
         });
+    }
+});
+// 🔥 ESCUTADOR DO CTRL+C E CTRL+V 🔥
+document.addEventListener('keydown', (e) => {
+    // CTRL + C (Copiar)
+    if (e.ctrlKey && (e.key === 'c' || e.key === 'C')) {
+        if (App.selectedTrip) {
+            const driver = State.getCurrentFleet()[App.selectedTrip.driver];
+            if (driver && driver.trips[App.selectedTrip.index]) {
+                // Clona a viagem exata
+                App.clipboardTrip = JSON.parse(JSON.stringify(driver.trips[App.selectedTrip.index]));
+                UI.toast(`Viagem copiada! Pressione Ctrl+V em outro motorista.`);
+            }
+        }
+    }
+    
+    // CTRL + V (Colar)
+    if (e.ctrlKey && (e.key === 'v' || e.key === 'V')) {
+        if (App.clipboardTrip && App.hoveredColumn) {
+            // Cria uma nova ID para não dar conflito
+            const newTrip = { ...App.clipboardTrip, id: Date.now() + Math.random() };
+            
+            const targetDriver = State.getCurrentFleet()[App.hoveredColumn];
+            if (!targetDriver.trips) targetDriver.trips = [];
+            targetDriver.trips.push(newTrip);
+            
+            State.saveFleet();
+            App.renderSpreadsheet();
+            UI.toast(`Colado na rota de ${App.hoveredColumn}!`);
+        }
     }
 });
