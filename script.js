@@ -1167,8 +1167,8 @@ const App = {
             const trips = d.trips || [];
             
             const column = document.createElement('div');
-            column.className = "driver-column shrink-0 min-w-[200px] sm:min-w-[230px] max-w-[260px] md:min-w-[280px] md:max-w-[340px] flex flex-col bg-slate-50 snap-start border-r border-slate-300 transition-colors h-full";
-
+            // 🔥 REMOVIDO os "max-w" e ADICIONADO "resize-x overflow-hidden" 🔥
+            column.className = "driver-column shrink-0 min-w-[260px] w-[310px] flex flex-col bg-slate-50 snap-start border-r-2 border-slate-300 transition-colors h-full resize-x overflow-hidden";
             let totalServicos = 0;
             trips.forEach(t => {
                 let qty = parseInt(t.qty) || 1;
