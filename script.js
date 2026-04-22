@@ -2001,13 +2001,14 @@ const App = {
     
     quickDelete(name, index) { this.deleteTrip(name, index); },
     
-    deleteTrip(name, index) { 
+   deleteTrip(name, index) { 
         if(confirm("Apagar esta entrega?")) {
             const driver = State.getCurrentFleet()[name];
-            
-            // 🔥 SE A VIAGEM VEIO DA AGENDA, DESTRAVA ELA LÁ PRIMEIRO 🔥
-            if (driver && driver.trips[index] && driver.trips[index].agendaId) {
-                const ag = State.data.agendamentos.find(a => a.id === driver.trips[index].agendaId);
+            const trip = driver.trips[index];
+
+            // 🔥 Garante que o agendamento seja liberado se a viagem for excluída
+            if (trip && trip.agendaId) {
+                const ag = State.data.agendamentos.find(a => a.id === trip.agendaId);
                 if (ag) {
                     ag.distribuido = false;
                     State.saveAgendamentos();
@@ -2015,11 +2016,30 @@ const App = {
             }
             
             State.removeTrip(name, index);
-            UI.toast("Serviço excluído da rota!");
+            
+            // Atualiza as telas para refletir a mudança na hora
+            this.renderSpreadsheet();
+            this.renderAgendaTab();
+            this.renderAgendaPanel();
+            UI.toast("Serviço removido e liberado na agenda!");
         } 
     },
-    toggleStatus(n, i) { State.toggleTripStatus(n, i); },
-    setTripStatus(n, i, s) { State.setTripStatus(n, i, s); },
+
+    // 🔥 NOVA FUNÇÃO: APAGAR TODOS OS AGENDAMENTOS DO DIA SELECIONADO
+    deleteAllAgendasForDay() {
+        const selectedDate = document.getElementById('agenda-date').value;
+        if (!selectedDate) return UI.toast("Selecione uma data primeiro", "error");
+
+        if (confirm(`ATENÇÃO: Deseja apagar TODOS os agendamentos do dia ${selectedDate.split('-').reverse().join('/')}?\n\nIsso não afetará os serviços que já estão na rota dos motoristas.`)) {
+            // Filtra mantendo apenas o que NÃO é da data selecionada
+            State.data.agendamentos = State.data.agendamentos.filter(a => a.date !== selectedDate);
+            
+            State.saveAgendamentos();
+            this.renderAgendaTab();
+            this.renderAgendaPanel();
+            UI.toast("Todos os agendamentos do dia foram apagados!");
+        }
+    },
     
     cycleType(name, index) {
         const d = State.getCurrentFleet()[name];
