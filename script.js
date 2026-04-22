@@ -1156,8 +1156,14 @@ const App = {
                 scrollY[driverName] = scrollDiv.scrollTop;
             }
         });
-        const scrollX = container.scrollLeft;
         
+        // 🔥 TRAVA O SCROLL HORIZONTAL COM MAIS PRECISÃO 🔥
+        const scrollX = container.scrollLeft;
+        const appWrapper = document.getElementById('app-wrapper');
+        const wrapperScroll = appWrapper ? appWrapper.scrollTop : 0;
+        
+        // Cria um clone "fantasma" invisível para a tela não dar solavanco enquanto limpa
+        container.style.minHeight = container.offsetHeight + 'px'; 
         container.innerHTML = '';
 
         const drivers = State.getDriversByShift();
@@ -1384,9 +1390,16 @@ const App = {
             }
         });
 
+        // 🔥 DEVOLVE A ROLAGEM EXATA DE FORMA IMEDIATA E SEM PISCAR 🔥
+        container.scrollLeft = scrollX;
+        if(appWrapper) appWrapper.scrollTop = wrapperScroll;
+        
+        // Remove a trava fantasma que a gente criou lá em cima
         setTimeout(() => {
-            container.scrollLeft = scrollX;
-        }, 15);
+            container.style.minHeight = '';
+            // Um segundo check de segurança caso o navegador atrase a renderização
+            if (container.scrollLeft !== scrollX) container.scrollLeft = scrollX; 
+        }, 10);
     },
 
     handleAgendaDragStart(e, id) {
