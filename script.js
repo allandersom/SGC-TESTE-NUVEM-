@@ -614,7 +614,15 @@ const App = {
     clipboardAction: null,
     clipboardSource: null,
     hoveredColumn: null,
-
+    // 🔥 VARIÁVEIS E FUNÇÕES DO COPIAR, RECORTAR E COLAR 🔥
+    selectedTrip: null,
+    selectedAgendaTrip: null,
+    clipboardTrip: null,
+    clipboardAction: null,
+    clipboardSource: null,
+    hoveredColumn: null,
+    hoveredIndex: null, // 🔥 RASTREIA A POSIÇÃO EXATA DO MOUSE 🔥
+    
     selectTrip(driverName, index, event) {
         // Desmarca os outros e marca o atual (Planilha)
         document.querySelectorAll('.trip-selected').forEach(el => el.classList.remove('trip-selected'));
@@ -1187,7 +1195,7 @@ const App = {
             bodyDiv.setAttribute('data-driver', name);
             bodyDiv.setAttribute('ondragover', 'App.handleDragOver(event)');
             bodyDiv.setAttribute('ondrop', `App.handleDrop(event, '${name}', -1)`);
-            bodyDiv.setAttribute('onmouseenter', `App.hoveredColumn = '${name}'`); // 🔥 RASTREIA O MOUSE PRO CTRL+V 🔥
+            bodyDiv.setAttribute('onmouseenter', `App.hoveredColumn = '${name}'; App.hoveredIndex = null;`); // 🔥 ATUALIZADO 🔥
             
             const buildCell = (t, i, colorClass, customLabel = null) => {
                 let status = t.status || (t.completed ? 'concluido' : 'pendente');
@@ -1275,9 +1283,10 @@ const App = {
                 return `
                 <div draggable="true" 
                      onclick="App.selectTrip('${name}', ${i}, event)"
+                     onmouseenter="App.hoveredIndex = ${i}"
                      ondragstart="App.handleDriverDragStart(event, '${name}', ${i})"
                      ondrop="App.handleDrop(event, '${name}', ${i})"
-                     class="drag-item p-2.5 border rounded-lg shadow-md relative flex flex-col cursor-grab active:cursor-grabbing transition-all hover:border-blue-400 ${bgClass} ${opacityClass}">
+                     class="drag-item p-2.5 border rounded-lg shadow-sm relative flex flex-col cursor-grab active:cursor-grabbing hover:border-blue-400 ${bgClass} ${opacityClass}">
                     
                     <div class="absolute top-2 right-2 flex gap-1 z-10">
                         ${btnUp}
@@ -1339,10 +1348,10 @@ const App = {
                 });
             }
 
-            // 🔥 GERA AS "CÉLULAS VAZIAS" NO FINAL DA COLUNA 🔥
-            const totalCells = Math.max(10, trips.length + 3); // Garante no mínimo 10 células, ou sempre 3 extras
+           // 🔥 GERA AS "CÉLULAS VAZIAS" NO FINAL DA COLUNA 🔥
+            const totalCells = Math.max(10, trips.length + 3); 
             for (let c = trips.length; c < totalCells; c++) {
-                tripsHtml += `<div class="border border-dashed border-slate-300/50 rounded-lg h-12 m-1 bg-slate-50/30"></div>`;
+                tripsHtml += `<div onmouseenter="App.hoveredIndex = null" class="border border-dashed border-slate-300/50 rounded-lg h-12 m-1 bg-slate-50/30"></div>`;
             }
 
             bodyDiv.innerHTML = tripsHtml;
@@ -2419,7 +2428,12 @@ document.addEventListener('keydown', (e) => {
                 }
             }
 
-            targetDriver.trips.push(newTrip);
+           // 🔥 COLA EXATAMENTE ONDE O MOUSE ESTÁ 🔥
+            if (typeof App.hoveredIndex === 'number' && App.hoveredIndex >= 0 && App.hoveredIndex < targetDriver.trips.length) {
+                targetDriver.trips.splice(App.hoveredIndex, 0, newTrip);
+            } else {
+                targetDriver.trips.push(newTrip); // Se estiver nas células vazias do final, joga pro final
+            }
             State.saveAll();
             
             // 🔥 O SEGREDO AQUI: Limpa a área de transferência pra não colar repetido! 🔥
