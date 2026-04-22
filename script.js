@@ -1149,20 +1149,26 @@ const App = {
         const container = document.getElementById('spreadsheet-container');
         if (!container) return; 
 
+        // 🔥 1. MEMÓRIA: SALVA O SCROLL E A LARGURA ANTES DE APAGAR A TELA 🔥
         const scrollY = {};
+        const savedWidths = {}; 
+
         container.querySelectorAll('.driver-list-scroll').forEach(scrollDiv => {
             const driverName = scrollDiv.getAttribute('data-driver');
             if (driverName) {
                 scrollY[driverName] = scrollDiv.scrollTop;
+                // Salva a largura que você esticou com o mouse
+                const parentCol = scrollDiv.closest('.driver-column');
+                if (parentCol) savedWidths[driverName] = parentCol.style.width;
             }
         });
         
-        // 🔥 TRAVA O SCROLL HORIZONTAL COM MAIS PRECISÃO 🔥
+        // Trava o scroll horizontal e vertical da tela
         const scrollX = container.scrollLeft;
         const appWrapper = document.getElementById('app-wrapper');
         const wrapperScroll = appWrapper ? appWrapper.scrollTop : 0;
         
-        // Cria um clone "fantasma" invisível para a tela não dar solavanco enquanto limpa
+        // Cria um clone "fantasma" invisível para a tela não dar solavanco
         container.style.minHeight = container.offsetHeight + 'px'; 
         container.innerHTML = '';
 
@@ -1173,15 +1179,22 @@ const App = {
             const trips = d.trips || [];
             
             const column = document.createElement('div');
-            // 🔥 REMOVIDO os "max-w" e ADICIONADO "resize-x overflow-hidden" 🔥
+            // Identificador para o sistema achar a coluna depois
+            column.setAttribute('data-driver-col', name); 
+            // Classes atualizadas com o "resize-x" liberado
             column.className = "driver-column shrink-0 min-w-[260px] w-[310px] flex flex-col bg-slate-50 snap-start border-r-2 border-slate-300 transition-colors h-full resize-x overflow-hidden";
+            
+            // 🔥 2. DEVOLVE A LARGURA EXATA QUE VOCÊ TINHA DEIXADO 🔥
+            if (savedWidths[name]) {
+                column.style.width = savedWidths[name];
+            }
+
             let totalServicos = 0;
             trips.forEach(t => {
                 let qty = parseInt(t.qty) || 1;
                 totalServicos += (t.type === 'encher') ? (qty * 2) : qty;
             });
 
-            // 🔥 Caixa e Aviso Manual 🔥
             let totalCaixas = d.totalCaixas || 0;
             let obsGeralHtml = d.obsGeral ? `<div class="bg-red-100 text-red-700 text-[10px] font-black py-1.5 px-2 border-b border-red-200 uppercase leading-tight cursor-pointer animate-pulse" onclick="App.openDriverSettings('${name}')" title="Editar Atenção Geral">⚠️ ${d.obsGeral}</div>` : '';
 
@@ -1201,7 +1214,7 @@ const App = {
             bodyDiv.setAttribute('data-driver', name);
             bodyDiv.setAttribute('ondragover', 'App.handleDragOver(event)');
             bodyDiv.setAttribute('ondrop', `App.handleDrop(event, '${name}', -1)`);
-            bodyDiv.setAttribute('onmouseenter', `App.hoveredColumn = '${name}'; App.hoveredIndex = null;`); // 🔥 ATUALIZADO 🔥
+            bodyDiv.setAttribute('onmouseenter', `App.hoveredColumn = '${name}'; App.hoveredIndex = null;`);
             
             const buildCell = (t, i, colorClass, customLabel = null) => {
                 let status = t.status || (t.completed ? 'concluido' : 'pendente');
@@ -1255,7 +1268,6 @@ const App = {
                 const btnDown = i < trips.length - 1 ? `<button onclick="App.moveTripDown('${name}', ${i})" class="w-5 h-5 rounded bg-slate-100 hover:bg-blue-100 text-slate-500 hover:text-blue-600 flex items-center justify-center border border-slate-200 transition shadow-sm" title="Descer Serviço"><i class="fas fa-arrow-down text-[9px]"></i></button>` : '';
                 const divider = (btnUp || btnDown) ? `<div class="w-px bg-slate-200 mx-0.5 my-1"></div>` : '';
 
-                // 🔥 BOTÕES DE EDIÇÃO AGORA CHAMAM MODAIS HTML 🔥
                 const barraAcoesHtml = `
                     <div class="mt-2 pt-1.5 border-t border-slate-100 flex gap-1 justify-between items-center bg-slate-50/50 -mx-1 -mb-1 px-1 pb-1 rounded-b">
                         <div class="flex gap-1">
@@ -1270,7 +1282,7 @@ const App = {
                             <button onclick="App.openEditTripModal('${name}', ${i})" class="h-6 px-1.5 rounded bg-white border border-slate-200 text-slate-500 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 flex items-center justify-center gap-1 transition shadow-sm text-[9px] font-bold" title="Editar Obra/Endereço">
                                 <i class="fas fa-pen text-[9px]"></i>
                             </button>
-                            <button onclick="App.openEditObsModal('${name}', ${i})" class="h-6 px-1.5 rounded bg-white border border-slate-200 text-slate-500 hover:text-amber-600 hover:border-amber-200 hover:bg-amber-50 flex items-center justify-center gap-1 transition shadow-sm text-[9px] font-bold" title="Editar OBS Logística">
+                            <button onclick="App.editObs('${name}', ${i})" class="h-6 px-1.5 rounded bg-white border border-slate-200 text-slate-500 hover:text-amber-600 hover:border-amber-200 hover:bg-amber-50 flex items-center justify-center gap-1 transition shadow-sm text-[9px] font-bold" title="Editar OBS Logística">
                                 <i class="fas fa-comment-dots text-[9px]"></i><span class="hidden xl:inline">OBS</span>
                             </button>
                             <button onclick="App.openMtrModal(${i}, '${name}')" class="h-6 px-1.5 rounded bg-white border border-slate-200 text-slate-500 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 flex items-center justify-center gap-1 transition shadow-sm text-[9px] font-bold" title="Definir MTR">
@@ -1279,7 +1291,7 @@ const App = {
                             <button onclick="App.attachPhotoObs('${name}', ${i})" class="w-6 h-6 rounded bg-white border border-slate-200 text-slate-400 hover:text-sky-600 hover:border-sky-200 hover:bg-sky-50 flex items-center justify-center transition shadow-sm" title="Anexar Foto (Logística)">
                                 <i class="fas fa-camera text-[9px]"></i>
                             </button>
-                            <button onclick="App.openExtraObsModal('${name}', ${i})" class="w-6 h-6 rounded bg-white border border-slate-200 text-slate-400 hover:text-red-600 hover:border-red-200 hover:bg-red-50 flex items-center justify-center transition shadow-sm font-black" title="Adicionar OBS Extra (Negrito)">
+                            <button onclick="App.addExtraObs('${name}', ${i})" class="w-6 h-6 rounded bg-white border border-slate-200 text-slate-400 hover:text-red-600 hover:border-red-200 hover:bg-red-50 flex items-center justify-center transition shadow-sm font-black" title="Adicionar OBS Extra (Negrito)">
                                 +
                             </button>
                         </div>
@@ -1294,7 +1306,7 @@ const App = {
                      ondrop="App.handleDrop(event, '${name}', ${i})"
                      class="drag-item p-2.5 border rounded-lg shadow-sm relative flex flex-col cursor-grab active:cursor-grabbing hover:border-blue-400 ${bgClass} ${opacityClass}">
                     
-                   <div class="absolute top-2 right-2 flex gap-1 z-10">
+                    <div class="absolute top-2 right-2 flex gap-1 z-10">
                         ${btnUp}
                         ${btnDown}
                         ${divider}
@@ -1309,7 +1321,7 @@ const App = {
                             <i class="fas fa-times text-[10px]"></i>
                         </button>
                     </div>
-                    
+
                     <div class="flex items-center gap-1 w-fit mb-1.5">
                         <button onclick="App.changeQty('${name}', ${i})" class="text-slate-600 hover:text-blue-600 hover:bg-blue-50 text-[10px] font-black bg-white rounded px-1.5 py-0.5 border border-slate-200 shadow-sm transition cursor-pointer" title="Mudar Quantidade">
                             ${t.qty || 1}
@@ -1362,13 +1374,11 @@ const App = {
                 });
             }
 
-           // 🔥 GERA AS "CÉLULAS VAZIAS" NO FINAL DA COLUNA 🔥
             const totalCells = Math.max(10, trips.length + 3); 
             for (let c = trips.length; c < totalCells; c++) {
                 tripsHtml += `<div onmouseenter="App.hoveredIndex = null" class="border border-dashed border-slate-300/50 rounded-lg h-12 m-1 bg-slate-50/30"></div>`;
             }
 
-            bodyDiv.innerHTML = tripsHtml;
             bodyDiv.innerHTML = tripsHtml;
 
             const footerHtml = `
@@ -1390,14 +1400,12 @@ const App = {
             }
         });
 
-        // 🔥 DEVOLVE A ROLAGEM EXATA DE FORMA IMEDIATA E SEM PISCAR 🔥
+        // 🔥 3. DEVOLVE A ROLAGEM EXATA E TIRA A TRAVA FANTASMA 🔥
         container.scrollLeft = scrollX;
         if(appWrapper) appWrapper.scrollTop = wrapperScroll;
         
-        // Remove a trava fantasma que a gente criou lá em cima
         setTimeout(() => {
             container.style.minHeight = '';
-            // Um segundo check de segurança caso o navegador atrase a renderização
             if (container.scrollLeft !== scrollX) container.scrollLeft = scrollX; 
         }, 10);
     },
