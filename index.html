@@ -479,6 +479,13 @@
                                 <input id="agenda-addr" type="text" class="input-modern" placeholder="Endereço">
                                 <input id="agenda-obs" type="text" class="input-modern bg-amber-50/30" placeholder="Observação">
                                 <button onclick="App.addAgenda()" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-lg text-xs shadow-md transition mt-2"><i class="fas fa-calendar-plus mr-1"></i> Salvar Agendamento</button>
+                                <button onclick="App.addAgenda()" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-lg text-xs shadow-md transition mt-2">
+    <i class="fas fa-calendar-plus mr-1"></i> Salvar Agendamento
+</button>
+
+<button onclick="App.deleteAllAgendasForDay()" class="w-full bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 font-bold py-2 rounded-lg text-[10px] transition mt-2">
+    <i class="fas fa-trash-alt mr-1"></i> APAGAR TODOS DESTE DIA
+</button>
                             </div>
 
                             <div class="pt-4 border-t border-slate-200">
