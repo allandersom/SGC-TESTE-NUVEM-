@@ -1999,8 +1999,25 @@ const App = {
         });
     },
     
-    quickDelete(name, index) { if(confirm("Excluir viagem rápida?")) State.removeTrip(name, index); },
-    deleteTrip(name, index) { if(confirm("Apagar esta entrega?")) State.removeTrip(name, index); },
+    quickDelete(name, index) { this.deleteTrip(name, index); },
+    
+    deleteTrip(name, index) { 
+        if(confirm("Apagar esta entrega?")) {
+            const driver = State.getCurrentFleet()[name];
+            
+            // 🔥 SE A VIAGEM VEIO DA AGENDA, DESTRAVA ELA LÁ PRIMEIRO 🔥
+            if (driver && driver.trips[index] && driver.trips[index].agendaId) {
+                const ag = State.data.agendamentos.find(a => a.id === driver.trips[index].agendaId);
+                if (ag) {
+                    ag.distribuido = false;
+                    State.saveAgendamentos();
+                }
+            }
+            
+            State.removeTrip(name, index);
+            UI.toast("Serviço excluído da rota!");
+        } 
+    },
     toggleStatus(n, i) { State.toggleTripStatus(n, i); },
     setTripStatus(n, i, s) { State.setTripStatus(n, i, s); },
     
