@@ -1288,22 +1288,22 @@ const App = {
                      ondrop="App.handleDrop(event, '${name}', ${i})"
                      class="drag-item p-2.5 border rounded-lg shadow-sm relative flex flex-col cursor-grab active:cursor-grabbing hover:border-blue-400 ${bgClass} ${opacityClass}">
                     
-                    <div class="absolute top-2 right-2 flex gap-1 z-10">
+                   <div class="absolute top-2 right-2 flex gap-1 z-10">
                         ${btnUp}
                         ${btnDown}
                         ${divider}
-                        <button onclick="App.deleteTrip('${name}', ${i})" class="w-5 h-5 rounded bg-white hover:bg-red-50 text-slate-300 hover:text-red-600 flex items-center justify-center border border-slate-200 transition shadow-sm" title="Excluir Serviço">
-                            <i class="fas fa-trash-alt text-[9px]"></i>
+                        <button onclick="App.deleteTrip('${name}', ${i})" class="w-6 h-6 rounded bg-slate-100 hover:bg-red-100 text-slate-600 hover:text-red-600 flex items-center justify-center border border-slate-300 transition shadow-sm font-black" title="Excluir Serviço">
+                            <i class="fas fa-trash-alt text-[10px]"></i>
                         </button>
-                        <div class="w-px bg-slate-200 mx-0.5 my-1"></div>
-                        <button onclick="App.setTripStatus('${name}', ${i}, 'concluido')" class="w-5 h-5 rounded bg-white hover:bg-emerald-50 text-slate-300 hover:text-emerald-500 flex items-center justify-center border border-slate-200 transition shadow-sm" title="Marcar Concluído">
-                            <i class="fas fa-check text-[9px]"></i>
+                        <div class="w-px bg-slate-300 mx-0.5 my-1"></div>
+                        <button onclick="App.setTripStatus('${name}', ${i}, 'concluido')" class="w-6 h-6 rounded bg-slate-100 hover:bg-emerald-100 text-slate-600 hover:text-emerald-600 flex items-center justify-center border border-slate-300 transition shadow-sm font-black" title="Marcar Concluído">
+                            <i class="fas fa-check text-[10px]"></i>
                         </button>
-                        <button onclick="App.setTripStatus('${name}', ${i}, 'nao_feito')" class="w-5 h-5 rounded bg-white hover:bg-red-50 text-slate-300 hover:text-red-500 flex items-center justify-center border border-slate-200 transition shadow-sm" title="Marcar Não Feito">
-                            <i class="fas fa-times text-[9px]"></i>
+                        <button onclick="App.setTripStatus('${name}', ${i}, 'nao_feito')" class="w-6 h-6 rounded bg-slate-100 hover:bg-red-100 text-slate-600 hover:text-red-600 flex items-center justify-center border border-slate-300 transition shadow-sm font-black" title="Marcar Não Feito">
+                            <i class="fas fa-times text-[10px]"></i>
                         </button>
                     </div>
-
+                    
                     <div class="flex items-center gap-1 w-fit mb-1.5">
                         <button onclick="App.changeQty('${name}', ${i})" class="text-slate-600 hover:text-blue-600 hover:bg-blue-50 text-[10px] font-black bg-white rounded px-1.5 py-0.5 border border-slate-200 shadow-sm transition cursor-pointer" title="Mudar Quantidade">
                             ${t.qty || 1}
