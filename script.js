@@ -23,7 +23,7 @@ const db = firebase.database();
 const CONFIG = {
     drivers: {
         day: ["MARIO", "ADRIELSON", "RÉGIO", "MARCELO A", "JAMERSON", "THIAGO", "CLAUDIO", "LUIZ CARLOS RODRIGUES", "JONES", "PAULO RICARDO", "MILTON", "EUDES", "ROBERTO C", "RODRIGO", "CLOVIS", "JOELITON"],
-        night: ["ELCIDES", "MARCONI", "LUIZ RODRIGO", "MAYKEL", "PLATINIS", "BRUNO"]
+        night: ["ELCIDES", "MARCONI", "MILTON", "MAYKEL", "THIAGO", "BRUNO"]
     },
     colors: ['#2563eb', '#16a34a', '#d97706', '#9333ea', '#db2777', '#dc2626', '#0891b2', '#ea580c']
 };
